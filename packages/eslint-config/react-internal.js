@@ -14,7 +14,8 @@ export const config = [
   ...baseConfig,
   js.configs.recommended,
   eslintConfigPrettier,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.strictTypeChecked,
   pluginReact.configs.flat.recommended,
   {
     languageOptions: {
@@ -22,6 +23,10 @@ export const config = [
       globals: {
         ...globals.serviceworker,
         ...globals.browser,
+      },
+      parserOptions: {
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+        tsconfigRootDir: import.meta.dirname,
       },
     },
   },

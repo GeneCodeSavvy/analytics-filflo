@@ -1,7 +1,12 @@
 import "./App.css";
+import NavSidebar from "./components/NavSidebar";
 
 function App() {
-  return <>Hello</>;
+  return (
+    <>
+      <NavSidebar />
+    </>
+  );
 }
 
 export default App;
