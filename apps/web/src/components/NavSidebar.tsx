@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import {
   Sidebar,
@@ -6,23 +5,21 @@ import {
   SidebarGroup,
   SidebarLink,
   SidebarSeparator,
+  useSidebar,
   type NavItem,
 } from "@/components/ui/sidebar";
 import {
   IconAdjustments,
   IconBell,
   IconChartBar,
-  IconDatabase,
-  IconFileText,
-  IconKey,
   IconLayoutDashboard,
-  IconLock,
   IconMail,
   IconMessage,
   IconUsers,
 } from "@tabler/icons-react";
-import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import logoFull from "@/assets/blackBgBackground.png";
+import logoMark from "@/assets/blackBgBackground2.png";
 
 const iconClass = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
 
@@ -30,89 +27,39 @@ const items: NavItem[] = [
   {
     kind: "link",
     label: "Dashboard",
-    href: "#",
+    href: "/",
     icon: <IconLayoutDashboard className={iconClass} />,
   },
   {
     kind: "link",
-    label: "Analytics",
-    href: "#",
+    label: "Tickets",
+    href: "/tickets",
     icon: <IconChartBar className={iconClass} />,
   },
   {
     kind: "link",
     label: "Messages",
-    href: "#",
+    href: "/messages",
     icon: <IconMessage className={iconClass} />,
   },
   {
     kind: "link",
     label: "Notifications",
-    href: "#",
+    href: "/notifications",
     icon: <IconBell className={iconClass} />,
   },
   { kind: "separator" },
   {
-    kind: "group",
-    group: {
-      label: "Content",
-      icon: <IconFileText className={iconClass} />,
-      links: [
-        {
-          label: "Documents",
-          href: "#",
-          icon: <IconFileText className={iconClass} />,
-        },
-        {
-          label: "Database",
-          href: "#",
-          icon: <IconDatabase className={iconClass} />,
-        },
-      ],
-    },
+    kind: "link",
+    label: "Team",
+    icon: <IconUsers className={iconClass} />,
+    href: "/team",
   },
   {
-    kind: "group",
-    group: {
-      label: "Team",
-      icon: <IconUsers className={iconClass} />,
-      links: [
-        {
-          label: "Members",
-          href: "#",
-          icon: <IconUsers className={iconClass} />,
-        },
-        {
-          label: "Invitations",
-          href: "#",
-          icon: <IconMail className={iconClass} />,
-        },
-      ],
-    },
-  },
-  {
-    kind: "group",
-    group: {
-      label: "Settings",
-      icon: <IconAdjustments className={iconClass} />,
-      links: [
-        {
-          label: "General",
-          href: "#",
-          icon: <IconAdjustments className={iconClass} />,
-        },
-        {
-          label: "Security",
-          href: "#",
-          icon: <IconLock className={iconClass} />,
-        },
-        {
-          label: "API Keys",
-          href: "#",
-          icon: <IconKey className={iconClass} />,
-        },
-      ],
-    },
+    kind: "link",
+    href: "#",
+    label: "Settings",
+    icon: <IconAdjustments className={iconClass} />,
   },
 ];
 
@@ -132,7 +79,7 @@ export default function NavSidebar() {
       <Sidebar open={open} setOpen={setOpen}>
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-            {open ? <Logo /> : <LogoIcon />}
+            <Logo />
             <div className="mt-8 flex flex-col gap-1">
               {items.map((item, idx) => {
                 if (item.kind === "separator") {
@@ -186,30 +133,21 @@ export default function NavSidebar() {
 }
 
 export const Logo = () => {
+  const { open } = useSidebar();
   return (
     <a
       href="#"
-      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black"
+      className="relative z-20 flex items-center gap-2 py-1 text-sm font-normal text-black"
     >
-      <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="font-medium whitespace-pre text-black dark:text-white"
-      >
-        Acet Labs
-      </motion.span>
-    </a>
-  );
-};
-
-export const LogoIcon = () => {
-  return (
-    <a
-      href="#"
-      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black"
-    >
-      <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
+      {open ? (
+        <img src={logoFull} alt="filflo" className="h-7 w-auto" />
+      ) : (
+        <img
+          src={logoMark}
+          alt="filflo"
+          className="h-8 w-8 shrink-0 object-contain"
+        />
+      )}
     </a>
   );
 };
