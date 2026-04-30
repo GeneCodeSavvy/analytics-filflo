@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Sidebar,
   SidebarBody,
@@ -13,13 +13,14 @@ import {
   IconBell,
   IconChartBar,
   IconLayoutDashboard,
-  IconMail,
   IconMessage,
+  IconUser,
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import logoFull from "@/assets/blackBgBackground.png";
 import logoMark from "@/assets/blackBgBackground2.png";
+import { Link } from "react-router";
 
 const iconClass = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
 
@@ -57,13 +58,13 @@ const items: NavItem[] = [
   },
   {
     kind: "link",
-    href: "#",
+    href: "/settings",
     label: "Settings",
     icon: <IconAdjustments className={iconClass} />,
   },
 ];
 
-export default function NavSidebar() {
+export default function NavSidebar({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -111,15 +112,13 @@ export default function NavSidebar() {
           <div>
             <SidebarLink
               link={{
-                label: "Manu Arora",
-                href: "#",
+                label: "Harsh Sharma",
+                href: "/settings",
                 icon: (
-                  <img
-                    src="https://assets.aceternity.com/manu.png"
+                  <IconUser
                     className="h-7 w-7 shrink-0 rounded-full"
                     width={50}
                     height={50}
-                    alt="Avatar"
                   />
                 ),
               }}
@@ -127,7 +126,13 @@ export default function NavSidebar() {
           </div>
         </SidebarBody>
       </Sidebar>
-      <Dashboard />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1">
+          <div className="flex h-full w-full flex-1 flex-col gap-2 rounded-tl-2xl border border-neutral-200 bg-white p-2 md:p-10 dark:border-neutral-700 dark:bg-neutral-900">
+            {children}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -135,8 +140,8 @@ export default function NavSidebar() {
 export const Logo = () => {
   const { open } = useSidebar();
   return (
-    <a
-      href="#"
+    <Link
+      to="/"
       className="relative z-20 flex items-center gap-2 py-1 text-sm font-normal text-black"
     >
       {open ? (
@@ -148,31 +153,6 @@ export const Logo = () => {
           className="h-8 w-8 shrink-0 object-contain"
         />
       )}
-    </a>
-  );
-};
-
-const Dashboard = () => {
-  return (
-    <div className="flex flex-1">
-      <div className="flex h-full w-full flex-1 flex-col gap-2 rounded-tl-2xl border border-neutral-200 bg-white p-2 md:p-10 dark:border-neutral-700 dark:bg-neutral-900">
-        <div className="flex gap-2">
-          {[...new Array(4)].map((_, idx) => (
-            <div
-              key={"first-array-demo-1" + idx}
-              className="h-20 w-full animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800"
-            ></div>
-          ))}
-        </div>
-        <div className="flex flex-1 gap-2">
-          {[...new Array(2)].map((_, idx) => (
-            <div
-              key={"second-array-demo-1" + idx}
-              className="h-full w-full animate-pulse rounded-lg bg-gray-100 dark:bg-neutral-800"
-            ></div>
-          ))}
-        </div>
-      </div>
-    </div>
+    </Link>
   );
 };
