@@ -103,14 +103,6 @@ export const BulkResultSchema = z.object({
   failed: z.array(z.object({ id: z.string(), reason: z.string() })),
 });
 
-export const UserRefSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  avatarUrl: z.string().optional(),
-  role: z.string(),
-  orgId: z.string(),
-});
 
 export type TicketStatus = z.infer<typeof TicketStatusSchema>;
 export type TicketPriority = z.infer<typeof TicketPrioritySchema>;
@@ -126,4 +118,3 @@ export type TicketDetail = z.infer<typeof TicketDetailSchema>;
 export type NewTicketDraft = z.infer<typeof NewTicketDraftSchema>;
 export type AssignPayload = z.infer<typeof AssignPayloadSchema>;
 export type BulkResult = z.infer<typeof BulkResultSchema>;
-export type UserRef = z.infer<typeof UserRefSchema>;
