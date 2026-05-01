@@ -1,8 +1,6 @@
 import { useSearchParams } from "react-router";
 import type { DashboardFilters, Priority, Range } from "../types/dashboard";
-
-const VALID_RANGES: Range[] = ["7d", "30d", "90d", "all", "custom"];
-const VALID_PRIORITIES: Priority[] = ["HIGH", "MEDIUM", "LOW"];
+import { VALID_RANGES, VALID_PRIORITIES } from "../config/dashboard";
 
 function parseRange(val: string | null): Range {
   return VALID_RANGES.includes(val as Range) ? (val as Range) : "30d";
