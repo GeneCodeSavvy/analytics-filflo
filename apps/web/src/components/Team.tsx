@@ -1,4 +1,4 @@
-export const Team = () => {
+export const Teams = () => {
   return (
     <div>
       <h1>This is the Team Page</h1>

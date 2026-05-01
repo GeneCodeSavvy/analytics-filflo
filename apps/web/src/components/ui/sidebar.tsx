@@ -5,13 +5,13 @@ import { Link } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { IconChevronRight, IconMenu2, IconX } from "@tabler/icons-react";
 
-interface Link {
+interface NavLink {
   label: string;
   href: string;
   icon: React.JSX.Element | React.ReactNode;
 }
 
-export type Group = { label: string; icon: React.ReactNode; links: Link[] };
+export type Group = { label: string; icon: React.ReactNode; links: NavLink[] };
 
 interface SidebarContextProps {
   open: boolean;
@@ -243,7 +243,7 @@ export const SidebarLink = ({
   className,
   ...props
 }: {
-  link: Link;
+  link: NavLink;
   className?: string;
 }) => {
   const { open, animate } = useSidebar();

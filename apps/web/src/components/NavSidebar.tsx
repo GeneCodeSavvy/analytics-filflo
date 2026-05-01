@@ -10,10 +10,14 @@ import {
 } from "@/components/ui/sidebar";
 import {
   IconAdjustments,
+  IconAlertTriangle,
   IconBell,
+  IconBuilding,
   IconChartBar,
   IconLayoutDashboard,
+  IconLock,
   IconMessage,
+  IconPalette,
   IconUser,
   IconUsers,
 } from "@tabler/icons-react";
@@ -54,13 +58,46 @@ const items: NavItem[] = [
     kind: "link",
     label: "Team",
     icon: <IconUsers className={iconClass} />,
-    href: "/team",
+    href: "/teams",
   },
   {
-    kind: "link",
-    href: "/settings",
-    label: "Settings",
-    icon: <IconAdjustments className={iconClass} />,
+    kind: "group",
+    group: {
+      label: "Settings",
+      icon: <IconAdjustments className={iconClass} />,
+      links: [
+        {
+          label: "Profile",
+          href: "/settings/profile",
+          icon: <IconUser className={iconClass} />,
+        },
+        {
+          label: "Security",
+          href: "/settings/security",
+          icon: <IconLock className={iconClass} />,
+        },
+        {
+          label: "Notifications",
+          href: "/settings/notifications",
+          icon: <IconBell className={iconClass} />,
+        },
+        {
+          label: "Appearance",
+          href: "/settings/appearance",
+          icon: <IconPalette className={iconClass} />,
+        },
+        {
+          label: "Org Settings",
+          href: "/settings/org",
+          icon: <IconBuilding className={iconClass} />,
+        },
+        {
+          label: "Danger Zone",
+          href: "/settings/danger",
+          icon: <IconAlertTriangle className={iconClass} />,
+        },
+      ],
+    },
   },
 ];
 
