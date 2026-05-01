@@ -4,14 +4,13 @@ import { useMutationState } from '@tanstack/react-query';
 import type { TicketFilters } from '../lib/ticketParams';
 import { useTicketStore } from '../stores/useTicketStore';
 
-const anyMutationPending = useMutationState({
-  filters: { status: 'pending' },
-  select: (m) => (m as { state: { status: string } }).state.status === 'pending',
-}).some(Boolean);
-
 export const Tickets = () => {
   const { data, status, url, ui } = useTicketsPageData();
   const actions = useTicketsPageActions();
+  const anyMutationPending = useMutationState({
+    filters: { status: 'pending' },
+    select: (m) => (m as { state: { status: string } }).state.status === 'pending',
+  }).some(Boolean);
 
   const density = useTicketStore((s) => s.density);
 
