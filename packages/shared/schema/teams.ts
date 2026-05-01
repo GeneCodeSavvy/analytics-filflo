@@ -24,7 +24,7 @@ export const TeamMemberListParamsSchema = z.object({
 
 export const TeamAuditParamsSchema = z.object({
   orgId: z.string().optional(),
-  limit: z.number().int().positive().default(50).optional(),
+  limit: z.number().int().positive().default(50),
   cursor: z.string().optional(),
 });
 
