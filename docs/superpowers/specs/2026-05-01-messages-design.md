@@ -10,11 +10,17 @@
 
 | Question | Decision | Reason |
 |---|---|---|
-| Store scope | Thin (drafts + staged files only) | Matches actual codebase pattern — server data lives in React Query |
+| Store scope | Thin — drafts only | Staged files → local component state (lifecycle = composer lifecycle, no cross-mount persistence needed) |
 | Schema location | `packages/shared/schema/messages.ts` | Mirrors tickets pattern, shares with backend eventually |
 | File/hook organization | Mirror tickets exactly (queries / mutations / WS separate) | Consistency over novelty |
-| WebSocket hook | In scope | Send mutation and WS share a cache key — design together to prevent divergence |
+| WebSocket hook | In scope | Send mutation and WS share a cache key — design together |
 | `activeThreadId` | URL only (`?thread=<id>`) | Spec §14: URL is source of truth |
+| `ThreadSchema.messages` | **Drop it** | Dual source of truth with `useThreadMessagesQuery`; WS only updates the paginated cache; `nextCursor` belongs on a page, not a thread |
+| WS no-op on empty cache | **Buffer** — queue events until first page lands, drain with dedupe | Silently dropping messages on initial load is a real bug |
+| `markThreadRead` cache patch | Filter-aware — remove row from `unread` tab cache, patch `unreadCount` elsewhere | Immediate removal from unread tab is expected UX |
+| `getWebSocketUrl` | Move off `messageApi` → `useMessageWebSocket` directly | Synchronous string return breaks the HTTP contract of the API object |
+| Staged files | Local component state in composer | No cross-mount persistence requirement; lifecycle = component |
+| `useUploadFileMutation` | Returns data only; caller (composer) stages file ID | Decouples mutation from store |
 
 ---
 
@@ -102,8 +108,8 @@ export const ThreadSchema = z.object({
     orgName: z.string(),
   }),
   participants: UserRefSchema.array(),
-  messages: MessageSchema.array(),
-  nextCursor: z.string().optional(),
+  // messages intentionally absent — use useThreadMessagesQuery (useInfiniteQuery)
+  // nextCursor belongs on MessagesPage, not the thread resource
   permissions: z.object({
     canSend: z.boolean(),
     canAddParticipants: z.boolean(),
@@ -240,8 +246,8 @@ export const messageApi = {
     });
   },
 
-  getWebSocketUrl: (threadId: string): string =>
-    `${import.meta.env.VITE_WS_BASE_URL}/threads/${threadId}/ws`,
+  // getWebSocketUrl intentionally absent — synchronous string return breaks
+  // the Promise<T> contract of this object. WS URL constructed in useMessageWebSocket directly.
 };
 ```
 
@@ -249,29 +255,28 @@ export const messageApi = {
 
 ## 4. Zustand Store (`stores/useMessageStore.ts`)
 
-Owns only localStorage-persisted state that React Query and the URL cannot own.
+Owns only localStorage-persisted state that React Query and URL cannot own.
 
 ```ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface MessageStoreState {
-  drafts: Record<string, string>;           // threadId → composer content
-  stagedFileIds: Record<string, string[]>;  // threadId → pre-uploaded fileIds
+  drafts: Record<string, string>;  // threadId → composer content
 
   saveDraft: (threadId: string, content: string) => void;
   clearDraft: (threadId: string) => void;
   getDraft: (threadId: string) => string;
-
-  stageFile: (threadId: string, fileId: string) => void;
-  unstageFile: (threadId: string, fileId: string) => void;
-  clearStagedFiles: (threadId: string) => void;
 }
 ```
 
 - `persist` key: `'message-store'`
-- `partialize`: persists `drafts` only (`stagedFileIds` is session-only — upload is gone on refresh)
-- `activeThreadId` is **not** here — read from `useSearchParams` (`?thread=<id>`)
+- `partialize`: entire state (only `drafts` exists)
+- `activeThreadId` — URL only (`?thread=<id>`), not in store
+- `stagedFileIds` — **not here**; lives in local component state in the composer
+  - Lifecycle = composer mount/unmount — `useEffect` cleanup handles it automatically
+  - No cross-mount persistence requirement
+  - `useUploadFileMutation` returns `{ fileId, url, thumbnailUrl? }`; the composer calls `stageFile` itself
 
 ---
 
@@ -289,17 +294,19 @@ useThreadQuery(threadId: string | null)
   queryKey: messageKeys.thread(threadId)
   enabled : !!threadId
 
-// Paginated messages — useInfiniteQuery
+// Paginated messages — useInfiniteQuery, newest page at pages[0]
+// (scroll-up loads older: getNextPageParam returns nextCursor for older pages)
 useThreadMessagesQuery(threadId: string | null)
-  queryKey       : messageKeys.messages(threadId)
+  queryKey        : messageKeys.messages(threadId)
   getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined
-  enabled        : !!threadId
-  staleTime      : Infinity   // WS keeps cache fresh; no background refetch
+  enabled         : !!threadId
+  staleTime       : 5 * 60_000  // NOT Infinity — safety net for WS disconnect gaps
+                                 // WS reconnect also triggers explicit refetch of latest page
 
 // @mention autocomplete scoped to thread participants
 useParticipantSearchQuery(q: string, threadId: string)
   queryKey : messageKeys.participants(threadId, q)
-  enabled  : q.length >= 1
+  enabled  : q.length >= 2  // not 1 — single-char is server abuse; debounce input 300ms
   staleTime: 60_000
 ```
 
@@ -308,14 +315,32 @@ useParticipantSearchQuery(q: string, threadId: string)
 ## 6. Mutation Hooks (`hooks/useMessageMutations.ts`)
 
 ### `useSendMessageMutation(threadId)`
-- `onMutate` — append optimistic `Message` with `id: 'pending-<uuid>'` to infinite query pages
-- `onError` — remove optimistic message, show toast
-- `onSuccess` — replace optimistic entry with real `Message` from server response
-- `onSettled` — invalidate `messageKeys.threads(...)` so list snippet updates
+
+**Page ordering contract:** `pages[0]` is the newest page. Optimistic message appends to `pages[0].messages` (front). WS messages also prepend to `pages[0]`.
+
+- `onMutate`
+  - Guard: if `pages` is empty, do NOT optimistic-append (no page to prepend to); let send complete and WS deliver
+  - Append `Message { id: 'pending-<uuid>', ...fields }` to front of `pages[0].messages`
+  - Use exact `pending-<uuid>` id — never search by "is pending" to avoid swap collision on concurrent sends
+- `onError` — find + remove by exact `pending-<uuid>`, show toast
+- `onSuccess` — find + replace `pending-<uuid>` with real `Message` from server
+- `onSettled` — invalidate `messageKeys.threads(...)` (snippet update); do NOT invalidate `messageKeys.messages(...)` — WS is source of truth, invalidation would fight it
 
 ### `useMarkThreadReadMutation()`
-- `onMutate` — patch `ThreadListRow.unreadCount = 0` in thread list cache
-- `onError` — rollback
+
+Filter-aware patch using `setQueriesData` with partial key `['messages', 'threads']`:
+- Tab is `'unread'` → **remove the row** from that cache (row should disappear immediately)
+- All other tabs → **patch** `ThreadListRow.unreadCount = 0`
+
+```ts
+queryClient.setQueriesData({ queryKey: ['messages', 'threads'] }, (old, { queryKey }) => {
+  const filters = parseFiltersFromKey(queryKey);
+  if (filters?.tab === 'unread') return removeRow(old, threadId);
+  return patchRow(old, threadId, { unreadCount: 0 });
+});
+```
+
+- `onError` — rollback (restore removed/patched rows)
 
 ### `useJoinThreadMutation()`
 - `onSettled` — invalidate `messageKeys.thread(threadId)`
@@ -327,7 +352,8 @@ useParticipantSearchQuery(q: string, threadId: string)
 - `onSettled` — invalidate `messageKeys.thread(threadId)`
 
 ### `useUploadFileMutation(threadId)`
-- `onSuccess` — call `useMessageStore.stageFile(threadId, fileId)`
+- Returns `{ fileId, url, thumbnailUrl? }` — **no Zustand side-effect**
+- Caller (composer component) receives the result via `onSuccess` at the call site and stages it in local state
 - `onError` — inline error below file preview (not toast)
 
 ---
@@ -338,34 +364,65 @@ useParticipantSearchQuery(q: string, threadId: string)
 useMessageWebSocket(threadId: string | null): void
 ```
 
+**WS URL** constructed inside this hook (not on `messageApi` — a synchronous string helper has no place on the HTTP API object):
+```ts
+const wsUrl = `${import.meta.env.VITE_WS_BASE_URL}/threads/${threadId}/ws`;
+```
+
 **Lifecycle:**
-- Opens `new WebSocket(messageApi.getWebSocketUrl(threadId))` when `threadId` truthy
-- Closes on unmount or `threadId` change
-- Reconnect: exponential backoff starting 1s, doubling, max 30s. Resets on clean close.
+- Opens `new WebSocket(wsUrl)` when `threadId` truthy
+- Closes + clears buffer on unmount or `threadId` change
+- Reconnect: exponential backoff 1s → 2s → 4s → max 30s; resets on clean close
+- **On reconnect:** call `queryClient.fetchQuery(messageKeys.messages(threadId))` to fill gap during disconnect, then drain buffer
+
+**Event buffer — solves WS-before-first-page race:**
+```ts
+const eventBuffer = useRef<Message[]>([]);
+
+// On 'new_message', if cache has no pages yet:
+eventBuffer.current.push(event.message);
+
+// When first page loads (watch query state):
+function drainBuffer() {
+  const pending = eventBuffer.current.splice(0);
+  for (const msg of pending) {
+    if (!isAlreadyInCache(msg.id)) prependToPage0(msg);
+  }
+}
+```
 
 **Incoming event handling:**
 ```
 event.type === 'new_message'
-  → queryClient.setQueryData(messageKeys.messages(threadId), appendToPages(event.message))
-    if cache empty (thread never loaded messages), no-op — thread query will load on open
+  → dedupe by id first (prevents double from optimistic+WS arriving for same message)
+  → prepend to pages[0].messages (newest page, front)
+  → queryClient.setQueryData(messageKeys.messages(threadId), updatedPages)
 
 event.type === 'thread_list_update'
   → queryClient.setQueriesData({ queryKey: ['messages', 'threads'] }, patchRow(event.row))
-    uses partial key — patches ALL cached thread list variants (all/unread/mine/org tabs)
+    partial key — patches ALL cached thread list variants (all/unread/mine/org tabs)
     same pattern as patchTicketInLists in useTicketMutations.ts
 ```
 
-`appendToPages` appends to the last page of the infinite query without triggering a refetch.  
 `patchRow` updates `lastMessage`, `unreadCount`, `isUnanswered` on the matching row by id.
 
-**No return value** — side-effect hook called inside the thread view component.
+**No return value** — side-effect hook, called inside the thread view component.
 
 ---
 
 ## Invariants
 
 - `messageKeys` is the single source of truth for all cache keys. Mutations and WS hook both import it.
-- Server data never enters Zustand.
-- `activeThreadId` is never in Zustand — URL only.
-- `stagedFileIds` is session-only (not persisted). Drafts are persisted.
-- `useInfiniteQuery` `staleTime: Infinity` prevents background refetch fighting WS updates.
+- Server data never enters Zustand. Zustand owns drafts only.
+- `activeThreadId` never in Zustand — URL only.
+- Staged file IDs live in local component state in the composer. Not in Zustand, not in RQ.
+- `useUploadFileMutation` returns data only — no store side-effects. Caller stages result.
+- `ThreadSchema` has no `messages` field — all message reads go through `useThreadMessagesQuery`.
+- `pages[0]` = newest page. All prepend operations target `pages[0].messages[0]`.
+- WS `new_message` handler dedupes by id before writing to cache (prevents optimistic+WS doubles).
+- WS events are buffered until first page loads; drained with dedupe on first `isSuccess`.
+- `staleTime: 5 * 60_000` on messages query — not Infinity — provides fallback when WS disconnects.
+- WS reconnect triggers explicit refetch of latest page before draining buffer.
+- `useMarkThreadReadMutation` is filter-aware: removes row from `unread` tab, patches others.
+- `onSettled` in send mutation does NOT invalidate `messageKeys.messages(...)` — WS is live truth.
+- Participant search: `q.length >= 2` minimum; debounce 300ms upstream.
