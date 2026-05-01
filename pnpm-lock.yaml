@@ -18,6 +18,28 @@ importers:
         specifier: 5.9.2
         version: 5.9.2
 
+  apps/api:
+    dependencies:
+      '@shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.15.3
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+
   apps/web:
     dependencies:
       '@base-ui/react':
