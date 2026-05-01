@@ -57,7 +57,7 @@ export const MemberRowSchema = z.object({
   role: TeamRoleSchema,
   orgId: z.string(),
   joinedAt: z.string(),
-  lastActiveAt: z.string().optional(),
+  lastActiveAt: z.string().nullable().optional(),
   isInactive: z.boolean(),
   permissions: MemberPermissionsSchema,
 });
@@ -73,7 +73,7 @@ export const MemberDetailSchema = MemberRowSchema.extend({
   stats: z.object({
     ticketsCreated: z.number(),
     ticketsAssigned: z.number(),
-    avgResolutionMs: z.number().optional(),
+    avgResolutionMs: z.number().nullable().optional(),
   }),
 });
 
@@ -116,16 +116,12 @@ export const AuditEntrySchema = z.object({
 });
 
 export const OrgSummarySchema = z.object({
-  id: z.string(),
-  name: z.string(),
+  org: OrgRefSchema,
   memberCount: z.number(),
-  roleCounts: z.object({
-    SUPER_ADMIN: z.number().optional(),
-    ADMIN: z.number().optional(),
-    MODERATOR: z.number().optional(),
-    USER: z.number().optional(),
-  }),
-  pendingInvitationCount: z.number().optional(),
+  adminCount: z.number(),
+  openTickets: z.number(),
+  staleTickets: z.number(),
+  lastActivityAt: z.string().optional(),
 });
 
 export const InvitePayloadSchema = z.object({

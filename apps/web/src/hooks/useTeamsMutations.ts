@@ -131,14 +131,9 @@ export function useMoveTeamMemberMutation() {
     { userId: string; payload: MoveMemberPayload }
   >({
     mutationFn: ({ userId, payload }) => teamsApi.moveMember(userId, payload),
-    onSettled: (_data, _error, { userId, payload }) => {
+    onSettled: (_data, _error, { userId }) => {
       invalidateTeamLists(queryClient);
-      queryClient.invalidateQueries({
-        queryKey: teamKeys.member(userId, payload.fromOrgId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: teamKeys.member(userId, payload.toOrgId),
-      });
+      invalidateTeamMemberDetail(queryClient, userId);
       invalidateTeamMemberHistory(queryClient, userId);
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
