@@ -38,6 +38,10 @@ function replaceInInfinitePages(
     })),
   };
 }
+type SendMessageMutationContext = {
+  previous: InfiniteData<MessagesPage> | undefined;
+  _pendingId: string;
+};
 
 // ─── useSendMessageMutation ──────────────────────────────────────────────────
 
@@ -47,7 +51,8 @@ export function useSendMessageMutation(threadId: string) {
   return useMutation<
     Message,
     Error,
-    SendMessagePayload & { _pendingId: string }
+    SendMessagePayload & { _pendingId: string },
+    SendMessageMutationContext
   >({
     mutationFn: ({ _pendingId: _, ...payload }) =>
       messageApi.send(threadId, payload),
