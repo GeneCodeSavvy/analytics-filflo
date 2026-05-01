@@ -9,26 +9,28 @@
 
 ```
 URL (useSearchParams / React Router v7)
-  viewId      → ?view=<id>
-  filters     → ?status=&priority=&category=&assignee=&q=&stale=
-  sort        → ?sort=updatedAt:desc
-  page        → ?page=1
+  viewId         → ?view=<id>
+  filters        → ?status=OPEN,IN_PROGRESS&priority=HIGH&category=&assignee=&q=&stale=
+  sort           → ?sort=updatedAt:desc,priority:asc   (comma-separated, multi-sort)
+  page           → ?page=1
   drawerTicketId → /tickets/:ticketId  (route param)
-  createModal → ?modal=create
+  createModal    → ?modal=create
 
 useTicketStore (Zustand — UI-only, no server state)
   selectedRowIds   → row selection for bulk actions
-  density          → compact | comfortable (persisted via Zustand persist middleware)
-  Rule: Zustand owns state that is ephemeral and not shareable.
-  Rule: URL owns state that should survive refresh or be copy-pasteable.
+  density          → compact | comfortable
+                     persisted via Zustand persist middleware with partialize
+                     (only density is whitelisted — selectedRowIds never persists)
+  Rule: URL owns state that should survive refresh or be shareable.
+  Rule: Zustand owns state that is ephemeral and must not persist across reloads.
 
-TanStack Query (server state)
+TanStack Query (server state — single source of truth for optimistic updates)
   useTicketListQuery      → GET /tickets
   useViewsQuery           → GET /tickets/views
   useTicketDetailQuery    → GET /tickets/:id
   useTicketActivityQuery  → GET /tickets/:id/activity
   useNewTicketsPoll       → GET /tickets/since
-  useUserSearchQuery      → GET /users/search (assignee picker)
+  useUserSearchQuery      → GET /users/search  (callers must pass debounced q)
   Mutations: see §4
 
 ticketApi (axios — stateless HTTP layer)
@@ -37,67 +39,69 @@ ticketApi (axios — stateless HTTP layer)
 userApi (axios — stateless)
   search(q, orgId) → UserRef[]
 
-useTicketsPageRoot (facade — root page component only)
-  Composes all 4 layers. Must NOT be imported by child components.
-  Children call primitive hooks directly.
-
 lib/ticketParams.ts
-  parseFilters, parseSort, mergeFilters, mergeSort — pure URL helpers
+  parseFilters, parseSort, mergeFilters, mergeSort, buildListKey — pure URL helpers
+
+useTicketsPageActions  — URL setters + store actions. Importable by any component.
+useTicketsPageData     — Composes all query hooks. Root page component only.
 ```
 
 ---
 
 ## 2. Zustand Store
 
-Owns only ephemeral UI state with no server-state leakage.
+Owns only ephemeral UI state. `partialize` ensures only `density` survives across reloads — `selectedRowIds` is always initialized to `[]`.
 
 ```ts
 interface TicketUIState {
   selectedRowIds: string[];
-  density: 'compact' | 'comfortable';   // persisted: key 'ticket-ui-density'
+  density: 'compact' | 'comfortable';
 
   setSelectedRows: (ids: string[]) => void;
   toggleRowSelected: (id: string) => void;
   clearSelection: () => void;
   setDensity: (d: 'compact' | 'comfortable') => void;
 }
+
+// Persist config:
+persist(store, {
+  name: 'ticket-ui',
+  partialize: (s) => ({ density: s.density }),  // selectedRowIds intentionally excluded
+})
 ```
 
-**Removed from original design:**
-- `drawerTicketId` → URL route param `/tickets/:ticketId`
-- `createModalOpen` → URL `?modal=create`
-- `newTicketsBannerCount` → derived from `useNewTicketsPoll().data?.count`
-- `filters`, `sort`, `page`, `activeViewId` → `useSearchParams`
-- `rows`, `total`, `loading`, `error`, `views` → TanStack Query
-- `draft` → `useTicketDraft` (standalone localStorage hook)
-- `optimisticUpdate` → `queryClient.setQueryData` in mutation `onMutate`
+**Selection auto-clear rule:** `clearSelection()` fires only when `filters` or `viewId` change — not on page change, modal open, or drawer open. Implemented in `useTicketsPageData` as:
 
-**Selection auto-clear rule:** When `filters` or `viewId` URL params change, `clearSelection()` is called in a `useEffect` inside `useTicketsPageRoot`.
+```ts
+const filtersHash = JSON.stringify(parseFilters(searchParams));
+useEffect(() => { clearSelection(); }, [filtersHash, viewId]);
+```
 
 ---
 
-## 3. `ticketApi` — Axios Object
+## 3. `ticketApi` and `userApi` — Axios Objects
 
-Thin, stateless, fully typed. All methods accept an optional `AbortSignal` to prevent stale responses from landing after filter changes (TanStack Query forwards `signal` automatically via `queryFn` context).
+Thin, stateless, fully typed. All read methods accept `AbortSignal` (TanStack Query forwards it automatically). `getSince` strips `page`/`pageSize` — the poll is filter-scoped, not page-scoped.
 
 ```ts
 export const ticketApi = {
-  getList:       (params: TicketListParams, signal?: AbortSignal): Promise<ListResponse>
-  getById:       (id: string, signal?: AbortSignal): Promise<TicketDetail>
-  getViews:      (signal?: AbortSignal): Promise<View[]>
-  createView:    (data: CreateViewPayload): Promise<View>
-  updateView:    (id: string, data: UpdateViewPayload): Promise<View>
-  deleteView:    (id: string): Promise<void>
-  create:        (data: NewTicketDraft): Promise<TicketDetail>
-  update:        (id: string, patch: UpdateTicketPayload): Promise<TicketDetail>
-  delete:        (id: string): Promise<void>
-  updateStatus:  (id: string, status: Status): Promise<TicketDetail>
-  updatePriority:(id: string, priority: Priority): Promise<TicketDetail>
-  assign:        (id: string, payload: AssignPayload): Promise<TicketDetail>
-  bulkUpdate:    (payload: BulkUpdatePayload): Promise<BulkResult>
-  bulkDelete:    (payload: BulkDeletePayload): Promise<void>
-  getSince:      (since: string, params: TicketListParams, signal?: AbortSignal): Promise<{ count: number }>
-  getActivity:   (id: string, signal?: AbortSignal): Promise<ActivityEntry[]>
+  getList:        (params: TicketListParams, signal?: AbortSignal): Promise<ListResponse>
+  getById:        (id: string, signal?: AbortSignal): Promise<TicketDetail>
+  getViews:       (signal?: AbortSignal): Promise<View[]>
+  createView:     (data: CreateViewPayload): Promise<View>
+  updateView:     (id: string, data: UpdateViewPayload): Promise<View>
+  deleteView:     (id: string): Promise<void>
+  create:         (data: NewTicketDraft): Promise<TicketDetail>
+  update:         (id: string, patch: UpdateTicketPayload): Promise<TicketDetail>
+  delete:         (id: string): Promise<void>
+  updateStatus:   (id: string, status: Status): Promise<TicketDetail>
+  updatePriority: (id: string, priority: Priority): Promise<TicketDetail>
+  assign:         (id: string, payload: AssignPayload): Promise<TicketDetail>
+  bulkUpdate:     (payload: BulkUpdatePayload): Promise<BulkResult>
+  bulkDelete:     (payload: BulkDeletePayload): Promise<void>
+  // page/pageSize stripped — poll is filter-scoped, not page-scoped
+  getSince:       (since: string, params: TicketFilterParams, signal?: AbortSignal): Promise<{ count: number }>
+  getActivity:    (id: string, signal?: AbortSignal): Promise<ActivityEntry[]>
 }
 
 export const userApi = {
@@ -105,35 +109,79 @@ export const userApi = {
 }
 ```
 
-`TicketListParams = TicketFilters & { sort: string; page: number; pageSize: number; groupBy?: string }`
+Type aliases:
+```ts
+// Full list params (includes pagination)
+type TicketListParams = TicketFilters & { sort: string; page: number; pageSize: number; groupBy?: string }
+
+// Filter-only params (no page/pageSize — used for poll)
+type TicketFilterParams = TicketFilters & { sort: string; groupBy?: string }
+```
+
+**`AssignPayload` shape** (pinned explicitly):
+```ts
+interface AssignPayload {
+  add: string[];     // user IDs to add
+  remove: string[];  // user IDs to remove
+}
+```
+
+**`BulkResult` partial failure contract:**
+```ts
+interface BulkResult {
+  succeeded: string[];  // ticket IDs
+  failed: { id: string; reason: string }[];
+}
+// On partial failure: roll back only failed IDs; toast per-failure summary.
+```
 
 ---
 
 ## 4. TanStack Query Hooks
 
+### Query Key Normalization
+
+All list and poll keys go through `buildListKey` to prevent key thrash from field-order variance:
+
+```ts
+// lib/ticketParams.ts
+function buildListKey(params: TicketListParams | TicketFilterParams): Record<string, unknown> {
+  // Sort keys alphabetically, drop undefined/empty-array fields, normalize arrays to sorted strings
+  return Object.fromEntries(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0))
+      .sort(([a], [b]) => a.localeCompare(b))
+  );
+}
+```
+
 ### Query Hooks
 
 ```ts
-// Primary list — 30s interval, stops when tab hidden
+// Primary list — 25s staleTime prevents re-fetch 2s after poll on window focus
 useTicketListQuery(params: TicketListParams)
-  queryKey:                   ['tickets', 'list', params]
-  queryFn:                    ({ signal }) => ticketApi.getList(params, signal)
-  refetchInterval:            30_000
+  queryKey:                    ['tickets', 'list', buildListKey(params)]
+  queryFn:                     ({ signal }) => ticketApi.getList(params, signal)
+  staleTime:                   25_000
+  refetchInterval:             30_000
   refetchIntervalInBackground: false
-  placeholderData:            keepPreviousData
-  retry:                      1   // not 3 — polling endpoint, don't thrash on failure
+  placeholderData:             keepPreviousData
+  retry:                       1
 
-// Views — rarely changes
+// Views — long stale + gcTime prevents loading flash on tab return
 useViewsQuery()
   queryKey:  ['tickets', 'views']
   queryFn:   ({ signal }) => ticketApi.getViews(signal)
   staleTime: 5 * 60 * 1000
+  gcTime:    30 * 60 * 1000
 
 // Detail drawer — only fetches when id present
+// On 404 error: consumer calls closeDrawer() + toast (see §6)
 useTicketDetailQuery(ticketId: string | null)
   queryKey: ['tickets', 'detail', ticketId]
   queryFn:  ({ signal }) => ticketApi.getById(ticketId!, signal)
   enabled:  !!ticketId
+  retry:    (failureCount, error) => error.status !== 404 && failureCount < 2
 
 // Activity tab inside drawer
 useTicketActivityQuery(ticketId: string | null)
@@ -141,17 +189,21 @@ useTicketActivityQuery(ticketId: string | null)
   queryFn:  ({ signal }) => ticketApi.getActivity(ticketId!, signal)
   enabled:  !!ticketId
 
-// Poll — cursor NOT in query key (prevents cache bloat + cadence reset)
-// `since` cursor is passed via closure/ref, not as a key segment
-useNewTicketsPoll(params: TicketListParams)
-  queryKey:                    ['tickets', 'since', params]
-  queryFn:                     ({ signal }) => ticketApi.getSince(sinceRef.current, params, signal)
+// Poll — cursor via ref (NOT in key). Key uses filter-only params (no page/pageSize).
+// sinceRef is seeded from list.data.serverTime and reset when filter params change.
+useNewTicketsPoll(filterParams: TicketFilterParams)
+  queryKey:                    ['tickets', 'since', buildListKey(filterParams)]
+  queryFn:                     ({ signal }) => ticketApi.getSince(sinceRef.current, filterParams, signal)
   refetchInterval:             30_000
   refetchIntervalInBackground: false
   retry:                       0
-  // sinceRef.current is updated from list.data.serverTime without re-keying
+  // sinceRef reset logic (inside the hook):
+  //   useEffect(() => { sinceRef.current = ''; }, [buildListKey(filterParams)])
+  //   On successful list fetch: sinceRef.current = list.data.serverTime
 
-// Assignee / invitee picker — debounced, only fires when q.length >= 2
+// Assignee / invitee picker
+// CALLER RESPONSIBILITY: pass a debounced q value (300ms recommended).
+// Hook does not debounce internally.
 useUserSearchQuery(q: string, orgId?: string)
   queryKey:  ['users', 'search', q, orgId]
   queryFn:   ({ signal }) => userApi.search(q, orgId, signal)
@@ -161,154 +213,251 @@ useUserSearchQuery(q: string, orgId?: string)
 
 ### Mutation Hooks
 
-**Strategy:** Single-row inline edits use `useOptimistic` (React 19, component-scoped). Bulk and cross-surface mutations use `queryClient.setQueryData` in `onMutate` (cache-level, shared across all consumers).
+**Optimistic strategy:** `queryClient.setQueryData` in `onMutate` for all mutations — single source of truth is the cache. `useOptimistic` (React 19) is **not used** — it is component-scoped and causes ghost state when the same row is visible on multiple surfaces (table + drawer) or targeted by concurrent mutations.
+
+**Single-row mutations** patch both list and detail caches:
 
 ```ts
-// Single-row inline — useOptimistic in component
-useStatusMutation()     → ticketApi.updateStatus()
-usePriorityMutation()   → ticketApi.updatePriority()
-useAssignMutation()     → ticketApi.assign()
-useUpdateTicketMutation() → ticketApi.update()   // subject, description, category
-
-// Cross-surface / bulk — queryClient.setQueryData in onMutate
-useBulkUpdateMutation()  → ticketApi.bulkUpdate()
-useBulkDeleteMutation()  → ticketApi.bulkDelete()
-
-// No optimistic needed (create adds new row, delete confirmed by refetch)
-useCreateTicketMutation() → ticketApi.create()   // invalidates ['tickets','list',*] on settle
-useDeleteTicketMutation() → ticketApi.delete()   // invalidates on settle
-
-// View management
-useSaveViewMutation()     → ticketApi.createView()
-useUpdateViewMutation()   → ticketApi.updateView()
-useDeleteViewMutation()   → ticketApi.deleteView()
-```
-
-**Bulk `onMutate` pattern:**
-```ts
-onMutate: async ({ ids, patch }) => {
+// Pattern for useStatusMutation, usePriorityMutation, useAssignMutation, useUpdateTicketMutation
+onMutate: async ({ id, ...patch }) => {
   await queryClient.cancelQueries({ queryKey: ['tickets', 'list'] });
-  const prev = queryClient.getQueryData(['tickets', 'list', params]);
-  queryClient.setQueryData(['tickets', 'list', params], (old) => ({
+  await queryClient.cancelQueries({ queryKey: ['tickets', 'detail', id] });
+
+  const prevList   = queryClient.getQueryData(['tickets', 'list', activeListKey]);
+  const prevDetail = queryClient.getQueryData(['tickets', 'detail', id]);
+
+  queryClient.setQueryData(['tickets', 'list', activeListKey], (old: ListResponse) => ({
     ...old,
-    rows: old.rows.map(r => ids.includes(r.id) ? { ...r, ...patch } : r),
+    rows: old.rows.map(r => r.id === id ? { ...r, ...patch } : r),
   }));
-  return { prev };
+  queryClient.setQueryData(['tickets', 'detail', id], (old: TicketDetail) =>
+    old ? { ...old, ...patch } : old
+  );
+  return { prevList, prevDetail };
 },
-onError: (_err, _vars, ctx) => {
-  queryClient.setQueryData(['tickets', 'list', params], ctx.prev);
+onError: (_err, { id }, ctx) => {
+  queryClient.setQueryData(['tickets', 'list', activeListKey], ctx.prevList);
+  queryClient.setQueryData(['tickets', 'detail', id], ctx.prevDetail);
 },
-onSettled: () => {
-  queryClient.invalidateQueries({ queryKey: ['tickets', 'list'] });
+onSettled: (_data, _err, { id }) => {
+  queryClient.invalidateQueries({ queryKey: ['tickets', 'list'], refetchType: 'active' });
+  queryClient.invalidateQueries({ queryKey: ['tickets', 'detail', id] });
 }
 ```
 
-**Refetch pause rule:** `refetchInterval` on `useTicketListQuery` is set to `false` when any single-row mutation is `isPending`, to prevent an in-flight list refetch from clobbering an optimistic update.
+**Bulk mutations** invalidate (not `setQueryData`) because selection may span pages:
+
+```ts
+// useBulkUpdateMutation, useBulkDeleteMutation
+onMutate: async () => {
+  await queryClient.cancelQueries({ queryKey: ['tickets', 'list'] });
+},
+onSettled: () => {
+  queryClient.invalidateQueries({ queryKey: ['tickets', 'list'], refetchType: 'active' });
+}
+// Partial failure: toast per failed ID from BulkResult.failed
+```
+
+**Full mutation list:**
+```ts
+useStatusMutation()          → ticketApi.updateStatus()    // single-row pattern
+usePriorityMutation()        → ticketApi.updatePriority()  // single-row pattern
+useAssignMutation()          → ticketApi.assign()           // single-row pattern
+useUpdateTicketMutation()    → ticketApi.update()           // single-row pattern
+useBulkUpdateMutation()      → ticketApi.bulkUpdate()       // bulk pattern
+useBulkDeleteMutation()      → ticketApi.bulkDelete()       // bulk pattern
+useCreateTicketMutation()    → ticketApi.create()           // invalidates list on settle
+useDeleteTicketMutation()    → ticketApi.delete()           // invalidates list on settle
+useSaveViewMutation()        → ticketApi.createView()       // invalidates views on settle
+useUpdateViewMutation()      → ticketApi.updateView()       // invalidates views on settle
+useDeleteViewMutation()      → ticketApi.deleteView()       // invalidates views + cleanup (see §6)
+```
 
 ---
 
 ## 5. `useTicketDraft` — Standalone Hook
 
-No store involvement. Key: `ticket-draft` (single new ticket, not per-ticket).
+No store involvement. Key: `ticket-draft`. `load()` must be called on every create modal mount.
 
 ```ts
 function useTicketDraft() {
-  const save   = (draft: NewTicketDraft) => localStorage.setItem('ticket-draft', JSON.stringify(draft));
-  const load   = (): NewTicketDraft | null => JSON.parse(localStorage.getItem('ticket-draft') ?? 'null');
-  const clear  = () => localStorage.removeItem('ticket-draft');
+  const save  = (draft: NewTicketDraft) => localStorage.setItem('ticket-draft', JSON.stringify(draft));
+  const load  = (): NewTicketDraft | null => JSON.parse(localStorage.getItem('ticket-draft') ?? 'null');
+  const clear = () => localStorage.removeItem('ticket-draft');
   return { save, load, clear };
 }
 ```
 
-Multi-tab collision is accepted: last-write-wins. Not worth a `storage` event listener given the draft is a create-only flow.
+Multi-tab: last-write-wins (accepted). Reactive sync not implemented — `storage` event wiring not worth it for a create-only flow.
 
 ---
 
-## 6. `useTicketsPageRoot` — Facade Hook
+## 6. `useTicketsPageActions` and `useTicketsPageData`
 
-**Import rule:** Only `<TicketsPage>` (the route component) may call this. All child components (`<TicketTable>`, `<TicketDrawer>`, `<BulkActionBar>`, `<FiltersPanel>`) call primitive hooks directly to limit re-render blast radius.
+The original `useTicketsPageRoot` is split into two hooks:
+
+- **`useTicketsPageActions`** — URL setters + store actions. Cheap, importable by any child component. No query subscriptions.
+- **`useTicketsPageData`** — composes query hooks + store selectors. Root `<TicketsPage>` component only. Children that need data call primitive query hooks directly.
+
+### `useTicketsPageActions`
 
 ```ts
-function useTicketsPageRoot() {
+function useTicketsPageActions() {
   const navigate = useNavigate();
-  const { ticketId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
 
-  // Parse URL
-  const filters  = parseFilters(searchParams);
-  const sort     = parseSort(searchParams);
-  const page     = Number(searchParams.get('page') ?? 1);
-  const viewId   = searchParams.get('view') ?? null;
-  const modalOpen = searchParams.get('modal') === 'create';
+  // All setters wrapped in useCallback — stable references across renders
+  const setFilters = useCallback((f: Partial<TicketFilters>) =>
+    setSearchParams(p => mergeFilters(p, f)), [setSearchParams]);
 
-  // Store
-  const { selectedRowIds, density, clearSelection, ...storeActions } = useTicketStore();
+  const setSort = useCallback((s: TicketSort[]) =>
+    setSearchParams(p => mergeSort(p, s)), [setSearchParams]);
 
-  // Auto-clear selection on filter/view change
-  const filterKey = searchParams.toString();
-  useEffect(() => { clearSelection(); }, [filterKey]);
+  const setPage = useCallback((n: number) =>
+    setSearchParams(p => { p.set('page', String(n)); return p; }), [setSearchParams]);
 
-  // Queries (pass down to children as needed, or children call directly)
-  const list   = useTicketListQuery({ ...filters, sort, page, pageSize: 25 });
-  const views  = useViewsQuery();
-  const banner = useNewTicketsPoll({ ...filters, sort, page, pageSize: 25 });
+  const setView = useCallback((id: string) =>
+    setSearchParams(p => { p.set('view', id); return p; }), [setSearchParams]);
 
-  // URL setters
-  const setFilters  = (f: Partial<TicketFilters>) =>
-    setSearchParams(p => mergeFilters(p, f));
-  const setSort     = (s: TicketSort[]) =>
-    setSearchParams(p => mergeSort(p, s));
-  const setPage     = (n: number) =>
-    setSearchParams(p => { p.set('page', String(n)); return p; });
-  const setView     = (id: string) =>
-    setSearchParams(p => { p.set('view', id); return p; });
-  const openModal   = () =>
-    setSearchParams(p => { p.set('modal', 'create'); return p; });
-  const closeModal  = () =>
-    setSearchParams(p => { p.delete('modal'); return p; });
-  const openDrawer  = (id: string) => navigate(`/tickets/${id}`);
-  const closeDrawer = () => navigate('/tickets');
+  const openModal = useCallback(() =>
+    setSearchParams(p => { p.set('modal', 'create'); return p; }), [setSearchParams]);
+
+  const closeModal = useCallback(() =>
+    setSearchParams(p => { p.delete('modal'); return p; }), [setSearchParams]);
+
+  const openDrawer  = useCallback((id: string) => navigate(`/tickets/${id}`), [navigate]);
+  const closeDrawer = useCallback(() => navigate('/tickets'), [navigate]);
+
+  // Store actions via selectors (no whole-store subscription)
+  const setSelectedRows  = useTicketStore(s => s.setSelectedRows);
+  const toggleRowSelected = useTicketStore(s => s.toggleRowSelected);
+  const clearSelection   = useTicketStore(s => s.clearSelection);
+  const setDensity       = useTicketStore(s => s.setDensity);
 
   return {
-    data:      { rows: list.data?.rows ?? [], total: list.data?.total ?? 0, views: views.data ?? [] },
-    status:    { loading: list.isPending, error: list.error },
-    url:       { filters, sort, page, viewId, modalOpen, drawerTicketId: ticketId ?? null },
-    ui:        { selectedRowIds, density, newTicketsBannerCount: banner.data?.count ?? 0 },
-    actions:   { setFilters, setSort, setPage, setView, openModal, closeModal, openDrawer, closeDrawer, ...storeActions },
+    setFilters, setSort, setPage, setView,
+    openModal, closeModal, openDrawer, closeDrawer,
+    setSelectedRows, toggleRowSelected, clearSelection, setDensity,
   };
 }
 ```
 
-Return shape is grouped into `data / status / url / ui / actions` — avoids 30-field flat object.
+### `useTicketsPageData`
+
+```ts
+function useTicketsPageData() {
+  const { ticketId } = useParams();
+  const [searchParams] = useSearchParams();
+  const { closeDrawer, setView } = useTicketsPageActions();
+
+  const filters  = parseFilters(searchParams);
+  const sort     = parseSort(searchParams);      // returns TicketSort[]
+  const page     = Number(searchParams.get('page') ?? 1);
+  const viewId   = searchParams.get('view') ?? null;
+  const modalOpen = searchParams.get('modal') === 'create';
+
+  // Store — per-field selectors only
+  const selectedRowIds = useTicketStore(s => s.selectedRowIds);
+  const density        = useTicketStore(s => s.density);
+  const clearSelection = useTicketStore(s => s.clearSelection);
+
+  // Selection auto-clear: filters or viewId changed only
+  const filtersHash = JSON.stringify(filters);
+  useEffect(() => { clearSelection(); }, [filtersHash, viewId]);
+
+  const listParams   = { ...filters, sort: serializeSort(sort), page, pageSize: 25 };
+  const filterParams = { ...filters, sort: serializeSort(sort) };
+
+  const list   = useTicketListQuery(listParams);
+  const views  = useViewsQuery();
+  const banner = useNewTicketsPoll(filterParams);
+  const detail = useTicketDetailQuery(ticketId ?? null);
+
+  // Drawer 404 handling
+  useEffect(() => {
+    if (detail.error?.status === 404) {
+      closeDrawer();
+      toast.error('Ticket not found or has been deleted.');
+    }
+  }, [detail.error]);
+
+  return {
+    data: {
+      rows:  list.data?.rows ?? [],
+      total: list.data?.total ?? 0,
+      views: views.data ?? [],
+      detail: detail.data ?? null,
+    },
+    status: {
+      loading: list.isPending,
+      error:   list.error,
+    },
+    url: { filters, sort, page, viewId, modalOpen, drawerTicketId: ticketId ?? null },
+    ui:  { selectedRowIds, density, newTicketsBannerCount: banner.data?.count ?? 0 },
+  };
+}
+```
+
+### View Deletion Cleanup
+
+`useDeleteViewMutation` `onSuccess` handler:
+
+```ts
+onSuccess: (_data, deletedId) => {
+  queryClient.invalidateQueries({ queryKey: ['tickets', 'views'] });
+  if (viewId === deletedId) {
+    setView('');  // clear active view from URL
+  }
+}
+```
 
 ---
 
 ## 7. `lib/ticketParams.ts` — URL Helpers
 
 ```ts
-// Merge semantics: undefined = leave unchanged, null = delete key
+// Merge semantics: undefined = leave unchanged, null = delete key from URL
 function mergeFilters(params: URLSearchParams, patch: Partial<TicketFilters>): URLSearchParams
 function mergeSort(params: URLSearchParams, sort: TicketSort[]): URLSearchParams
 function parseFilters(params: URLSearchParams): TicketFilters
-function parseSort(params: URLSearchParams): TicketSort[]
+function parseSort(params: URLSearchParams): TicketSort[]       // returns TicketSort[]
+function serializeSort(sort: TicketSort[]): string              // → 'updatedAt:desc,priority:asc'
+function buildListKey(params: TicketListParams | TicketFilterParams): Record<string, unknown>
 ```
 
-Filter values in URL are comma-separated strings. `undefined` fields are omitted from URL entirely (not `undefined` vs missing — always one form). `parseFilters` never returns `undefined` for array fields — returns empty array.
+**Sort serialization:** comma-separated `field:dir` pairs. Supports multi-sort from day one. `parseSort` and `serializeSort` are inverses.
+
+**Filter URL serialization:** array fields are comma-separated (`status=OPEN,IN_PROGRESS`). `undefined` fields are omitted from URL entirely. `parseFilters` returns empty array `[]` (never `undefined`) for unset array fields.
+
+**`buildListKey`:** sorts object keys alphabetically, drops `undefined` and empty arrays, normalizes arrays to sorted comma-separated strings. Prevents key thrash from field-order variance across render cycles.
 
 ---
 
 ## 8. Decision Log
 
-| Decision | Rule |
+| Decision | Rule / Rationale |
 |---|---|
 | URL vs Zustand | URL if shareable/survives refresh; Zustand if ephemeral-only |
-| `createModalOpen` | URL (`?modal=create`) — shareable |
-| `drawerTicketId` | URL route param — shareable |
-| `density` | Zustand + persist — preference, not navigation state |
-| `selectedRowIds` | Zustand — ephemeral; cleared on filter/view change |
-| `newTicketsBannerCount` | Derived from `useNewTicketsPoll` — not stored |
-| Optimistic strategy | `useOptimistic` for single-row inline; `setQueryData` for bulk/cross-surface |
-| Poll cursor (`since`) | Ref, not query key — prevents cache bloat and cadence reset |
-| `useTicketsPageRoot` | Root component only; children call primitive hooks |
+| `createModalOpen` | URL (`?modal=create`) — shareable link to pre-open modal |
+| `drawerTicketId` | URL route param — shareable, supports direct link |
+| `density` | Zustand + persist with `partialize` — user preference, not nav state |
+| `selectedRowIds` | Zustand — ephemeral; never persisted; cleared on filter/view change only |
+| `newTicketsBannerCount` | Derived from `useNewTicketsPoll` — not stored anywhere |
+| Optimistic strategy | `setQueryData` in `onMutate` for all mutations — no `useOptimistic` |
+| Single-row optimistic | Patches both `['tickets','list',*]` and `['tickets','detail',id]` |
+| Bulk optimistic | Invalidate with `refetchType: 'active'` — selection may span pages |
+| Poll cursor | Ref, not query key — prevents cache bloat and cadence reset |
+| Poll params | `TicketFilterParams` (no page/pageSize) — poll is filter-scoped |
+| Query key normalization | `buildListKey()` — canonical sorted key prevents refetch storms |
+| `staleTime` on list | `25_000` — dedupe window focus refetch when poll just ran |
+| `gcTime` on views | `30 * 60 * 1000` — prevents loading flash on tab return |
+| `useTicketsPageData` | Root `<TicketsPage>` only — children call primitive hooks |
+| `useTicketsPageActions` | Any component may import — no query subscriptions, all `useCallback` |
 | Bulk mutations | Split: `useBulkUpdateMutation` + `useBulkDeleteMutation` |
-| Refetch during mutation | Pause `refetchInterval` while any single-row mutation `isPending` |
+| View delete cleanup | `onSuccess`: if deleted view was active, clear `?view=` from URL |
+| Drawer 404 | `detail.error?.status === 404` → `closeDrawer()` + toast |
+| `useUserSearchQuery` | Callers must pass debounced `q` (300ms recommended) |
+| `partialize` | Whitelist `density` only — `selectedRowIds` must never persist |
+| Sort multi-sort | Serialized as `'field:dir,field:dir'` — `TicketSort[]` at all call sites |
+| Partial bulk failure | `BulkResult.failed[]` — roll back failed IDs only, toast summary |
+| `AssignPayload` | `{ add: string[], remove: string[] }` — explicit delta, not full replace |
