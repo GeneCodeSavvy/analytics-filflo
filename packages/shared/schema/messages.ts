@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRefSchema } from './user.js';
+import { UserRefSchema } from './user';
 
 export const MessageKindSchema = z.enum(['user_message', 'system_event', 'file_attachment']);
 

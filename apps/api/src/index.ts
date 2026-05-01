@@ -2,7 +2,7 @@ import http from "http";
 import express from "express";
 import { WebSocketServer } from "ws";
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.use(express.json());
@@ -11,7 +11,7 @@ const server = http.createServer(app);
 
 export const wss = new WebSocketServer({ server });
 
-wss.on("connection", () => {
+wss.on("connection", (ws) => {
   console.log("WebSocket client connected");
 });
 
