@@ -29,6 +29,33 @@ function invalidateTeamInvitations(
   });
 }
 
+function invalidateTeamMemberDetail(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+) {
+  queryClient.invalidateQueries({
+    queryKey: ["teams", "member", userId],
+  });
+}
+
+function removeTeamMemberDetail(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+) {
+  queryClient.removeQueries({
+    queryKey: ["teams", "member", userId],
+  });
+}
+
+function invalidateTeamMemberHistory(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+) {
+  queryClient.invalidateQueries({
+    queryKey: ["teams", "history", userId],
+  });
+}
+
 export function useChangeTeamMemberRoleMutation() {
   const queryClient = useQueryClient();
 
@@ -38,14 +65,10 @@ export function useChangeTeamMemberRoleMutation() {
     { userId: string; payload: RoleChangePayload }
   >({
     mutationFn: ({ userId, payload }) => teamsApi.changeRole(userId, payload),
-    onSettled: (_data, _error, { userId, payload }) => {
+    onSettled: (_data, _error, { userId }) => {
       invalidateTeamLists(queryClient);
-      queryClient.invalidateQueries({
-        queryKey: teamKeys.member(userId, payload.orgId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["teams", "history", userId],
-      });
+      invalidateTeamMemberDetail(queryClient, userId);
+      invalidateTeamMemberHistory(queryClient, userId);
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });
@@ -60,19 +83,17 @@ export function useRemoveTeamMemberMutation() {
     { userId: string; params?: RemoveMemberParams }
   >({
     mutationFn: ({ userId, params }) => teamsApi.removeMember(userId, params),
-    onSuccess: (_data, { userId, params }) => {
+    onSuccess: (_data, { userId }) => {
       useTeamsStore.getState().setSelectedRows(
         useTeamsStore
           .getState()
           .selectedRowIds.filter((rowId) => rowId !== userId),
       );
-      queryClient.removeQueries({
-        queryKey: teamKeys.member(userId, params?.orgId),
-      });
+      removeTeamMemberDetail(queryClient, userId);
     },
     onSettled: (_data, _error, { userId }) => {
       invalidateTeamLists(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["teams", "history", userId] });
+      invalidateTeamMemberHistory(queryClient, userId);
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });
@@ -86,8 +107,16 @@ export function useBulkTeamMembersMutation() {
     onSuccess: () => {
       useTeamsStore.getState().clearSelection();
     },
-    onSettled: () => {
+    onSettled: (_data, _error, payload) => {
       invalidateTeamLists(queryClient);
+      payload.ids.forEach((id) => {
+        if (payload.op === "remove") {
+          removeTeamMemberDetail(queryClient, id);
+        } else {
+          invalidateTeamMemberDetail(queryClient, id);
+        }
+        invalidateTeamMemberHistory(queryClient, id);
+      });
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });
@@ -110,7 +139,7 @@ export function useMoveTeamMemberMutation() {
       queryClient.invalidateQueries({
         queryKey: teamKeys.member(userId, payload.toOrgId),
       });
-      queryClient.invalidateQueries({ queryKey: ["teams", "history", userId] });
+      invalidateTeamMemberHistory(queryClient, userId);
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });
@@ -128,6 +157,7 @@ export function useInviteTeamMemberMutation() {
     },
     onSettled: () => {
       invalidateTeamInvitations(queryClient);
+      queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });
 }
@@ -150,6 +180,7 @@ export function useCancelTeamInvitationMutation() {
     mutationFn: (id) => teamsApi.cancelInvitation(id),
     onSettled: () => {
       invalidateTeamInvitations(queryClient);
+      queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });
 }
