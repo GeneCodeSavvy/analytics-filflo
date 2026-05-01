@@ -1,7 +1,7 @@
 import "./App.css";
 import Dashboard from "./components/Dashboard";
 import NavSidebar from "./components/NavSidebar";
-import { Routes, Route } from "react-router";
+import { Routes, Route, Link } from "react-router";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Tickets } from "./components/Tickets";
 import { Messages } from "./components/Messages";
@@ -14,6 +14,15 @@ import { NotificationSettings } from "./components/NotificationSettings";
 import { AppearanceSettings } from "./components/AppearanceSettings";
 import { OrgSettings } from "./components/OrgSettings";
 import { DangerSettings } from "./components/DangerSettings";
+
+const NotFound = () => (
+  <>
+    <h1>404: Page Not Found</h1>
+    <Link to="/">
+      <h2>Return to Home.</h2>
+    </Link>
+  </>
+);
 
 const App = () => (
   <ErrorBoundary>
@@ -32,6 +41,7 @@ const App = () => (
           <Route path="org" Component={OrgSettings} />
           <Route path="danger" Component={DangerSettings} />
         </Route>
+        <Route path="*" Component={NotFound} />
       </Routes>
     </NavSidebar>
   </ErrorBoundary>
