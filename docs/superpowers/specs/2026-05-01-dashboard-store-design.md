@@ -1,140 +1,99 @@
 # Dashboard Store Design
 
 **Date:** 2026-05-01
-**File:** `apps/web/src/stores/useDashboardStore.ts`
+**Files:**
+- `apps/web/src/stores/useDashboardStore.ts`
+- `apps/web/src/hooks/useDashboardFilters.ts`
+- `apps/web/src/hooks/useZone1Query.ts`
+- `apps/web/src/hooks/useZone2Query.ts`
+- `apps/web/src/hooks/useZone3Query.ts`
 
 ---
 
-## Context
+## Architecture
 
-Implements `useDashboardStore` — the Zustand store for the dashboard page (`/`). Store is a write-through cache: React Query fetches zone data and writes it into the store via setters. URL owns filter state; store mirrors it.
+Three distinct layers — no cross-layer state sharing.
 
----
+| Layer | Owns | Does NOT own |
+|-------|------|--------------|
+| `useDashboardStore` | UI state: active zone tab, expanded panel IDs | Server data, filters, loading, errors |
+| `useDashboardFilters()` | Parse + validate `useSearchParams` → typed `DashboardFilters` | Nothing stored in Zustand |
+| `useZone1/2/3Query` | Data, loading, error, stale detection, background refetch | UI state |
 
-## Decisions
-
-### Server state: spec-literal (React Query + Zustand hybrid)
-
-Zone data (`zone1`, `zone2`, `zone3`) lives in Zustand. React Query fetches each zone independently and calls `setZone1/2/3` on success. Store is the cache; React Query is the fetcher. Loading and error per zone are also in the store, set via React Query callbacks.
-
-### Filter ownership: URL-owns, store mirrors
-
-URL is source of truth for `range`, `orgIds`, `priority`, `category`. A `useDashboardFilters` hook (not in this spec) initializes store filters from `useSearchParams` on mount and calls both `setSearchParams` and store `setFilters` on change. The store itself has no React Router dependency.
-
-### Stale signaling: Approach B — timer inside store closure
-
-A `_staleTimer` variable lives inside the `create()` closure — not in state, not exported, no module-level globals. `setZone1/2/3` each clear and restart this timer (5-minute window). When the timer fires, it sets `shouldRefetch: true`. Components `useEffect` on `shouldRefetch` and call `queryClient.invalidateQueries(['dashboard'])` when it becomes `true`.
-
-`refetchIfStale()` is called on `visibilitychange` (tab focus). It checks `Date.now() - lastFetchedAt > 5min` and sets `shouldRefetch = true` directly if stale — no timer involved for the manual path.
-
-`shouldRefetch` resets to `false` inside `setZone1/2/3` so it doesn't re-trigger while React Query is already in flight.
+No write-through cache. No timer. No `shouldRefetch` flag. No `lastFetchedAt`. React Query owns server state entirely.
 
 ---
 
-## State Shape
+## `useDashboardStore` — UI state only
 
 ```ts
-interface DashboardState {
-  // Filters — URL mirror
-  filters: DashboardFilters;
+interface DashboardUIState {
+  expandedPanelIds: string[];   // Zone 3 panels that are expanded
+  activeZoneTab: string | null; // Mobile tab selection between zones
 
-  // Zone data — written by React Query callbacks
-  zone1: Zone1Data | null;
-  zone2: Zone2Data | null;
-  zone3: Zone3Data | null;
-
-  // Per-zone loading + error
-  loading: Record<'zone1' | 'zone2' | 'zone3', boolean>;
-  errors:  Record<'zone1' | 'zone2' | 'zone3', string | null>;
-
-  // Stale signaling
-  lastFetchedAt: number | null;
-  shouldRefetch: boolean;
+  togglePanel: (id: string) => void;
+  setActiveZoneTab: (tab: string | null) => void;
 }
 ```
 
----
-
-## Actions
-
-| Action | Behavior |
-|--------|----------|
-| `setFilters(partial)` | Merges partial into `filters`. Called by `useDashboardFilters` hook alongside `setSearchParams`. |
-| `setZone1(data)` | Sets `zone1`, resets `shouldRefetch: false`, updates `lastFetchedAt`, restarts stale timer. |
-| `setZone2(data)` | Same as above for `zone2`. |
-| `setZone3(data)` | Same as above for `zone3`. |
-| `setLoading(zone, bool)` | Sets `loading[zone]`. |
-| `setError(zone, msg\|null)` | Sets `errors[zone]`. |
-| `refetchIfStale()` | If `lastFetchedAt` is null or `> 5min` old → sets `shouldRefetch: true`. Called on `visibilitychange`. |
+Minimal. Only state that is not derivable from URL or server data.
 
 ---
 
-## Timer Invariant
+## `useDashboardFilters()` — URL hook
 
-All three `setZone*` actions share one `_staleTimer`. Each call restarts it. The 5-minute clock begins from the **last** zone data to arrive. This means a full dashboard load (all three zones fetched) won't go stale until 5 minutes after the slowest zone completes.
-
----
-
-## Internal Implementation Sketch
+Thin wrapper over `useSearchParams`. Parses raw params into a typed `DashboardFilters` object. Validates and falls back to defaults on bad input. Returns both the parsed filters and a typed `setFilters` setter that writes back to the URL.
 
 ```ts
-export const useDashboardStore = create<DashboardState>((set, get) => {
-  let _staleTimer: ReturnType<typeof setTimeout> | null = null;
+// Usage
+const { filters, setFilters } = useDashboardFilters();
+```
 
-  const restartStaleTimer = () => {
-    if (_staleTimer) clearTimeout(_staleTimer);
-    _staleTimer = setTimeout(() => {
-      set({ shouldRefetch: true });
-    }, 5 * 60 * 1000);
-  };
+No Zustand involvement. Filters live in the URL only.
 
-  return {
-    filters: { range: '30d' },
-    zone1: null,
-    zone2: null,
-    zone3: null,
-    loading: { zone1: false, zone2: false, zone3: false },
-    errors:  { zone1: null,  zone2: null,  zone3: null  },
-    lastFetchedAt: null,
-    shouldRefetch: false,
+---
 
-    setFilters: (partial) =>
-      set((s) => ({ filters: { ...s.filters, ...partial } })),
+## Zone Query Hooks
 
-    setZone1: (data) => {
-      set({ zone1: data, lastFetchedAt: Date.now(), shouldRefetch: false });
-      restartStaleTimer();
-    },
-    setZone2: (data) => {
-      set({ zone2: data, lastFetchedAt: Date.now(), shouldRefetch: false });
-      restartStaleTimer();
-    },
-    setZone3: (data) => {
-      set({ zone3: data, lastFetchedAt: Date.now(), shouldRefetch: false });
-      restartStaleTimer();
-    },
+All three follow the same pattern:
 
-    setLoading: (zone, loading) =>
-      set((s) => ({ loading: { ...s.loading, [zone]: loading } })),
-
-    setError: (zone, error) =>
-      set((s) => ({ errors: { ...s.errors, [zone]: error } })),
-
-    refetchIfStale: () => {
-      const { lastFetchedAt } = get();
-      if (!lastFetchedAt || Date.now() - lastFetchedAt > 5 * 60 * 1000) {
-        set({ shouldRefetch: true });
-      }
-    },
-  };
+```ts
+// staleTime: 5 minutes — no refetch until data is 5 min old
+// refetchOnWindowFocus: true — React Query re-evaluates staleTime on focus;
+//   if stale, background refetch fires automatically
+useQuery({
+  queryKey: ['dashboard', 'zone1', filters],
+  queryFn: () => fetchZone1(filters),
+  staleTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: true,
 });
 ```
+
+Zone fetches are independent — a failed zone 3 does not block zone 1 data from rendering.
+
+Query keys include the full `filters` object so any filter change triggers a fresh fetch automatically.
+
+---
+
+## What replaces the old store fields
+
+| Old field | Replacement |
+|-----------|-------------|
+| `filters` | `useDashboardFilters()` reads from URL |
+| `zone1/2/3` | `useZone1/2/3Query().data` |
+| `loading[zone]` | `useZone1/2/3Query().isLoading` |
+| `errors[zone]` | `useZone1/2/3Query().error` |
+| `lastFetchedAt` | Removed — React Query tracks this internally |
+| `shouldRefetch` | Removed — `refetchOnWindowFocus: true` handles it |
+| `_staleTimer` | Removed — `staleTime: 5min` handles it |
+| `setZone1/2/3` | Removed — no write-through cache |
+| `refetchIfStale` | Removed — React Query handles window focus |
 
 ---
 
 ## Out of Scope
 
-- `useDashboardFilters` hook (URL ↔ store sync)
-- React Query query definitions (`useQuery` hooks per zone)
-- `visibilitychange` event wiring (lives in a layout effect in the dashboard page component)
-- Zone data type definitions (already in `docs/web/zustand.md`)
+- `QueryClient` provider setup
+- API fetch functions (`fetchZone1` etc.)
+- Role-gating logic inside query functions
+- `useDashboardFilters` full validation rules
