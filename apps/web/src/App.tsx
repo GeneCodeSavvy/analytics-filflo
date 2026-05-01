@@ -29,7 +29,9 @@ const App = () => (
     <NavSidebar>
       <Routes>
         <Route path="/" Component={Dashboard} />
-        <Route path="/tickets" Component={Tickets} />
+        <Route path="/tickets" Component={Tickets}>
+          <Route path=":ticketId" Component={Tickets} />
+        </Route>
         <Route path="/messages" Component={Messages} />
         <Route path="/notifications" Component={Notifications} />
         <Route path="/teams" Component={Teams} />
