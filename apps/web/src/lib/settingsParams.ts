@@ -24,6 +24,7 @@ export {
   UpdateAppearancePayloadSchema,
   UpdateOrgSettingsPayloadSchema,
   DeleteAccountPayloadSchema,
+  OAuthConnectResponseSchema,
 } from "@shared/schema";
 
 export type {

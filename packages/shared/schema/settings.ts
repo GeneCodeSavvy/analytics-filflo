@@ -61,7 +61,8 @@ export const NotificationPreferenceSchema = z.object({
   email: z.boolean(),
 });
 
-const TimeStringSchema = z.string()
+const TimeStringSchema = z
+  .string()
   .regex(/^\d{2}:\d{2}$/)
   .refine((t) => {
     const [h, m] = t.split(":").map(Number);
@@ -101,6 +102,10 @@ export const OrgSettingsSchema = z.object({
 
 export const OrgLogoUploadResponseSchema = z.object({
   orgLogoUrl: z.string().url(),
+});
+
+export const OAuthConnectResponseSchema = z.object({
+  redirectUrl: z.string().url(),
 });
 
 // ─── Request / Payload Schemas ────────────────────────────────────────────────
@@ -150,6 +155,10 @@ export type Role = z.infer<typeof RoleSchema>;
 export type Theme = z.infer<typeof ThemeSchema>;
 export type Density = z.infer<typeof DensitySchema>;
 export type OAuthProvider = z.infer<typeof OAuthProviderSchema>;
+export type OAuthConnectResponseSchema = z.infer<
+  typeof OAuthConnectResponseSchema
+>;
+
 export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 
 export type UserProfile = z.infer<typeof UserProfileSchema>;
@@ -157,7 +166,9 @@ export type AvatarUploadResponse = z.infer<typeof AvatarUploadResponseSchema>;
 export type ConnectedProvider = z.infer<typeof ConnectedProviderSchema>;
 export type ActiveSession = z.infer<typeof ActiveSessionSchema>;
 export type SecurityInfo = z.infer<typeof SecurityInfoSchema>;
-export type NotificationPreference = z.infer<typeof NotificationPreferenceSchema>;
+export type NotificationPreference = z.infer<
+  typeof NotificationPreferenceSchema
+>;
 export type QuietHours = z.infer<typeof QuietHoursSchema>;
 export type MutedTicket = z.infer<typeof MutedTicketSchema>;
 export type NotificationSettings = z.infer<typeof NotificationSettingsSchema>;
@@ -167,7 +178,13 @@ export type OrgLogoUploadResponse = z.infer<typeof OrgLogoUploadResponseSchema>;
 
 export type UpdateProfilePayload = z.infer<typeof UpdateProfilePayloadSchema>;
 export type ChangePasswordPayload = z.infer<typeof ChangePasswordPayloadSchema>;
-export type UpdateNotificationSettingsPayload = z.infer<typeof UpdateNotificationSettingsPayloadSchema>;
-export type UpdateAppearancePayload = z.infer<typeof UpdateAppearancePayloadSchema>;
-export type UpdateOrgSettingsPayload = z.infer<typeof UpdateOrgSettingsPayloadSchema>;
+export type UpdateNotificationSettingsPayload = z.infer<
+  typeof UpdateNotificationSettingsPayloadSchema
+>;
+export type UpdateAppearancePayload = z.infer<
+  typeof UpdateAppearancePayloadSchema
+>;
+export type UpdateOrgSettingsPayload = z.infer<
+  typeof UpdateOrgSettingsPayloadSchema
+>;
 export type DeleteAccountPayload = z.infer<typeof DeleteAccountPayloadSchema>;

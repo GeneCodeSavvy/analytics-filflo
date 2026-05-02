@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { api } from ".";
 import {
   UserProfileSchema,
@@ -8,6 +7,7 @@ import {
   AppearanceSettingsSchema,
   OrgSettingsSchema,
   OrgLogoUploadResponseSchema,
+  OAuthConnectResponseSchema,
 } from "../lib/settingsParams";
 import type {
   UserProfile,
@@ -26,8 +26,6 @@ import type {
   OAuthProvider,
 } from "../lib/settingsParams";
 
-const OAuthConnectResponseSchema = z.object({ redirectUrl: z.string().url() });
-
 export const settingsApi = {
   // ─── Profile ───────────────────────────────────────────────────────────────
 
@@ -36,7 +34,9 @@ export const settingsApi = {
     return UserProfileSchema.parse(data);
   },
 
-  updateProfile: async (payload: UpdateProfilePayload): Promise<UserProfile> => {
+  updateProfile: async (
+    payload: UpdateProfilePayload,
+  ): Promise<UserProfile> => {
     const data = await api.patch<UserProfile>("/settings/profile", payload);
     return UserProfileSchema.parse(data);
   },
@@ -45,9 +45,13 @@ export const settingsApi = {
   uploadAvatar: async (file: File): Promise<AvatarUploadResponse> => {
     const form = new FormData();
     form.append("avatar", file);
-    const data = await api.post<AvatarUploadResponse>("/settings/profile/avatar", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const data = await api.post<AvatarUploadResponse>(
+      "/settings/profile/avatar",
+      form,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
     return AvatarUploadResponseSchema.parse(data);
   },
 
@@ -64,8 +68,10 @@ export const settingsApi = {
   },
 
   // Initiates OAuth connect — returns redirect URL to navigate the browser to
-  getOAuthConnectUrl: async (provider: OAuthProvider): Promise<{ redirectUrl: string }> => {
-    const data = await api.post<{ redirectUrl: string }>(
+  getOAuthConnectUrl: async (
+    provider: OAuthProvider,
+  ): Promise<OAuthConnectResponseSchema> => {
+    const data = await api.post<OAuthConnectResponseSchema>(
       `/settings/security/oauth/${provider}/connect`,
     );
     return OAuthConnectResponseSchema.parse(data);
@@ -89,29 +95,44 @@ export const settingsApi = {
 
   // ─── Notifications ─────────────────────────────────────────────────────────
 
-  getNotificationSettings: async (signal?: AbortSignal): Promise<NotificationSettings> => {
-    const data = await api.get<NotificationSettings>("/settings/notifications", { signal });
+  getNotificationSettings: async (
+    signal?: AbortSignal,
+  ): Promise<NotificationSettings> => {
+    const data = await api.get<NotificationSettings>(
+      "/settings/notifications",
+      { signal },
+    );
     return NotificationSettingsSchema.parse(data);
   },
 
   updateNotificationSettings: async (
     payload: UpdateNotificationSettingsPayload,
   ): Promise<NotificationSettings> => {
-    const data = await api.patch<NotificationSettings>("/settings/notifications", payload);
+    const data = await api.patch<NotificationSettings>(
+      "/settings/notifications",
+      payload,
+    );
     return NotificationSettingsSchema.parse(data);
   },
 
   // ─── Appearance ────────────────────────────────────────────────────────────
 
-  getAppearanceSettings: async (signal?: AbortSignal): Promise<AppearanceSettings> => {
-    const data = await api.get<AppearanceSettings>("/settings/appearance", { signal });
+  getAppearanceSettings: async (
+    signal?: AbortSignal,
+  ): Promise<AppearanceSettings> => {
+    const data = await api.get<AppearanceSettings>("/settings/appearance", {
+      signal,
+    });
     return AppearanceSettingsSchema.parse(data);
   },
 
   updateAppearanceSettings: async (
     payload: UpdateAppearancePayload,
   ): Promise<AppearanceSettings> => {
-    const data = await api.patch<AppearanceSettings>("/settings/appearance", payload);
+    const data = await api.patch<AppearanceSettings>(
+      "/settings/appearance",
+      payload,
+    );
     return AppearanceSettingsSchema.parse(data);
   },
 
@@ -122,7 +143,9 @@ export const settingsApi = {
     return OrgSettingsSchema.parse(data);
   },
 
-  updateOrgSettings: async (payload: UpdateOrgSettingsPayload): Promise<OrgSettings> => {
+  updateOrgSettings: async (
+    payload: UpdateOrgSettingsPayload,
+  ): Promise<OrgSettings> => {
     const data = await api.patch<OrgSettings>("/settings/org", payload);
     return OrgSettingsSchema.parse(data);
   },
@@ -131,9 +154,13 @@ export const settingsApi = {
   uploadOrgLogo: async (file: File): Promise<OrgLogoUploadResponse> => {
     const form = new FormData();
     form.append("logo", file);
-    const data = await api.post<OrgLogoUploadResponse>("/settings/org/logo", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const data = await api.post<OrgLogoUploadResponse>(
+      "/settings/org/logo",
+      form,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
     return OrgLogoUploadResponseSchema.parse(data);
   },
 
