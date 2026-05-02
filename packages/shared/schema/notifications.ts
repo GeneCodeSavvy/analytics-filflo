@@ -1,19 +1,12 @@
 import { z } from "zod";
+import { NotificationTypeSchema } from "./settings";
+export { NotificationTypeSchema };
 
 export const NotificationStateSchema = z.enum(["inbox", "read", "done"]);
 export const NotificationTierSchema = z.enum([
   "action_required",
   "status_update",
   "fyi",
-]);
-export const NotificationTypeSchema = z.enum([
-  "ticket_assigned",
-  "review_requested",
-  "ticket_invitation",
-  "ticket_resolved",
-  "ticket_closed",
-  "new_ticket_in_org",
-  "message_activity",
 ]);
 
 const UserRefSchema = z.object({
@@ -142,15 +135,15 @@ export const InvitationResponsePayloadSchema = z.object({
   response: z.enum(["accepted", "rejected"]),
 });
 
-export const NotificationPreferenceSchema = z.object({
+export const NotificationApiPreferenceSchema = z.object({
   type: NotificationTypeSchema,
   inApp: z.boolean(),
   email: z.boolean(),
   digest: z.boolean(),
 });
 
-export const NotificationSettingsSchema = z.object({
-  preferences: NotificationPreferenceSchema.array(),
+export const NotificationApiSettingsSchema = z.object({
+  preferences: NotificationApiPreferenceSchema.array(),
   mutedTicketIds: z.string().array(),
   quietHours: z
     .object({
@@ -174,5 +167,5 @@ export type NotificationListParams = z.infer<typeof NotificationListParamsSchema
 export type SnoozePayload = z.infer<typeof SnoozePayloadSchema>;
 export type BulkNotificationPayload = z.infer<typeof BulkNotificationPayloadSchema>;
 export type InvitationResponsePayload = z.infer<typeof InvitationResponsePayloadSchema>;
-export type NotificationPreference = z.infer<typeof NotificationPreferenceSchema>;
-export type NotificationSettings = z.infer<typeof NotificationSettingsSchema>;
+export type NotificationApiPreference = z.infer<typeof NotificationApiPreferenceSchema>;
+export type NotificationApiSettings = z.infer<typeof NotificationApiSettingsSchema>;
