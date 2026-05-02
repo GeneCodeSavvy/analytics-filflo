@@ -1,408 +1,751 @@
-import { useTicketsPageData } from '../hooks/useTicketsPageData';
-import { useTicketsPageActions } from '../hooks/useTicketsPageActions';
-import { useMutationState } from '@tanstack/react-query';
-import type { TicketFilters } from '../lib/ticketParams';
-import { useTicketStore } from '../stores/useTicketStore';
+import { useEffect, useMemo, useRef, useState, startTransition } from "react";
+import { useMutationState, useQueryClient } from "@tanstack/react-query";
+import {
+  IconCheck,
+  IconAlertCircle,
+  IconChevronDown,
+  IconChevronRight,
+  IconCopy,
+  IconDots,
+  IconInbox,
+  IconLayoutRows,
+  IconList,
+  IconMaximize,
+  IconPlus,
+  IconSearch,
+  IconX,
+} from "@tabler/icons-react";
+import { useTicketsPageData } from "../hooks/useTicketsPageData";
+import { useTicketsPageActions } from "../hooks/useTicketsPageActions";
+import {
+  useBulkUpdateMutation,
+  useCreateTicketMutation,
+  useStatusMutation,
+  useUpdateTicketMutation,
+} from "../hooks/useTicketMutations";
+import { useAuthState } from "../stores/useAuthStore";
+import { useTicketStore } from "../stores/useTicketStore";
+import type {
+  ActivityEntry,
+  TicketFilters,
+  TicketPriority,
+  TicketRow,
+  TicketSort,
+  TicketStatus,
+  UserRef,
+} from "../lib/ticketParams";
 
-export const Tickets = () => {
-  const { data, status, url, ui } = useTicketsPageData();
-  const actions = useTicketsPageActions();
-  const anyMutationPending = useMutationState({
-    filters: { status: 'pending' },
-    select: (m) => (m as { state: { status: string } }).state.status === 'pending',
-  }).some(Boolean);
+const STATUSES: TicketStatus[] = ["OPEN", "IN_PROGRESS", "ON_HOLD", "REVIEW", "RESOLVED"];
+const PRIORITIES: TicketPriority[] = ["HIGH", "MEDIUM", "LOW"];
+const FILTERS = ["Status", "Priority", "Category", "Assignee", "Date"];
+const DEFAULT_VIEWS = [
+  { id: null, name: "All tickets" },
+  { id: "awaiting-review", name: "Awaiting my review" },
+  { id: "high-priority", name: "High priority open" },
+  { id: "stale", name: "Stale" },
+];
+const ROW_HEIGHT = { compact: 36, comfortable: 56 };
+const OVERSCAN = 8;
 
-  const density = useTicketStore((s) => s.density);
+type SortField = TicketSort["field"];
+type Density = "compact" | "comfortable";
+type DrawerTab = "Details" | "Activity" | "Messages";
 
-  const handleFilterChange = (key: keyof TicketFilters, values: string[]) => {
-    const current = url.filters[key] as string[] | undefined;
-    if (JSON.stringify(current) === JSON.stringify(values)) return;
+function statusClass(status: string) {
+  if (status === "OPEN") return "bg-primary/10 text-primary";
+  if (status === "IN_PROGRESS") return "bg-secondary/10 text-secondary";
+  if (status === "REVIEW") return "bg-[oklch(0.78_0.14_78/.12)] text-[oklch(0.66_0.13_78)]";
+  if (status === "RESOLVED") return "bg-muted text-muted-foreground line-through";
+  return "bg-muted text-muted-foreground";
+}
 
-    if (key === 'status') {
-      actions.setFilters({ status: values as any });
-    } else if (key === 'priority') {
-      actions.setFilters({ priority: values as any });
-    } else if (key === 'category') {
-      actions.setFilters({ category: values });
-    } else if (key === 'assigneeIds') {
-      actions.setFilters({ assigneeIds: values });
-    }
-  };
+function priorityBar(priority: string) {
+  if (priority === "HIGH") return "bg-[oklch(0.62_0.22_25)]";
+  if (priority === "MEDIUM") return "bg-[oklch(0.78_0.14_78)]";
+  return "bg-border";
+}
 
-  const handlePageChange = (newPage: number) => {
-    actions.setPage(newPage);
-  };
+function displayId(id: string) {
+  return `#${id.replace(/-/g, "").slice(0, 8)}`;
+}
 
-  const handleRowClick = (ticketId: string) => {
-    actions.openDrawer(ticketId);
-  };
+function relativeTime(value: string) {
+  const then = new Date(value).getTime();
+  const diff = Date.now() - then;
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diff < minute) return "now";
+  if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
+  if (diff < day) return `${Math.floor(diff / hour)}h ago`;
+  if (diff < 2 * day) return "Yesterday";
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(value));
+}
 
-  const handleRowSelect = (ticketId: string) => {
-    actions.toggleRowSelected(ticketId);
-  };
+function absoluteTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
 
-  const handleSelectAll = () => {
-    if (ui.selectedRowIds.length === data.rows.length) {
-      actions.clearSelection();
-    } else {
-      actions.setSelectedRows(data.rows.map((r) => r.id));
-    }
-  };
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
-  const handleCreateClick = () => {
-    actions.openModal();
-  };
+function HeaderIconButton({
+  label,
+  children,
+  onClick,
+  active = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={`tickets-icon-button ${active ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+    >
+      {children}
+    </button>
+  );
+}
 
-  const handleViewChange = (viewId: string | null) => {
-    actions.setView(viewId);
-  };
+function StatusPill({ status, pulse = false }: { status: string; pulse?: boolean }) {
+  return (
+    <span className={`tickets-status ${statusClass(status)} ${pulse ? "tickets-status-pulse" : ""}`}>
+      {status.replace("_", " ")}
+    </span>
+  );
+}
 
-  const handleDensityChange = (d: 'compact' | 'comfortable') => {
-    actions.setDensity(d);
-  };
+function Avatar({ user, className = "" }: { user?: Partial<UserRef> | null; className?: string }) {
+  const name = user?.name ?? "Unassigned";
+  return user?.avatarUrl ? (
+    <img src={user.avatarUrl} alt="" className={`tickets-avatar ${className}`} />
+  ) : (
+    <span className={`tickets-avatar tickets-avatar-fallback ${className}`}>{initials(name)}</span>
+  );
+}
 
-  const hasActiveFilters =
-    (url.filters.status?.length ?? 0) > 0 ||
-    (url.filters.priority?.length ?? 0) > 0 ||
-    (url.filters.category?.length ?? 0) > 0 ||
-    (url.filters.assigneeIds?.length ?? 0) > 0 ||
-    url.filters.q;
+function Assignees({ row }: { row: TicketRow }) {
+  const assignees = [row.primaryAssignee, ...((row.assigneesPreview ?? []) as UserRef[])]
+    .filter(Boolean)
+    .filter((user, index, list) => list.findIndex((item) => item?.id === user?.id) === index) as UserRef[];
+  const visible = assignees.slice(0, 3);
+  const hidden = Math.max(row.assigneeCount - visible.length, 0);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold">Tickets</h1>
-          {data.views.length > 0 && (
-            <div className="flex gap-1">
-              {data.views.map((view) => (
-                <button
-                  key={view.id}
-                  onClick={() => handleViewChange(view.id)}
-                  disabled={anyMutationPending}
-                  className={`px-3 py-1 text-sm rounded ${
-                    url.viewId === view.id
-                      ? 'bg-primary text-white'
-                      : 'bg-muted hover:bg-muted/80'
-                  }`}
-                >
-                  {view.name}
-                </button>
-              ))}
-              <button
-                onClick={() => handleViewChange(null)}
-                disabled={anyMutationPending}
-                className={`px-3 py-1 text-sm rounded ${
-                  !url.viewId ? 'bg-primary text-white' : 'bg-muted hover:bg-muted/80'
-                }`}
-              >
-                All
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {ui.newTicketsBannerCount > 0 && (
-            <button className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600">
-              {ui.newTicketsBannerCount} new tickets
-            </button>
-          )}
-          <button
-            onClick={handleCreateClick}
-            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
-          >
-            Create Ticket
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4 p-4 border-b">
-        <div className="flex flex-wrap gap-2">
-          <select
-            disabled={anyMutationPending}
-            value={url.filters.status?.join(',') ?? ''}
-            onChange={(e) =>
-              handleFilterChange(
-                'status',
-                e.target.value ? e.target.value.split(',') : []
-              )
-            }
-            className="px-2 py-1 border rounded"
-          >
-            <option value="">All Status</option>
-            <option value="OPEN">Open</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="ON_HOLD">On Hold</option>
-            <option value="REVIEW">Review</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
-          </select>
-
-          <select
-            disabled={anyMutationPending}
-            value={url.filters.priority?.join(',') ?? ''}
-            onChange={(e) =>
-              handleFilterChange(
-                'priority',
-                e.target.value ? e.target.value.split(',') : []
-              )
-            }
-            className="px-2 py-1 border rounded"
-          >
-            <option value="">All Priority</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
-          </select>
-
-          <input
-            type="text"
-            placeholder="Search..."
-            value={url.filters.q ?? ''}
-            onChange={(e) => actions.setFilters({ q: e.target.value || undefined })}
-            disabled={anyMutationPending}
-            className="px-2 py-1 border rounded"
-          />
-
-          {hasActiveFilters && (
-            <button
-              onClick={() => actions.setFilters({ status: [], priority: [], category: [], assigneeIds: [], q: undefined })}
-              className="px-2 py-1 text-sm text-red-500 hover:underline"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 ml-auto">
-          <button
-            onClick={() => handleDensityChange('compact')}
-            className={`px-2 py-1 text-sm ${density === 'compact' ? 'bg-muted' : ''}`}
-          >
-            Compact
-          </button>
-          <button
-            onClick={() => handleDensityChange('comfortable')}
-            className={`px-2 py-1 text-sm ${density === 'comfortable' ? 'bg-muted' : ''}`}
-          >
-            Comfortable
-          </button>
-        </div>
-      </div>
-
-      {status.loading && (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-muted-foreground">Loading tickets...</div>
-        </div>
+    <div className="group/assignees relative flex h-6 items-center">
+      {visible.length === 0 ? (
+        <span className="text-[12px] text-muted-foreground">None</span>
+      ) : (
+        visible.map((user, index) => <Avatar key={user.id} user={user} className={index > 0 ? "-ml-2" : ""} />)
       )}
-
-      {status.error && (
-        <div className="flex items-center justify-center p-8 text-red-500">
-          Failed to load tickets
-        </div>
-      )}
-
-      {!status.loading && !status.error && (
-        <>
-          <div className="flex-1 overflow-auto">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-background border-b">
-                <tr>
-                  <th className="w-10 p-2">
-                    <input
-                      type="checkbox"
-                      checked={
-                        ui.selectedRowIds.length > 0 &&
-                        ui.selectedRowIds.length === data.rows.length
-                      }
-                      onChange={handleSelectAll}
-                    />
-                  </th>
-                  <th className="p-2 text-left">Subject</th>
-                  <th className="p-2 text-left">Status</th>
-                  <th className="p-2 text-left">Priority</th>
-                  <th className="p-2 text-left">Assignee</th>
-                  <th className="p-2 text-left">Org</th>
-                  <th className="p-2 text-left">Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => handleRowClick(row.id)}
-                    className={`border-b cursor-pointer hover:bg-muted/50 ${
-                      density === 'compact' ? 'py-1' : 'py-3'
-                    }`}
-                  >
-                    <td className="p-2" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={ui.selectedRowIds.includes(row.id)}
-                        onChange={() => handleRowSelect(row.id)}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <div className="font-medium">{row.subject}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {row.descriptionPreview}
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      <span
-                        className={`px-2 py-0.5 text-xs rounded ${
-                          row.status === 'OPEN'
-                            ? 'bg-green-100 text-green-800'
-                            : row.status === 'IN_PROGRESS'
-                            ? 'bg-blue-100 text-blue-800'
-                            : row.status === 'CLOSED'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <span
-                        className={`px-2 py-0.5 text-xs rounded ${
-                          row.priority === 'HIGH'
-                            ? 'bg-red-100 text-red-800'
-                            : row.priority === 'MEDIUM'
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {row.priority}
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      {row.primaryAssignee ? (
-                        <div className="flex items-center gap-2">
-                          {row.primaryAssignee.avatarUrl && (
-                            <img
-                              src={row.primaryAssignee.avatarUrl}
-                              alt=""
-                              className="w-6 h-6 rounded-full"
-                            />
-                          )}
-                          <span>{row.primaryAssignee.name}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">Unassigned</span>
-                      )}
-                      {row.assigneeCount > 1 && (
-                        <span className="text-muted-foreground ml-1">
-                          +{row.assigneeCount - 1}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-2">{row.org.name}</td>
-                    <td className="p-2 text-sm text-muted-foreground">
-                      {new Date(row.updatedAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border-t">
-            <div className="text-sm text-muted-foreground">
-              Showing {data.rows.length} of {data.total} tickets
+      {hidden > 0 && <span className="tickets-plus-chip">+{hidden}</span>}
+      {assignees.length > 0 && (
+        <div className="tickets-popover pointer-events-none absolute right-0 top-7 z-30 min-w-44 opacity-0 group-hover/assignees:opacity-100">
+          {assignees.map((user) => (
+            <div key={user.id} className="flex items-center gap-2 whitespace-nowrap px-2 py-1.5 text-[12px]">
+              <Avatar user={user} />
+              <span>{user.name}</span>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePageChange(url.page - 1)}
-                disabled={url.page <= 1}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="px-3 py-1">Page {url.page}</span>
-              <button
-                onClick={() => handlePageChange(url.page + 1)}
-                disabled={data.rows.length < 25}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {url.modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Create Ticket</h2>
-            <p className="text-muted-foreground">Create ticket modal placeholder</p>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={actions.closeModal}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={actions.closeModal}
-                className="px-4 py-2 bg-primary text-white rounded"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {url.drawerTicketId && data.detail && (
-        <div className="fixed inset-y-0 right-0 w-[500px] bg-background border-l shadow-lg z-40 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-xl font-semibold">{data.detail.subject}</h2>
-            <button
-              onClick={actions.closeDrawer}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto p-4">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Status</label>
-                <div className="mt-1">{data.detail.status}</div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Priority</label>
-                <div className="mt-1">{data.detail.priority}</div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Description</label>
-                <div className="mt-1 text-muted-foreground">
-                  {data.detail.description || data.detail.descriptionPreview}
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Assignees</label>
-                <div className="mt-1">
-                  {data.detail.primaryAssignee?.name || 'Unassigned'}
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Requester</label>
-                <div className="mt-1">{data.detail.requester.name}</div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Organization</label>
-                <div className="mt-1">{data.detail.org.name}</div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       )}
     </div>
   );
+}
+
+function TimeCell({ value, muted = false }: { value: string; muted?: boolean }) {
+  const [absolute, setAbsolute] = useState(false);
+  return (
+    <span
+      onMouseEnter={() => setAbsolute(true)}
+      onMouseLeave={() => setAbsolute(false)}
+      className={`font-mono text-[12px] ${muted ? "text-muted-foreground" : "text-foreground"}`}
+    >
+      {absolute ? absoluteTime(value) : relativeTime(value)}
+    </span>
+  );
+}
+
+function UserTicketList({ rows, onOpen }: { rows: TicketRow[]; onOpen: (id: string) => void }) {
+  return (
+    <div className="flex flex-1 justify-center overflow-auto border-t border-border bg-background px-4 py-6">
+      <div className="flex w-full max-w-[480px] flex-col gap-2">
+        {rows.map((row) => (
+          <button key={row.id} type="button" onClick={() => onOpen(row.id)} className="h-24 rounded-sm border border-border bg-background p-3 text-left hover:bg-muted/40">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="font-mono text-[12px] text-muted-foreground">{displayId(row.id)}</span>
+              <StatusPill status={row.status} />
+            </div>
+            <div className="truncate text-[16px] font-medium text-foreground">{row.subject}</div>
+            <div className="mt-2 font-mono text-[12px] text-muted-foreground">{relativeTime(row.updatedAt)}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export const Tickets = () => {
+  const { data, status, url, ui } = useTicketsPageData();
+  const actions = useTicketsPageActions();
+  const queryClient = useQueryClient();
+  const user = useAuthState((s) => s.user);
+  const role = user?.role ?? "MODERATOR";
+  const density = useTicketStore((s) => s.density);
+  const createTicket = useCreateTicketMutation();
+  const updateTicket = useUpdateTicketMutation();
+  const statusMutation = useStatusMutation();
+  const bulkUpdate = useBulkUpdateMutation();
+  const anyMutationPending = useMutationState({ filters: { status: "pending" } }).some(Boolean);
+
+  const [searchValue, setSearchValue] = useState(url.filters.q ?? "");
+  const [tabIndex, setTabIndex] = useState(0);
+  const [drawerTab, setDrawerTab] = useState<DrawerTab>("Details");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [hoveredStatusId, setHoveredStatusId] = useState<string | null>(null);
+  const [hoveredTime, setHoveredTime] = useState<string | null>(null);
+  const [groupByOrg, setGroupByOrg] = useState(false);
+  const [toast, setToast] = useState("");
+  const [draft, setDraft] = useState({ subject: "", description: "", category: "", priority: "MEDIUM" as TicketPriority });
+  const [editSubject, setEditSubject] = useState(false);
+  const [editDescription, setEditDescription] = useState(false);
+  const [virtualScrollTop, setVirtualScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(600);
+  const tableRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const subjectRef = useRef<HTMLInputElement | null>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const modalSubjectRef = useRef<HTMLInputElement | null>(null);
+
+  const rowHeight = ROW_HEIGHT[density as Density];
+  const activeSort = url.sort[0] ?? { field: "updatedAt" as SortField, dir: "desc" as const };
+  const secondarySort = url.sort[1];
+  const selectedCount = ui.selectedRowIds.length;
+  const visibleColumns = role === "SUPER_ADMIN" ? 9 : 8;
+  const drawerOpen = Boolean(url.drawerTicketId && data.detail);
+
+  const activeViews = useMemo(() => {
+    const serverViews = data.views.map((view) => ({ id: view.id, name: view.name }));
+    return [...DEFAULT_VIEWS, ...serverViews.filter((view) => !DEFAULT_VIEWS.some((item) => item.name === view.name))];
+  }, [data.views]);
+
+  const sortedRows = useMemo(() => {
+    const list = [...data.rows];
+    const priorityOrder = new Map([["HIGH", 0], ["MEDIUM", 1], ["LOW", 2]]);
+    const statusOrder = new Map(STATUSES.map((item, index) => [item, index]));
+    const sorts = url.sort.length ? url.sort : [{ field: "updatedAt", dir: "desc" }] as TicketSort[];
+    list.sort((a, b) => {
+      for (const sort of sorts) {
+        let result = 0;
+        if (sort.field === "updatedAt" || sort.field === "createdAt") result = new Date(a[sort.field]).getTime() - new Date(b[sort.field]).getTime();
+        if (sort.field === "subject") result = a.subject.localeCompare(b.subject);
+        if (sort.field === "priority") result = (priorityOrder.get(a.priority) ?? 3) - (priorityOrder.get(b.priority) ?? 3);
+        if (sort.field === "status") result = (statusOrder.get(a.status as TicketStatus) ?? 9) - (statusOrder.get(b.status as TicketStatus) ?? 9);
+        if (result !== 0) return sort.dir === "asc" ? result : -result;
+      }
+      return 0;
+    });
+    return list;
+  }, [data.rows, url.sort]);
+
+  const groupedRows = useMemo(() => {
+    if (!groupByOrg || role !== "SUPER_ADMIN") return [{ org: "", rows: sortedRows }];
+    const groups = new Map<string, TicketRow[]>();
+    for (const row of sortedRows) groups.set(row.org.name, [...(groups.get(row.org.name) ?? []), row]);
+    return [...groups.entries()].map(([org, rows]) => ({ org, rows }));
+  }, [groupByOrg, role, sortedRows]);
+
+  const flatRows = useMemo(() => groupedRows.flatMap((group) => group.org ? [{ kind: "group" as const, id: group.org, group }, ...group.rows.map((row) => ({ kind: "row" as const, id: row.id, row }))] : group.rows.map((row) => ({ kind: "row" as const, id: row.id, row }))), [groupedRows]);
+  const totalHeight = flatRows.length * rowHeight;
+  const startIndex = Math.max(0, Math.floor(virtualScrollTop / rowHeight) - OVERSCAN);
+  const endIndex = Math.min(flatRows.length, Math.ceil((virtualScrollTop + viewportHeight) / rowHeight) + OVERSCAN);
+  const virtualRows = flatRows.slice(startIndex, endIndex);
+
+  const currentIndex = sortedRows.findIndex((row) => row.id === url.drawerTicketId);
+  const hasActiveFilters = Boolean(
+    url.filters.q ||
+      url.filters.stale ||
+      url.filters.status?.length ||
+      url.filters.priority?.length ||
+      url.filters.category?.length ||
+      url.filters.assigneeIds?.length ||
+      url.filters.orgIds?.length,
+  );
+
+  useEffect(() => setSearchValue(url.filters.q ?? ""), [url.filters.q]);
+  useEffect(() => {
+    const node = tableRef.current;
+    if (!node) return;
+    const resize = () => setViewportHeight(node.clientHeight);
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!url.modalOpen) return;
+    const saved = localStorage.getItem("ticket-create-draft");
+    if (saved && !draft.subject && !draft.description && !draft.category) {
+      try {
+        setDraft(JSON.parse(saved) as typeof draft);
+      } catch {
+        localStorage.removeItem("ticket-create-draft");
+      }
+    }
+    requestAnimationFrame(() => modalSubjectRef.current?.focus());
+  }, [url.modalOpen]);
+
+  useEffect(() => {
+    if (editSubject) requestAnimationFrame(() => subjectRef.current?.focus());
+  }, [editSubject]);
+
+  useEffect(() => {
+    if (editDescription) requestAnimationFrame(() => descriptionRef.current?.focus());
+  }, [editDescription]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
+      if (event.key === "/" && !typing) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (event.key === "c" && !typing) {
+        event.preventDefault();
+        actions.openModal();
+      }
+      if (event.key === "Escape") {
+        if (url.modalOpen) closeModal();
+        else if (drawerOpen) actions.closeDrawer();
+      }
+      if (!drawerOpen || typing) return;
+      if (event.key === "j" || event.key === "k") {
+        event.preventDefault();
+        const next = event.key === "j" ? sortedRows[currentIndex + 1] : sortedRows[currentIndex - 1];
+        if (next) actions.openDrawer(next.id);
+      }
+      if (event.key === "e") {
+        event.preventDefault();
+        setDrawerTab("Details");
+        setEditDescription(true);
+      }
+      if (event.key === "s" && data.detail) {
+        event.preventDefault();
+        const index = STATUSES.indexOf(data.detail.status as TicketStatus);
+        statusMutation.mutate({ id: data.detail.id, status: STATUSES[(index + 1) % STATUSES.length] });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [actions, currentIndex, data.detail, drawerOpen, sortedRows, statusMutation, url.modalOpen]);
+
+  const setFilters = (patch: Partial<TicketFilters>) => {
+    startTransition(() => actions.setFilters(patch));
+  };
+
+  const clearFilters = () => setFilters({ status: [], priority: [], category: [], assigneeIds: [], orgIds: [], q: undefined, stale: undefined });
+
+  const setSort = (field: SortField, shiftKey: boolean) => {
+    const current = url.sort.length ? url.sort : [{ field: "updatedAt", dir: "desc" }] as TicketSort[];
+    const existing = current.find((sort) => sort.field === field);
+    const nextDir: TicketSort["dir"] = existing?.dir === "asc" ? "desc" : "asc";
+    const next: TicketSort[] = shiftKey
+      ? [{ ...current[0] }, { field, dir: nextDir }].filter((sort, index, list) => list.findIndex((item) => item.field === sort.field) === index).slice(0, 2)
+      : [{ field, dir: nextDir }];
+    startTransition(() => actions.setSort(next));
+  };
+
+  const copyId = async (id: string) => {
+    await navigator.clipboard?.writeText(id);
+    setCopiedId(id);
+    window.setTimeout(() => setCopiedId(null), 240);
+  };
+
+  const closeModal = () => {
+    if (draft.subject || draft.description || draft.category) {
+      localStorage.setItem("ticket-create-draft", JSON.stringify(draft));
+      setToast("Draft saved");
+      window.setTimeout(() => setToast(""), 2_000);
+    }
+    actions.closeModal();
+  };
+
+  const submitDraft = () => {
+    if (!draft.subject.trim() || !draft.description.trim()) return;
+    createTicket.mutate({ ...draft, inviteeIds: [] }, {
+      onSuccess: () => {
+        localStorage.removeItem("ticket-create-draft");
+        setDraft({ subject: "", description: "", category: "", priority: "MEDIUM" });
+        actions.closeModal();
+      },
+    });
+  };
+
+  const saveSubject = (value: string) => {
+    if (!data.detail || !value.trim() || value === data.detail.subject) return setEditSubject(false);
+    updateTicket.mutate({ id: data.detail.id, patch: { subject: value.trim() } });
+    setEditSubject(false);
+  };
+
+  const saveDescription = (value: string) => {
+    if (!data.detail || !value.trim() || value === data.detail.description) return setEditDescription(false);
+    updateTicket.mutate({ id: data.detail.id, patch: { description: value.trim() } });
+    setEditDescription(false);
+  };
+
+  const refreshNewTickets = () => {
+    queryClient.invalidateQueries({ queryKey: ["tickets", "list"], refetchType: "active" });
+    queryClient.invalidateQueries({ queryKey: ["tickets", "since"], refetchType: "active" });
+  };
+
+  const emptyMessage = url.viewId === "awaiting-review"
+    ? "Nothing's waiting on you - nice work."
+    : url.viewId === "high-priority"
+      ? "No high-priority tickets open right now."
+      : url.viewId === "stale"
+        ? "Nothing's gone stale. Keep it up."
+        : "No tickets in this view.";
+
+  return (
+    <div className="tickets-page">
+      <header className="tickets-header">
+        <div className="tickets-title">Tickets</div>
+        <label className="tickets-search">
+          <IconSearch className="h-4 w-4 text-muted-foreground" />
+          <input
+            ref={searchRef}
+            value={searchValue}
+            onChange={(event) => {
+              setSearchValue(event.target.value);
+              setFilters({ q: event.target.value || undefined });
+            }}
+            placeholder="Search tickets"
+          />
+          <kbd>/</kbd>
+        </label>
+        <button type="button" onClick={actions.openModal} className="tickets-primary">
+          <IconPlus className="h-4 w-4" />
+          New ticket
+        </button>
+      </header>
+
+      {role === "USER" ? (
+        <UserTicketList rows={sortedRows} onOpen={actions.openDrawer} />
+      ) : (
+        <>
+          <div className="tickets-tabs">
+            <div className="tickets-view-tabs">
+              {activeViews.map((view, index) => {
+                const active = url.viewId === view.id || (!url.viewId && view.id === null);
+                return (
+                  <button
+                    key={view.id ?? "all"}
+                    type="button"
+                    onClick={() => {
+                      setTabIndex(index);
+                      actions.setView(view.id);
+                    }}
+                    className={`tickets-view-tab ${active ? "text-foreground" : "text-muted-foreground"}`}
+                  >
+                    {view.name}
+                  </button>
+                );
+              })}
+              <span className="tickets-tab-underline" style={{ transform: `translateX(${tabIndex * 100}%)` }} />
+              <HeaderIconButton label="Save current filters"><IconPlus className="h-4 w-4" /></HeaderIconButton>
+            </div>
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              {FILTERS.map((filter) => (
+                <button key={filter} type="button" className="tickets-chip">{filter}<IconChevronDown className="h-3 w-3" /></button>
+              ))}
+              {role === "SUPER_ADMIN" && (
+                <button type="button" onClick={() => setGroupByOrg((value) => !value)} className={`tickets-chip ${groupByOrg ? "border-primary text-primary" : ""}`}>
+                  Group by Org
+                </button>
+              )}
+              <div className="tickets-density">
+                <HeaderIconButton label="Compact rows" active={density === "compact"} onClick={() => actions.setDensity("compact")}><IconList className="h-4 w-4" /></HeaderIconButton>
+                <HeaderIconButton label="Comfortable rows" active={density === "comfortable"} onClick={() => actions.setDensity("comfortable")}><IconLayoutRows className="h-4 w-4" /></HeaderIconButton>
+              </div>
+            </div>
+          </div>
+
+          <main className={`tickets-table-region ${drawerOpen ? "tickets-table-compressed" : ""}`}>
+            {ui.newTicketsBannerCount > 0 && (
+              <button type="button" onClick={refreshNewTickets} className="tickets-refresh-ribbon">
+                {ui.newTicketsBannerCount} new tickets · refresh
+              </button>
+            )}
+
+            <div className="tickets-table-shell" ref={tableRef} onScroll={(event) => setVirtualScrollTop(event.currentTarget.scrollTop)}>
+              <table className="tickets-table">
+                <thead>
+                  <tr>
+                    <th className="w-[30px]" />
+                    <th className="w-[34px]">
+                      <input
+                        type="checkbox"
+                        checked={selectedCount > 0 && selectedCount === sortedRows.length}
+                        onChange={() => selectedCount === sortedRows.length ? actions.clearSelection() : actions.setSelectedRows(sortedRows.map((row) => row.id))}
+                      />
+                    </th>
+                    {[
+                      ["id", "ID"],
+                      ["subject", "Subject"],
+                      ["status", "Status"],
+                      ["category", "Category"],
+                      ...(role === "SUPER_ADMIN" ? [["org", "Org"]] : []),
+                      [role === "ADMIN" ? "requester" : "assignees", role === "ADMIN" ? "Requester" : "Assignees"],
+                      ["updatedAt", "Updated"],
+                      ["createdAt", "Created"],
+                    ].map(([field, label]) => (
+                      <th key={field} className={field === "subject" ? "tickets-subject-col" : ""} onClick={(event) => ["subject", "status", "updatedAt", "createdAt"].includes(field) && setSort(field as SortField, event.shiftKey)}>
+                        {label}
+                        {activeSort.field === field && <span className="tickets-sort">{activeSort.dir === "asc" ? "▲" : "▼"}</span>}
+                        {secondarySort?.field === field && <sup className="text-primary">2</sup>}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody style={{ height: totalHeight }}>
+                  {status.loading && (
+                    <tr><td colSpan={visibleColumns} className="h-32 text-center text-sm text-muted-foreground">Loading tickets...</td></tr>
+                  )}
+                  {status.error && (
+                    <tr>
+                      <td colSpan={visibleColumns}>
+                        <div className="tickets-error-state">
+                          <IconAlertCircle className="h-6 w-6 text-destructive" />
+                          <div className="text-[16px] font-medium text-foreground">Couldn't load tickets</div>
+                          <div className="text-[13px] text-muted-foreground">Something went wrong fetching tickets. Try again in a moment.</div>
+                          <button
+                            type="button"
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ["tickets", "list"], refetchType: "active" })}
+                            className="tickets-secondary mt-1"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {!status.loading && !status.error && sortedRows.length === 0 && (
+                    <tr>
+                      <td colSpan={visibleColumns}>
+                        {data.total === 0 && !hasActiveFilters ? (
+                          <div className="tickets-empty-center">
+                            <IconInbox className="h-8 w-8 text-muted-foreground" />
+                            <div className="text-[16px] font-medium text-foreground">No tickets yet</div>
+                            <div className="text-[14px] text-muted-foreground">Tickets are how requests move through your team</div>
+                            <button type="button" onClick={actions.openModal} className="tickets-primary mt-2">Create your first ticket</button>
+                          </div>
+                        ) : hasActiveFilters ? (
+                          <div className="tickets-empty-filter">No tickets match these filters <button type="button" onClick={clearFilters}>Clear filters</button></div>
+                        ) : (
+                          <div className="tickets-empty-filter"><IconCheck className="h-4 w-4" /> {emptyMessage}</div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  {!status.loading && !status.error && virtualRows.map((item, virtualIndex) => {
+                    const top = (startIndex + virtualIndex) * rowHeight;
+                    if (item.kind === "group") {
+                      return (
+                        <tr key={item.id} className="tickets-virtual-row tickets-org-row" style={{ transform: `translateY(${top}px)`, height: 28 }}>
+                          <td colSpan={visibleColumns}>{item.group.org} · {item.group.rows.length}</td>
+                        </tr>
+                      );
+                    }
+                    const row = item.row;
+                    const selected = ui.selectedRowIds.includes(row.id);
+                    return (
+                      <tr
+                        key={row.id}
+                        onClick={() => actions.openDrawer(row.id)}
+                        className={`tickets-virtual-row tickets-row ${selected ? "tickets-row-selected" : ""}`}
+                        style={{ transform: `translateY(${top}px)`, height: rowHeight }}
+                      >
+                        <td className="w-[30px] p-0"><span className={`tickets-priority ${priorityBar(row.priority)}`} /></td>
+                        <td onClick={(event) => event.stopPropagation()}>
+                          <input className="tickets-row-check" type="checkbox" checked={selected} onChange={() => actions.toggleRowSelected(row.id)} />
+                        </td>
+                        <td className="w-[110px]">
+                          <button type="button" onClick={(event) => { event.stopPropagation(); copyId(row.id); }} className={`tickets-id ${copiedId === row.id ? "text-primary" : ""}`}>
+                            {displayId(row.id)}
+                            <IconCopy className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100" />
+                          </button>
+                        </td>
+                        <td className="tickets-subject-col">
+                          <div className="truncate text-[14px] font-medium text-foreground">{row.subject}</div>
+                          <div className="tickets-preview">{row.descriptionPreview.slice(0, 80)}</div>
+                        </td>
+                        <td onMouseEnter={() => setHoveredStatusId(row.id)} onMouseLeave={() => setHoveredStatusId(null)}><StatusPill status={row.status} pulse={hoveredStatusId === row.id} /></td>
+                        <td className="w-[120px] truncate text-muted-foreground">{row.category ?? "Uncategorized"}</td>
+                        {role === "SUPER_ADMIN" && <td className="w-[120px] truncate text-muted-foreground">{row.org.name}</td>}
+                        <td className="w-[84px]">{role === "ADMIN" ? <div className="flex items-center gap-2"><Avatar user={row.requester} /><span className="truncate text-[12px]">{row.requester.name}</span></div> : <Assignees row={row} />}</td>
+                        <td className="w-[90px]" onMouseEnter={() => setHoveredTime(`${row.id}-updated`)} onMouseLeave={() => setHoveredTime(null)}><span className="font-mono text-[12px]">{hoveredTime === `${row.id}-updated` ? absoluteTime(row.updatedAt) : relativeTime(row.updatedAt)}</span></td>
+                        <td className="w-[90px]"><TimeCell value={row.createdAt} muted /></td>
+                        <td className="tickets-row-chevron"><IconChevronRight className="h-4 w-4" /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </main>
+        </>
+      )}
+
+      {drawerOpen && data.detail && (
+        <aside className="tickets-drawer">
+          <div className="tickets-drawer-top">
+            <button type="button" title="Close" onClick={actions.closeDrawer}><IconX className="h-4 w-4" /></button>
+            <span className="font-mono text-muted-foreground">{displayId(data.detail.id)}</span>
+            <IconChevronRight className="h-4 w-4 text-muted-foreground" />
+            <span className="truncate">{data.detail.subject}</span>
+            <div className="ml-auto flex items-center gap-1">
+              <button type="button" title="Open full page"><IconMaximize className="h-4 w-4" /></button>
+              <button type="button" title="More"><IconDots className="h-4 w-4" /></button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-auto p-5">
+            {editSubject ? (
+              <input
+                ref={subjectRef}
+                defaultValue={data.detail.subject}
+                onBlur={(event) => saveSubject(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveSubject(event.currentTarget.value);
+                  if (event.key === "Escape") setEditSubject(false);
+                }}
+                className="tickets-title-input"
+              />
+            ) : (
+              <h2 onClick={() => setEditSubject(true)} className="tickets-drawer-title">{data.detail.subject}</h2>
+            )}
+            <div className="tickets-meta">
+              <button type="button" onClick={() => data.detail && statusMutation.mutate({ id: data.detail.id, status: "REVIEW" })}><StatusPill status={data.detail.status} /></button>
+              <button type="button" className="tickets-priority-chip">{data.detail.priority}</button>
+              <Assignees row={data.detail} />
+              <span className="font-mono text-[12px] text-muted-foreground">Created {relativeTime(data.detail.createdAt)}</span>
+              <span className="font-mono text-[12px] text-muted-foreground">Updated {relativeTime(data.detail.updatedAt)}</span>
+            </div>
+            <div className="tickets-drawer-tabs">
+              {(["Details", "Activity", "Messages"] as DrawerTab[]).map((tab) => (
+                <button key={tab} type="button" onClick={() => setDrawerTab(tab)} className={drawerTab === tab ? "text-foreground" : "text-muted-foreground"}>{tab}</button>
+              ))}
+              <span style={{ transform: `translateX(${(["Details", "Activity", "Messages"] as DrawerTab[]).indexOf(drawerTab) * 100}%)` }} />
+            </div>
+            {drawerTab === "Details" && (
+              <div className="space-y-4 pt-4">
+                {editDescription ? (
+                  <textarea
+                    ref={descriptionRef}
+                    defaultValue={data.detail.description}
+                    onBlur={(event) => saveDescription(event.target.value)}
+                    onKeyDown={(event) => {
+                      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") saveDescription(event.currentTarget.value);
+                      if (event.key === "Escape") setEditDescription(false);
+                    }}
+                    className="tickets-description-input"
+                  />
+                ) : (
+                  <div onClick={() => setEditDescription(true)} className="tickets-editable">{data.detail.description || data.detail.descriptionPreview}</div>
+                )}
+                <div className="tickets-editable text-sm text-muted-foreground">Category: {data.detail.category ?? "Uncategorized"}</div>
+              </div>
+            )}
+            {drawerTab === "Activity" && <ActivityList activity={data.detail.activity} />}
+            {drawerTab === "Messages" && <div className="pt-4 text-sm text-muted-foreground">No messages attached to this ticket.</div>}
+          </div>
+        </aside>
+      )}
+
+      {url.modalOpen && (
+        <div className="tickets-modal-backdrop" onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submitDraft();
+        }}>
+          <form className="tickets-modal" onSubmit={(event) => { event.preventDefault(); submitDraft(); }}>
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="m-0 text-[16px] font-medium text-foreground">New ticket</h2>
+              <button type="button" title="Close" onClick={closeModal}><IconX className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-3 p-4">
+              <input ref={modalSubjectRef} value={draft.subject} onChange={(event) => setDraft((value) => ({ ...value, subject: event.target.value }))} placeholder="Subject" className="tickets-form-input text-[18px]" />
+              <textarea value={draft.description} onChange={(event) => setDraft((value) => ({ ...value, description: event.target.value }))} placeholder="Description" className="tickets-form-input min-h-32 resize-none" />
+              <div className="grid grid-cols-2 gap-2">
+                <input value={draft.category} onChange={(event) => setDraft((value) => ({ ...value, category: event.target.value }))} placeholder="Category" className="tickets-form-input" />
+                <select value={draft.priority} onChange={(event) => setDraft((value) => ({ ...value, priority: event.target.value as TicketPriority }))} className="tickets-form-input">
+                  {PRIORITIES.map((priority) => <option key={priority}>{priority}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-border px-4 py-3">
+              <button type="button" onClick={closeModal} className="tickets-secondary">Cancel</button>
+              <button type="submit" disabled={createTicket.isPending} className="tickets-primary">Create</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {selectedCount > 0 && (
+        <div className="tickets-bulk-bar">
+          <span className="font-mono text-[13px]">{selectedCount} selected</span>
+          <div className="ml-auto flex items-center gap-1">
+            {role !== "USER" && <button type="button">Assign</button>}
+            <button type="button" onClick={() => bulkUpdate.mutate({ ids: ui.selectedRowIds, status: "REVIEW" })}>Status</button>
+            <button type="button" onClick={() => bulkUpdate.mutate({ ids: ui.selectedRowIds, priority: "HIGH" })}>Priority</button>
+            <button type="button" onClick={() => bulkUpdate.mutate({ ids: ui.selectedRowIds, status: "CLOSED" as TicketStatus })}>Close ticket</button>
+            <span className="h-5 w-px bg-border" />
+            <button type="button" onClick={actions.clearSelection}>Clear selection</button>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className="tickets-toast">{toast}</div>}
+      {anyMutationPending && <span className="sr-only">Saving ticket changes</span>}
+    </div>
+  );
 };
+
+function ActivityList({ activity }: { activity: ActivityEntry[] }) {
+  if (activity.length === 0) return <div className="pt-4 text-sm text-muted-foreground">No activity yet.</div>;
+  return (
+    <div className="tickets-activity">
+      {activity.map((item) => {
+        const change = item.changes ? Object.entries(item.changes)[0] : null;
+        const verb = item.type === "created" ? "created" : item.type === "status_change" ? "changed status to" : item.type === "assignee_change" ? "assigned" : item.type.replace("_", " ");
+        const object = change?.[1]?.to ?? item.comment ?? "ticket";
+        return (
+          <div key={item.id} className="tickets-activity-item">
+            <span className="text-foreground">{item.actor.name}</span>{" "}
+            <span className="text-muted-foreground">{verb}</span>{" "}
+            <span className="text-foreground">{object}</span>{" "}
+            <span className="text-muted-foreground">· {relativeTime(item.createdAt)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default Tickets;
