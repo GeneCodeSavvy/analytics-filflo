@@ -4,6 +4,7 @@ import { settingsApi } from "../api/settingsApi";
 import { settingsKeys } from "../lib/settingsParams";
 import { useSettingsStore } from "../stores/useSettingsStore";
 import { useUIStore } from "../stores/useUIStore";
+import { useAuthState } from "../stores/useAuthStore";
 import type {
   UserProfile,
   AvatarUploadResponse,
@@ -84,8 +85,13 @@ export function useInitiateOAuthConnect() {
 
   return async (provider: OAuthProvider) => {
     setOAuthRedirectPending(provider);
-    const { redirectUrl } = await settingsApi.getOAuthConnectUrl(provider);
-    window.location.href = redirectUrl;
+    try {
+      const { redirectUrl } = await settingsApi.getOAuthConnectUrl(provider);
+      window.location.href = redirectUrl;
+    } catch (err) {
+      setOAuthRedirectPending(null);
+      throw err;
+    }
   };
 }
 
@@ -96,7 +102,7 @@ export function useDisconnectProviderMutation() {
     mutationFn: (provider) => settingsApi.disconnectProvider(provider),
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: settingsKeys.security.providers(),
+        queryKey: settingsKeys.security.all(),
       });
     },
   });
@@ -109,7 +115,7 @@ export function useRevokeSessionMutation() {
     mutationFn: (sessionId) => settingsApi.revokeSession(sessionId),
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: settingsKeys.security.sessions(),
+        queryKey: settingsKeys.security.all(),
       });
     },
   });
@@ -123,6 +129,7 @@ export function useRevokeAllSessionsMutation() {
     mutationFn: () => settingsApi.revokeAllSessions(),
     onSuccess: () => {
       queryClient.clear();
+      useAuthState.getState().logout();
       navigate("/login");
     },
   });
@@ -162,6 +169,11 @@ export function useUpdateAppearanceMutation() {
       const snapshot = queryClient.getQueryData<AppearanceSettings>(
         settingsKeys.appearance(),
       );
+      // Also snapshot UIStore state so we can roll it back even when cache is empty
+      const uiSnapshot = {
+        theme: useUIStore.getState().theme,
+        density: useUIStore.getState().density,
+      };
       // Apply optimistically to both query cache and UIStore
       queryClient.setQueryData<AppearanceSettings>(
         settingsKeys.appearance(),
@@ -169,16 +181,19 @@ export function useUpdateAppearanceMutation() {
       );
       if (newValues.theme) useUIStore.getState().setTheme(newValues.theme);
       if (newValues.density) useUIStore.getState().setDensity(newValues.density);
-      return { snapshot };
+      return { snapshot, uiSnapshot };
     },
 
     // Rollback on error
     onError: (_err, _vars, context) => {
-      const ctx = context as { snapshot?: AppearanceSettings } | undefined;
+      const ctx = context as { snapshot?: AppearanceSettings; uiSnapshot?: { theme: AppearanceSettings["theme"]; density: AppearanceSettings["density"] } } | undefined;
       if (ctx?.snapshot) {
         queryClient.setQueryData(settingsKeys.appearance(), ctx.snapshot);
-        useUIStore.getState().setTheme(ctx.snapshot.theme);
-        useUIStore.getState().setDensity(ctx.snapshot.density);
+      }
+      // Always roll back UIStore — uiSnapshot is always set
+      if (ctx?.uiSnapshot) {
+        useUIStore.getState().setTheme(ctx.uiSnapshot.theme);
+        useUIStore.getState().setDensity(ctx.uiSnapshot.density);
       }
     },
 
@@ -233,6 +248,7 @@ export function useDeleteAccountMutation() {
       useSettingsStore.getState().clearAllUnsaved();
       useSettingsStore.getState().closeDeletionModal();
       useSettingsStore.getState().setOAuthRedirectPending(null);
+      useAuthState.getState().logout();
       navigate("/");
     },
   });

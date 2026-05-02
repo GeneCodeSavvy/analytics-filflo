@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useCallback } from "@tanstack/react-query";
 import { settingsApi } from "../api/settingsApi";
 import { settingsKeys } from "../lib/settingsParams";
 import { useAuthState } from "../stores/useAuthStore";
@@ -6,6 +6,7 @@ import type {
   UserProfile,
   ConnectedProvider,
   ActiveSession,
+  SecurityInfo,
   NotificationSettings,
   AppearanceSettings,
   OrgSettings,
@@ -19,26 +20,31 @@ export function useProfileQuery() {
   });
 }
 
-// Providers and sessions share one network call but have separate cache entries.
-// Use usePrefetchSecurityInfo to warm both from one response if needed.
+// Single query for security info — providers and sessions share one fetch.
+// useConnectedProvidersQuery and useActiveSessionsQuery use `select` to derive
+// their slices from this shared cache entry. TanStack Query deduplicates the request.
+function useSecurityInfoQuery() {
+  return useQuery<SecurityInfo>({
+    queryKey: settingsKeys.security.all(),
+    queryFn: ({ signal }) => settingsApi.getSecurityInfo(signal),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useConnectedProvidersQuery() {
-  return useQuery<ConnectedProvider[]>({
-    queryKey: settingsKeys.security.providers(),
-    queryFn: async ({ signal }) => {
-      const info = await settingsApi.getSecurityInfo(signal);
-      return info.providers;
-    },
+  return useQuery<SecurityInfo, Error, ConnectedProvider[]>({
+    queryKey: settingsKeys.security.all(),
+    queryFn: ({ signal }) => settingsApi.getSecurityInfo(signal),
+    select: (info) => info.providers,
     staleTime: 2 * 60 * 1000,
   });
 }
 
 export function useActiveSessionsQuery() {
-  return useQuery<ActiveSession[]>({
-    queryKey: settingsKeys.security.sessions(),
-    queryFn: async ({ signal }) => {
-      const info = await settingsApi.getSecurityInfo(signal);
-      return info.sessions;
-    },
+  return useQuery<SecurityInfo, Error, ActiveSession[]>({
+    queryKey: settingsKeys.security.all(),
+    queryFn: ({ signal }) => settingsApi.getSecurityInfo(signal),
+    select: (info) => info.sessions,
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -70,14 +76,15 @@ export function useOrgSettingsQuery() {
   });
 }
 
-// Convenience hook: warms both security cache entries from a single API call.
-// Call this on Security section mount instead of calling both hooks separately.
+// Prefetch helper — memoized to be safe in useEffect dep arrays.
 export function usePrefetchSecurityInfo() {
   const queryClient = useQueryClient();
 
-  return async () => {
-    const info = await settingsApi.getSecurityInfo();
-    queryClient.setQueryData(settingsKeys.security.providers(), info.providers);
-    queryClient.setQueryData(settingsKeys.security.sessions(), info.sessions);
-  };
+  return useCallback(async () => {
+    await queryClient.prefetchQuery({
+      queryKey: settingsKeys.security.all(),
+      queryFn: () => settingsApi.getSecurityInfo(),
+      staleTime: 2 * 60 * 1000,
+    });
+  }, [queryClient]);
 }

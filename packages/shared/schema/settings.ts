@@ -61,24 +61,17 @@ export const NotificationPreferenceSchema = z.object({
   email: z.boolean(),
 });
 
+const TimeStringSchema = z.string()
+  .regex(/^\d{2}:\d{2}$/)
+  .refine((t) => {
+    const [h, m] = t.split(":").map(Number);
+    return (h ?? 0) >= 0 && (h ?? 0) <= 23 && (m ?? 0) >= 0 && (m ?? 0) <= 59;
+  });
+
 export const QuietHoursSchema = z.object({
   enabled: z.boolean(),
-  from: z.string()
-    .regex(/^\d{2}:\d{2}$/)
-    .refine((t) => {
-      const parts = t.split(":").map(Number);
-      const h = parts[0] ?? 0;
-      const m = parts[1] ?? 0;
-      return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-    }),
-  to: z.string()
-    .regex(/^\d{2}:\d{2}$/)
-    .refine((t) => {
-      const parts = t.split(":").map(Number);
-      const h = parts[0] ?? 0;
-      const m = parts[1] ?? 0;
-      return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-    }),
+  from: TimeStringSchema,
+  to: TimeStringSchema,
   timezone: z.string(),
 });
 

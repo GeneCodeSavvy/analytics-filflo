@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { api } from ".";
 import {
   UserProfileSchema,
@@ -24,6 +25,8 @@ import type {
   DeleteAccountPayload,
   OAuthProvider,
 } from "../lib/settingsParams";
+
+const OAuthConnectResponseSchema = z.object({ redirectUrl: z.string().url() });
 
 export const settingsApi = {
   // ─── Profile ───────────────────────────────────────────────────────────────
@@ -65,7 +68,7 @@ export const settingsApi = {
     const data = await api.post<{ redirectUrl: string }>(
       `/settings/security/oauth/${provider}/connect`,
     );
-    return data as { redirectUrl: string };
+    return OAuthConnectResponseSchema.parse(data);
   },
 
   disconnectProvider: async (provider: OAuthProvider): Promise<void> => {
