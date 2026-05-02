@@ -32,7 +32,10 @@ export const useNotificationStore = create<NotificationUIState>()((set, get) => 
 
   selectRows: (ids) =>
     set({
-      selectedIds: Object.fromEntries(ids.map((id) => [id, true])) as Record<string, true>,
+      selectedIds: ids.reduce<Record<string, true>>((acc, id) => {
+        acc[id] = true;
+        return acc;
+      }, {}),
     }),
 
   toggleRowSelected: (id) =>
