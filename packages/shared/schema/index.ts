@@ -37,3 +37,4 @@ export type {
   ThreadMessageParams,
 } from "./messages";
 export * from "./teams";
+export * from "./settings";
