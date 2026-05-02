@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient, useCallback } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { settingsApi } from "../api/settingsApi";
 import { settingsKeys } from "../lib/settingsParams";
 import { useAuthState } from "../stores/useAuthStore";
@@ -20,17 +21,9 @@ export function useProfileQuery() {
   });
 }
 
-// Single query for security info — providers and sessions share one fetch.
+// Providers and sessions share one fetch.
 // useConnectedProvidersQuery and useActiveSessionsQuery use `select` to derive
 // their slices from this shared cache entry. TanStack Query deduplicates the request.
-function useSecurityInfoQuery() {
-  return useQuery<SecurityInfo>({
-    queryKey: settingsKeys.security.all(),
-    queryFn: ({ signal }) => settingsApi.getSecurityInfo(signal),
-    staleTime: 2 * 60 * 1000,
-  });
-}
-
 export function useConnectedProvidersQuery() {
   return useQuery<SecurityInfo, Error, ConnectedProvider[]>({
     queryKey: settingsKeys.security.all(),
