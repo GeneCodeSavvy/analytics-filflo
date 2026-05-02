@@ -9,7 +9,7 @@ import { setupMessageWebSocket } from "./ws";
 
 const PORT = process.env.PORT || 3000;
 const corsOptions: CorsOptions = {
-  origin: process.env.CORS_URLS || "http://127.0.0.1:5173",
+  origin: process.env.CORS_URLS || "http://localhost:5173",
   credentials: true,
 };
 

@@ -166,6 +166,105 @@ body {
     margin: 0;
 }
 
+.dashboard-page {
+    min-height: 100%;
+    overflow: auto;
+    margin: -2.5rem;
+    padding: 0 24px 24px;
+    background: #FAFAF8;
+    color: #08060d;
+    font-family: "Inter Variable", Inter, system-ui, sans-serif;
+    letter-spacing: 0;
+}
+
+.dashboard-page .font-mono,
+.dashboard-page [class*="font-mono"] {
+    font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.dashboard-data-zones {
+    transition: opacity 200ms ease;
+}
+
+.dashboard-refreshing .dashboard-data-zones {
+    opacity: 0.45;
+}
+
+.dashboard-sparkline-path {
+    stroke-dasharray: 140;
+    stroke-dashoffset: 140;
+    animation: dashboard-sparkline-draw 600ms ease-in-out 400ms forwards;
+}
+
+.dashboard-chart-panel {
+    min-height: 280px;
+    border-radius: 12px;
+    border: 1px solid #E8E6E0;
+    background: #FFFFFF;
+    padding: 20px;
+    box-shadow:
+        0 1px 4px 0 hsl(0 0% 0% / 0.05),
+        0 1px 2px -1px hsl(0 0% 0% / 0.05);
+}
+
+.dashboard-panel-enter {
+    opacity: 0;
+    transform: translateY(80px);
+    animation: dashboard-panel-enter 300ms ease-out forwards;
+}
+
+.dashboard-donut-cell,
+.dashboard-donut-active {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+        transform 150ms ease,
+        filter 150ms ease;
+}
+
+.dashboard-donut-active {
+    transform: scale(1.04);
+    filter: drop-shadow(0 6px 10px rgb(8 6 13 / 0.16));
+}
+
+.dashboard-feed {
+    scrollbar-width: thin;
+    scrollbar-color: #D1CEC7 #E8E6E0;
+}
+
+.dashboard-feed::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dashboard-feed::-webkit-scrollbar-track {
+    background: #E8E6E0;
+}
+
+.dashboard-feed::-webkit-scrollbar-thumb {
+    background: #D1CEC7;
+    border-radius: 999px;
+}
+
+@keyframes dashboard-sparkline-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes dashboard-panel-enter {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-page {
+        margin: -0.5rem;
+        padding: 0 12px 16px;
+    }
+}
+
 .tickets-page {
     position: relative;
     display: flex;
