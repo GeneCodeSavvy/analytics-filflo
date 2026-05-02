@@ -34,7 +34,7 @@ export const messageApi = {
     api.post(`/threads/${threadId}/messages`, payload),
 
   markThreadRead: (threadId: string): Promise<void> =>
-    api.post(`/threads/${threadId}/read`),
+    api.patch(`/threads/${threadId}/read`),
 
   addParticipant: (threadId: string, userId: string): Promise<void> =>
     api.post(`/threads/${threadId}/participants`, { userId }),

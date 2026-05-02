@@ -11,6 +11,14 @@ import type {
 const MIN_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 30_000;
 
+function getWsBaseUrl() {
+  const explicit = import.meta.env.VITE_WS_BASE_URL;
+  if (explicit) return explicit;
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+  return apiBase.replace(/^http/, "ws");
+}
+
 type WsEvent =
   | { type: "new_message"; message: Message }
   | { type: "thread_list_update"; row: ThreadListRow };
@@ -112,7 +120,7 @@ export function useMessageWebSocket(threadId: string | null): void {
     (tid: string) => {
       if (unmountedRef.current) return;
 
-      const wsUrl = `${import.meta.env.VITE_WS_BASE_URL}/threads/${tid}/ws`;
+      const wsUrl = `${getWsBaseUrl()}/threads/${tid}/ws`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -120,7 +128,7 @@ export function useMessageWebSocket(threadId: string | null): void {
         backoffRef.current = MIN_BACKOFF_MS;
         // On reconnect, refetch latest page to fill any gap during disconnect
         queryClient
-          .fetchQuery({ queryKey: messageKeys.messages(tid) })
+          .invalidateQueries({ queryKey: messageKeys.messages(tid) })
           .then(() => {
             drainBuffer(tid);
           });
