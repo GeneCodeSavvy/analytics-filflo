@@ -41,6 +41,7 @@ export * from "./settings";
 export {
   NotificationStateSchema,
   NotificationTierSchema,
+  NotificationTypeSchema,
   NotificationRowSchema,
   NotificationListResponseSchema,
   NotificationCountResponseSchema,
@@ -51,6 +52,8 @@ export {
   SnoozePayloadSchema,
   BulkNotificationPayloadSchema,
   InvitationResponsePayloadSchema,
+  NotificationPreferenceSchema,
+  NotificationSettingsSchema,
 } from "./notifications";
 export type {
   NotificationState,
@@ -65,4 +68,6 @@ export type {
   SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
+  NotificationPreference,
+  NotificationSettings,
 } from "./notifications";
