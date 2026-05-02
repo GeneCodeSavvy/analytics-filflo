@@ -1,14 +1,18 @@
-import { z } from 'zod';
-import { UserRefSchema } from './user';
+import { z } from "zod";
+import { UserRefSchema } from "./user";
 
-export const MessageKindSchema = z.enum(['user_message', 'system_event', 'file_attachment']);
+export const MessageKindSchema = z.enum([
+  "user_message",
+  "system_event",
+  "file_attachment",
+]);
 
 export const SystemEventKindSchema = z.enum([
-  'status_change',
-  'priority_change',
-  'assignee_added',
-  'assignee_removed',
-  'ticket_created',
+  "status_change",
+  "priority_change",
+  "assignee_added",
+  "assignee_removed",
+  "ticket_created",
 ]);
 
 export const MessageSchema = z.object({
@@ -76,7 +80,7 @@ export const ThreadSchema = z.object({
 });
 
 export const MessageFiltersSchema = z.object({
-  tab: z.enum(['all', 'unread', 'mine', 'org']).default('all'),
+  tab: z.enum(["all", "unread", "mine", "org"]).default("all"),
   orgId: z.string().optional(),
   q: z.string().optional(),
 });
@@ -108,6 +112,27 @@ export const MessagesPageSchema = z.object({
   nextCursor: z.string().optional(),
 });
 
+export const ThreadListSchema = ThreadListRowSchema.array();
+export const ParticipantsSchema = UserRefSchema.array();
+
+export const IdParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const ThreadMessageParamsSchema = z.object({
+  threadId: z.string().min(1),
+  messageId: z.string().min(1).optional(),
+});
+
+export const ThreadFileParamsSchema = z.object({
+  threadId: z.string().min(1),
+  fileId: z.string().min(1).optional(),
+});
+
+export const EmptyResponseSchema = z.object({
+  ok: z.literal(true),
+});
+
 export type MessageKind = z.infer<typeof MessageKindSchema>;
 export type SystemEventKind = z.infer<typeof SystemEventKindSchema>;
 export type Message = z.infer<typeof MessageSchema>;
@@ -119,3 +144,9 @@ export type SendMessagePayload = z.infer<typeof SendMessagePayloadSchema>;
 export type AddParticipantPayload = z.infer<typeof AddParticipantPayloadSchema>;
 export type FileUploadResponse = z.infer<typeof FileUploadResponseSchema>;
 export type MessagesPage = z.infer<typeof MessagesPageSchema>;
+export type ThreadList = z.infer<typeof ThreadListSchema>;
+export type Participants = z.infer<typeof ParticipantsSchema>;
+export type IdParams = z.infer<typeof IdParamsSchema>;
+export type ThreadMessageParams = z.infer<typeof ThreadMessageParamsSchema>;
+export type ThreadFileParams = z.infer<typeof ThreadFileParamsSchema>;
+export type EmptyResponse = z.infer<typeof EmptyResponseSchema>;
