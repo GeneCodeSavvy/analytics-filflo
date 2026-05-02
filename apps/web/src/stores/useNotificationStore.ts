@@ -1,55 +1,54 @@
-type NotificationState = "inbox" | "read" | "done";
-type NotificationTier = "action_required" | "status_update" | "fyi";
-type NotificationType =
-  | "ticket_assigned"
-  | "review_requested"
-  | "ticket_invitation"
-  | "ticket_resolved"
-  | "ticket_closed"
-  | "new_ticket_in_org"
-  | "message_activity";
+import { create } from "zustand";
 
-interface NotificationRow {
-  id: string;
-  type: NotificationType;
-  tier: NotificationTier;
-  state: NotificationState;
-  ticket: { id: string; subject: string; orgId: string; orgName: string };
-  latestEvent: { description: string; actor: unknown; at: string };
-  eventCount: number;
-  snoozedUntil?: string;
-  invitationId?: string;
-  invitationStatus?: "pending" | "accepted" | "rejected" | "expired";
-}
+interface NotificationUIState {
+  expandedGroupIds: Record<string, true>;
+  selectedIds: Record<string, true>;
 
-interface NotificationFilters {
-  tab: "inbox" | "read" | "done" | "all";
-  type?: NotificationType[];
-  ticketId?: string;
-  orgId?: string;
-}
-
-export interface NotificationsState {
-  filters: NotificationFilters;
-  notifications: NotificationRow[];
-  expandedGroupIds: Set<string>;
-  selectedIds: string[];
-  bellBadgeCount: number;
-  newBannerCount: number;
-  loading: boolean;
-  error: string | null;
-
-  setFilters: (filters: Partial<NotificationFilters>) => void;
-  setNotifications: (rows: NotificationRow[]) => void;
-  toggleGroup: (groupId: string) => void;
+  toggleGroup: (id: string) => void;
+  isExpanded: (id: string) => boolean;
   selectRows: (ids: string[]) => void;
-  markAsRead: (id: string) => void;
-  markAsDone: (id: string) => void;
-  snooze: (id: string, until: string) => void;
-  respondToInvitation: (
-    invitationId: string,
-    response: "accepted" | "rejected",
-  ) => void;
-  setBellBadge: (count: number) => void;
-  setNewBanner: (count: number) => void;
+  toggleRowSelected: (id: string) => void;
+  clearSelection: () => void;
+  isSelected: (id: string) => boolean;
+  selectedCount: () => number;
 }
+
+export const useNotificationStore = create<NotificationUIState>()((set, get) => ({
+  expandedGroupIds: {},
+  selectedIds: {},
+
+  toggleGroup: (id) =>
+    set((state) => {
+      const next = { ...state.expandedGroupIds };
+      if (next[id]) {
+        delete next[id];
+      } else {
+        next[id] = true;
+      }
+      return { expandedGroupIds: next };
+    }),
+
+  isExpanded: (id) => !!get().expandedGroupIds[id],
+
+  selectRows: (ids) =>
+    set({
+      selectedIds: Object.fromEntries(ids.map((id) => [id, true])) as Record<string, true>,
+    }),
+
+  toggleRowSelected: (id) =>
+    set((state) => {
+      const next = { ...state.selectedIds };
+      if (next[id]) {
+        delete next[id];
+      } else {
+        next[id] = true;
+      }
+      return { selectedIds: next };
+    }),
+
+  clearSelection: () => set({ selectedIds: {} }),
+
+  isSelected: (id) => !!get().selectedIds[id],
+
+  selectedCount: () => Object.keys(get().selectedIds).length,
+}));
