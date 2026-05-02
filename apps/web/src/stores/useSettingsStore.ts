@@ -1,96 +1,64 @@
-interface UserProfile {
-  id: string;
-  displayName: string;
-  email: string;
-  avatarUrl?: string;
-  timezone: string;
-  role: string;
+import { create } from "zustand";
+import type { SettingsSection } from "../lib/settingsParams";
+import type { OAuthProvider } from "../lib/settingsParams";
+
+interface SettingsUIState {
+  // Danger zone deletion modal
+  deletionModalOpen: boolean;
+  deletionEmailInput: string;
+
+  // Tracks which OAuth provider connect is in-flight (set before redirect, cleared on return)
+  oauthRedirectPending: OAuthProvider | null;
+
+  // Sections with unsaved form changes — drives sidebar dirty indicators and leave-guard
+  // Using Record instead of Set for devtools serialization
+  unsavedSections: Record<SettingsSection, boolean>;
+
+  // Actions
+  openDeletionModal: () => void;
+  closeDeletionModal: () => void;
+  setDeletionEmailInput: (value: string) => void;
+
+  setOAuthRedirectPending: (provider: OAuthProvider | null) => void;
+
+  markSectionDirty: (section: SettingsSection) => void;
+  markSectionClean: (section: SettingsSection) => void;
+  clearAllUnsaved: () => void;
 }
 
-interface ConnectedProvider {
-  provider: "github" | "google";
-  connected: boolean;
-  accountIdentifier?: string;
-}
+const emptyUnsavedSections: Record<SettingsSection, boolean> = {
+  profile: false,
+  security: false,
+  notifications: false,
+  appearance: false,
+  org: false,
+  danger: false,
+};
 
-interface ActiveSession {
-  id: string;
-  deviceDescription: string;
-  locationCity?: string;
-  lastActiveAt: string;
-  isCurrent: boolean;
-}
+export const useSettingsStore = create<SettingsUIState>()((set) => ({
+  deletionModalOpen: false,
+  deletionEmailInput: "",
+  oauthRedirectPending: null,
+  unsavedSections: { ...emptyUnsavedSections },
 
-interface NotificationPreference {
-  type: string;
-  inApp: boolean;
-  email: boolean;
-}
+  openDeletionModal: () => set({ deletionModalOpen: true }),
+  closeDeletionModal: () =>
+    set({ deletionModalOpen: false, deletionEmailInput: "" }),
+  setDeletionEmailInput: (value) => set({ deletionEmailInput: value }),
 
-interface QuietHours {
-  enabled: boolean;
-  from: string; // "HH:mm"
-  to: string;
-  timezone: string;
-}
+  setOAuthRedirectPending: (provider) =>
+    set({ oauthRedirectPending: provider }),
 
-interface OrgSettingsData {
-  orgId: string;
-  orgName: string;
-  orgLogoUrl?: string;
-  defaultCategories: string[];
-  defaultPriority: "HIGH" | "MEDIUM" | "LOW";
-}
+  markSectionDirty: (section) =>
+    set((state) => ({
+      unsavedSections: { ...state.unsavedSections, [section]: true },
+    })),
 
-export interface SettingsState {
-  // Profile
-  profile: UserProfile | null;
-  // Security
-  connectedProviders: ConnectedProvider[];
-  activeSessions: ActiveSession[];
-  // Notifications
-  notificationPreferences: NotificationPreference[];
-  quietHours: QuietHours | null;
-  mutedTickets: { id: string; subject: string }[];
-  // Org
-  orgSettings: OrgSettingsData | null;
-  // UI
-  saving: Record<string, boolean>; // keyed by section
-  errors: Record<string, string | null>;
+  markSectionClean: (section) =>
+    set((state) => ({
+      unsavedSections: { ...state.unsavedSections, [section]: false },
+    })),
 
-  // Profile
-  setProfile: (profile: UserProfile) => void;
-  updateDisplayName: (name: string) => void;
-  updateTimezone: (tz: string) => void;
-  uploadAvatar: (file: File) => void;
-
-  // Security
-  setConnectedProviders: (providers: ConnectedProvider[]) => void;
-  setActiveSessions: (sessions: ActiveSession[]) => void;
-  changePassword: (current: string, next: string) => void;
-  connectOAuthProvider: (provider: "github" | "google") => void;
-  disconnectOAuthProvider: (provider: string) => void;
-  logoutSession: (sessionId: string) => void;
-  logoutAllSessions: () => void;
-
-  // Notifications
-  setNotificationPreferences: (prefs: NotificationPreference[]) => void;
-  toggleNotificationType: (type: string, channel: "inApp" | "email") => void;
-  setQuietHours: (qh: QuietHours) => void;
-  muteTicket: (id: string, subject: string) => void;
-  unmuteTicket: (id: string) => void;
-
-  // Appearance — delegates to useUIStore
-  // (theme and density live in useUIStore, settings page reads/writes there)
-
-  // Org
-  setOrgSettings: (settings: OrgSettingsData) => void;
-  updateOrgName: (name: string) => void;
-  uploadOrgLogo: (file: File) => void;
-  updateDefaultCategories: (categories: string[]) => void;
-  updateDefaultPriority: (priority: string) => void;
-
-  // Danger
-  initiateAccountDeletion: () => void;
-  confirmAccountDeletion: (emailConfirmation: string) => void;
-}
+  clearAllUnsaved: () =>
+    set({ unsavedSections: { ...emptyUnsavedSections } }),
+}));
