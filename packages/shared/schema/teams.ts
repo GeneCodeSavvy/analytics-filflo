@@ -146,6 +146,14 @@ export const RemoveMemberParamsSchema = z.object({
   orgId: z.string().optional(),
 });
 
+export const TeamMemberParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const TeamInvitationParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
 export const BulkMemberOpSchema = z.object({
   ids: z.string().array(),
   orgId: z.string().optional(),
@@ -178,5 +186,7 @@ export type InvitePayload = z.infer<typeof InvitePayloadSchema>;
 export type RoleChangePayload = z.infer<typeof RoleChangePayloadSchema>;
 export type MoveMemberPayload = z.infer<typeof MoveMemberPayloadSchema>;
 export type RemoveMemberParams = z.infer<typeof RemoveMemberParamsSchema>;
+export type TeamMemberParams = z.infer<typeof TeamMemberParamsSchema>;
+export type TeamInvitationParams = z.infer<typeof TeamInvitationParamsSchema>;
 export type BulkMemberOp = z.infer<typeof BulkMemberOpSchema>;
 export type BulkMemberResult = z.infer<typeof BulkMemberResultSchema>;

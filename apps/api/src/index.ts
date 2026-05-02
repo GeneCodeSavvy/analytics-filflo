@@ -4,6 +4,7 @@ import cors, { CorsOptions } from "cors";
 import { WebSocketServer } from "ws";
 import dashboardRouter from "./routes/dashboard";
 import messageRouter from "./routes/messages";
+import teamsRouter from "./routes/teams";
 import ticketsRouter from "./routes/tickets";
 import { setupMessageWebSocket } from "./ws";
 
@@ -23,6 +24,7 @@ setupMessageWebSocket(wss);
 
 app.use("/dashboard", dashboardRouter);
 app.use("/tickets", ticketsRouter);
+app.use("/teams", teamsRouter);
 app.use("/threads", messageRouter);
 
 server.listen(PORT, () => {

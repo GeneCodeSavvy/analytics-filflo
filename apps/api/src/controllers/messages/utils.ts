@@ -2,16 +2,11 @@ import {
   MessageFiltersSchema,
   MessagePageParamsSchema,
 } from "@shared/schema/messages";
-import { toNumber } from "../../lib/controllers";
+import { getQuerySource, toNumber } from "../../lib/controllers";
 import { messagesByThread, threadRows, threads } from "./data";
 
-const sourceFromQuery = (query: unknown) =>
-  typeof query === "object" && query !== null
-    ? (query as Record<string, unknown>)
-    : {};
-
 export const parseMessageFilters = (query: unknown) => {
-  const source = sourceFromQuery(query);
+  const source = getQuerySource(query);
 
   return MessageFiltersSchema.safeParse({
     tab: source.tab,
@@ -21,7 +16,7 @@ export const parseMessageFilters = (query: unknown) => {
 };
 
 export const parseMessagePageParams = (query: unknown) => {
-  const source = sourceFromQuery(query);
+  const source = getQuerySource(query);
 
   return MessagePageParamsSchema.safeParse({
     cursor: source.cursor,

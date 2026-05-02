@@ -2,15 +2,13 @@ import { DashboardFilters } from "@shared/schema/dashboard";
 import {
   sendInvalidRequest,
   sendValidatedData as sendControllerData,
+  getQuerySource,
   toStringArray,
   type ValidationIssue,
 } from "../../lib/controllers";
 
 export const parseDashboardFilters = (query: unknown) => {
-  const source =
-    typeof query === "object" && query !== null
-      ? (query as Record<string, unknown>)
-      : {};
+  const source = getQuerySource(query);
 
   return DashboardFilters.safeParse({
     range: source.range ?? "30d",

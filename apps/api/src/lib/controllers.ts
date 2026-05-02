@@ -14,6 +14,13 @@ export type SafeParseSchema<Output> = {
   safeParse: (data: unknown) => SafeParseResult<Output>;
 };
 
+export type QuerySource = Record<string, unknown>;
+
+export const getQuerySource = (query: unknown): QuerySource =>
+  typeof query === "object" && query !== null
+    ? (query as QuerySource)
+    : {};
+
 export const toStringArray = (value: unknown): string[] | undefined => {
   if (value === undefined) {
     return undefined;
@@ -63,6 +70,19 @@ export const toBoolean = (value: unknown): boolean | undefined => {
   return undefined;
 };
 
+export const sendError = (
+  res: Response,
+  status: number,
+  error: string,
+  details?: Record<string, unknown>,
+) => {
+  return res.status(status).json({
+    success: false,
+    error,
+    ...details,
+  });
+};
+
 export const sendValidatedData = <Output>(
   res: Response,
   schema: SafeParseSchema<Output>,
@@ -72,9 +92,7 @@ export const sendValidatedData = <Output>(
   const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
-    return res.status(500).json({
-      success: false,
-      error: `${label} failed response validation`,
+    return sendError(res, 500, `${label} failed response validation`, {
       issues: parsed.error.issues,
     });
   }
@@ -87,9 +105,11 @@ export const sendInvalidRequest = (
   label: string,
   issues: ValidationIssue[],
 ) => {
-  return res.status(400).json({
-    success: false,
-    error: `Invalid ${label}`,
+  return sendError(res, 400, `Invalid ${label}`, {
     issues,
   });
+};
+
+export const sendNotFound = (res: Response, label: string) => {
+  return sendError(res, 404, `${label} not found`);
 };

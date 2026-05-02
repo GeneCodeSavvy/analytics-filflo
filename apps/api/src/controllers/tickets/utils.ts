@@ -8,17 +8,17 @@ import {
   TicketSearchParamsSchema,
 } from "@shared/schema/tickets";
 import { ticketDetails } from "./data";
-import { toBoolean, toNumber, toStringArray } from "../../lib/controllers";
+import {
+  getQuerySource,
+  toBoolean,
+  toNumber,
+  toStringArray,
+} from "../../lib/controllers";
 
 export { IdParamsSchema } from "@shared/schema/tickets";
 
-const sourceFromQuery = (query: unknown) =>
-  typeof query === "object" && query !== null
-    ? (query as Record<string, unknown>)
-    : {};
-
 export const parseTicketListParams = (query: unknown) => {
-  const source = sourceFromQuery(query);
+  const source = getQuerySource(query);
 
   return TicketListParamsSchema.safeParse({
     status: toStringArray(source.status),
@@ -39,7 +39,7 @@ export const parseTicketListParams = (query: unknown) => {
 };
 
 export const parseTicketFilterParams = (query: unknown) => {
-  const source = sourceFromQuery(query);
+  const source = getQuerySource(query);
 
   return TicketFilterParamsSchema.safeParse({
     status: toStringArray(source.status),
@@ -58,7 +58,7 @@ export const parseTicketFilterParams = (query: unknown) => {
 };
 
 export const parseTicketSearchParams = (query: unknown) => {
-  const source = sourceFromQuery(query);
+  const source = getQuerySource(query);
 
   return TicketSearchParamsSchema.safeParse({
     status: toStringArray(source.status),
