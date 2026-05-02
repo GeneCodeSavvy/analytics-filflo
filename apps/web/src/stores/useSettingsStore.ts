@@ -59,6 +59,5 @@ export const useSettingsStore = create<SettingsUIState>()((set) => ({
       unsavedSections: { ...state.unsavedSections, [section]: false },
     })),
 
-  clearAllUnsaved: () =>
-    set({ unsavedSections: { ...emptyUnsavedSections } }),
+  clearAllUnsaved: () => set({ unsavedSections: { ...emptyUnsavedSections } }),
 }));
