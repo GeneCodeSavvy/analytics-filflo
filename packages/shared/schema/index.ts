@@ -57,6 +57,7 @@ export {
 } from "./notifications";
 export type {
   NotificationState,
+  NotificationType,
   NotificationTier,
   NotificationRow,
   NotificationListResponse,
