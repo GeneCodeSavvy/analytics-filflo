@@ -21,7 +21,7 @@ export function useProfileQuery() {
   });
 }
 
-// Single query for security info — providers and sessions share one fetch.
+// Providers and sessions share one fetch.
 // useConnectedProvidersQuery and useActiveSessionsQuery use `select` to derive
 // their slices from this shared cache entry. TanStack Query deduplicates the request.
 export function useSecurityInfoQuery() {
