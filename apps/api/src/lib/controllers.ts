@@ -113,3 +113,23 @@ export const sendInvalidRequest = (
 export const sendNotFound = (res: Response, label: string) => {
   return sendError(res, 404, `${label} not found`);
 };
+
+export const parseRequestData = <Output>(
+  res: Response,
+  schema: SafeParseSchema<Output>,
+  data: unknown,
+  label: string,
+) => {
+  const parsed = schema.safeParse(data);
+
+  if (!parsed.success) {
+    sendInvalidRequest(res, label, parsed.error.issues);
+    return null;
+  }
+
+  return parsed.data;
+};
+
+export const sendOk = (res: Response, schema: SafeParseSchema<{ ok: true }>, label: string) => {
+  return sendValidatedData(res, schema, { ok: true }, label);
+};

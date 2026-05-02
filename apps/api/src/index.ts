@@ -4,6 +4,7 @@ import cors, { CorsOptions } from "cors";
 import { WebSocketServer } from "ws";
 import dashboardRouter from "./routes/dashboard";
 import messageRouter from "./routes/messages";
+import notificationsRouter from "./routes/notifications";
 import teamsRouter from "./routes/teams";
 import ticketsRouter from "./routes/tickets";
 import { setupMessageWebSocket } from "./ws";
@@ -26,6 +27,7 @@ app.use("/dashboard", dashboardRouter);
 app.use("/tickets", ticketsRouter);
 app.use("/teams", teamsRouter);
 app.use("/threads", messageRouter);
+app.use("/notifications", notificationsRouter);
 
 server.listen(PORT, () => {
   console.log(`API + WS running on http://localhost:${PORT}`);
