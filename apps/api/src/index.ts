@@ -7,7 +7,8 @@ import messageRouter from "./routes/messages";
 import notificationsRouter from "./routes/notifications";
 import teamsRouter from "./routes/teams";
 import ticketsRouter from "./routes/tickets";
-import { setupMessageWebSocket } from "./ws";
+import { createDbClient } from "./lib/db";
+import { setupMessageWebSocket } from "./lib/ws";
 
 const PORT = process.env.PORT || 3000;
 const corsOptions: CorsOptions = {
@@ -16,6 +17,7 @@ const corsOptions: CorsOptions = {
 };
 
 const app = express();
+app.locals.db = createDbClient();
 app.use(express.json());
 app.use(cors(corsOptions));
 
