@@ -13,19 +13,20 @@ import { setupMessageWebSocket } from "./lib/ws";
 
 const PORT = process.env.PORT || 3000;
 const DB_CONNECTION_STRING = process.env.DATABASE_URL;
+
 const corsOptions: CorsOptions = {
   origin: process.env.CORS_URLS || "http://localhost:5173",
   credentials: true,
 };
 
 const app = express();
+app.use(express.json());
+app.use(cors(corsOptions));
 if (DB_CONNECTION_STRING) {
   app.locals.db = createDbClient(DB_CONNECTION_STRING);
 } else {
-    console.error("DB String not passed")
+  console.error("DATABASE_URL not provided in the .env");
 }
-app.use(express.json());
-app.use(cors(corsOptions));
 
 const server = http.createServer(app);
 export const wss = new WebSocketServer({ server });
