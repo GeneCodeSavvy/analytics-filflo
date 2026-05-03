@@ -1,19 +1,18 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function sendInviteMail(
-    to: string,
-    inviterName: string,
-    teamName: string,
-    inviteLink: string
+  to: string,
+  inviterName: string,
+  teamName: string,
+  inviteLink: string,
 ) {
-    try {
-        await resend.emails.send({
-            from: "onboarding@resend.dev",
-            to,
-            subject: `${inviterName} invited you to ${teamName} on Filflo`,
-            html: `
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  try {
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to,
+      subject: `${inviterName} invited you to ${teamName} on Filflo`,
+      html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -33,8 +32,8 @@ export async function sendInviteMail(
   </table>
 </body>
 </html>`,
-        });
-    } catch {
-        throw new Error("Unable to send invite email");
-    }
+    });
+  } catch {
+    throw new Error("Unable to send invite email");
+  }
 }
