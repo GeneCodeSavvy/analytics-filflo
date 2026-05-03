@@ -6,6 +6,7 @@ import messageRouter from "./routes/messages";
 import notificationsRouter from "./routes/notifications";
 import teamsRouter from "./routes/teams";
 import ticketsRouter from "./routes/tickets";
+import invitationsRouter from "./routes/invitations";
 import type { DbClient } from "./lib/db";
 import { requireDbUser } from "./lib/auth";
 
@@ -21,6 +22,11 @@ export const createApp = (db: DbClient): express.Application => {
   app.locals.db = db;
 
   app.use(clerkMiddleware());
+
+  // Public routes (no authentication required)
+  app.use("/invitations", invitationsRouter);
+
+  // Protected routes (authentication required)
   app.use(requireDbUser);
 
   app.use("/dashboard", dashboardRouter);
