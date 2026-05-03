@@ -1,24 +1,19 @@
 import { TicketRowsSchema } from "@shared/schema/tickets";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
-import { ticketDetails } from "./data";
-import { filterTickets, parseTicketSearchParams, toTicketRow } from "./utils";
+import type { DbClient } from "../../lib/db";
+import { searchTicketList } from "./data";
+import { parseTicketSearchParams } from "./utils";
 
-export const searchTickets: RequestHandler = (req, res) => {
+export const searchTickets: RequestHandler = async (req, res) => {
   const params = parseTicketSearchParams(req.query);
 
   if (!params.success) {
     return sendInvalidRequest(res, "ticket search params", params.error.issues);
   }
 
-  const rows = filterTickets(ticketDetails, params.data)
-    .slice(0, params.data.limit ?? 20)
-    .map(toTicketRow);
+  const db = req.app.locals.db as DbClient;
+  const rows = await searchTicketList(db, params.data);
 
-  return sendValidatedData(
-    res,
-    TicketRowsSchema,
-    rows,
-    "Ticket search dummy data",
-  );
+  return sendValidatedData(res, TicketRowsSchema, rows);
 };
