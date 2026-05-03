@@ -11,6 +11,8 @@
         "prisma": "prisma"
     },
     "dependencies": {
+        "@neondatabase/serverless": "^1.1.0",
+        "@prisma/adapter-neon": "^7.8.0",
         "@prisma/client": "^7.0.1",
         "@shared": "workspace:*",
         "@types/cors": "^2.8.19",
