@@ -18,6 +18,13 @@ if (!DB_CONNECTION_STRING) {
   process.exit(1);
 }
 
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
+
+if (!CLERK_SECRET_KEY) {
+  console.error("CLERK_SECRET_KEY not provided in .env");
+  process.exit(1);
+}
+
 const db = createDbClient(DB_CONNECTION_STRING);
 const app = createApp(db);
 
