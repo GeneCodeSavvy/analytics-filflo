@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import type { ExpressRequestWithAuth } from "@clerk/express";
 import type { DbClient } from "./db";
 
 export type DbUser = {
@@ -20,7 +21,7 @@ declare global {
 }
 
 export const requireDbUser: RequestHandler = async (req, res, next) => {
-  const clerkUserId = (req as any).auth?.userId as string | null | undefined;
+  const clerkUserId = (req as ExpressRequestWithAuth).auth().userId;
 
   if (!clerkUserId) {
     res.status(401).json({ success: false, error: "Unauthenticated" });
