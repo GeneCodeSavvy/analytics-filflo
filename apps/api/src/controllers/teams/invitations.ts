@@ -22,6 +22,8 @@ import {
   parseTeamAuditParams,
   parseTeamInvitationListParams,
 } from "./utils";
+import { randomBytes, createHash } from "node:crypto";
+import { sendInviteMail } from "../../lib/mail";
 
 const appBaseUrl = process.env.APP_BASE_URL ?? "https://app.filflo.example";
 const inviteExpiryDays = 7;
@@ -57,6 +59,9 @@ export const createInvitation: RequestHandler = async (req, res) => {
     return sendNotFound(res, "Org");
   }
 
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+
   const sentAt = new Date();
   const expiresAt = new Date(sentAt.getTime() + inviteExpiryDays * 24 * 60 * 60 * 1000);
 
@@ -66,6 +71,7 @@ export const createInvitation: RequestHandler = async (req, res) => {
       role: body.data.role,
       orgId: body.data.orgId,
       invitedById: actor.id,
+      tokenHash,
       sentAt,
       expiresAt,
       ...(body.data.message ? { message: body.data.message } : {}),
@@ -83,6 +89,15 @@ export const createInvitation: RequestHandler = async (req, res) => {
     },
   });
 
+  const inviteLink = `${appBaseUrl}/invitations/${rawToken}`;
+
+  await sendInviteMail(
+    body.data.email,
+    actor.displayName,
+    org.displayName,
+    inviteLink,
+  );
+
   return sendValidatedData(res, InvitationSchema, {
     id: invitation.id,
     email: invitation.email,
@@ -93,7 +108,7 @@ export const createInvitation: RequestHandler = async (req, res) => {
     sentAt: invitation.sentAt.toISOString(),
     expiresAt: invitation.expiresAt.toISOString(),
     status: invitation.status,
-    inviteUrl: `${appBaseUrl}/invitations/${invitation.id}`,
+    inviteUrl: inviteLink,
   });
 };
 
