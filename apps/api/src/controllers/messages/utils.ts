@@ -30,36 +30,49 @@ export const buildThreadWhere = (
   currentUserId?: string,
 ): Prisma.ThreadWhereInput => {
   const query = filters.q?.trim().toLowerCase();
+  const and: Prisma.ThreadWhereInput[] = [];
+  const ticketWhere: Prisma.ThreadWhereInput["ticket"] = {};
 
-  return {
-    ...(filters.orgId ? { ticket: { orgId: filters.orgId } } : {}),
-    ...(query
-      ? {
-          OR: [
-            { ticket: { subject: { contains: query, mode: "insensitive" } } },
-            {
-              messages: {
-                some: {
-                  deletedAt: null,
-                  content: { contains: query, mode: "insensitive" },
-                },
-              },
-            },
-          ],
-        }
-      : {}),
-    ...(filters.tab === "mine" && currentUserId
-      ? {
-          ticket: {
-            ...(filters.orgId ? { orgId: filters.orgId } : {}),
-            participants: {
-              some: {
-                userId: currentUserId,
-                role: TicketParticipantRole.ASSIGNEE,
-              },
+  if (filters.orgId) {
+    ticketWhere.orgId = filters.orgId;
+  }
+
+  if (filters.tab === "mine" && currentUserId) {
+    ticketWhere.participants = {
+      some: {
+        userId: currentUserId,
+        role: TicketParticipantRole.ASSIGNEE,
+      },
+    };
+  }
+
+  if (Object.keys(ticketWhere).length > 0) {
+    and.push({ ticket: ticketWhere });
+  }
+
+  if (query) {
+    and.push({
+      OR: [
+        { ticket: { subject: { contains: query, mode: "insensitive" } } },
+        {
+          messages: {
+            some: {
+              deletedAt: null,
+              content: { contains: query, mode: "insensitive" },
             },
           },
-        }
-      : {}),
-  };
+        },
+      ],
+    });
+  }
+
+  if (filters.tab === "org" && !filters.orgId) {
+    and.push({ id: "__no_org_selected__" });
+  }
+
+  if (filters.tab === "unread" && !currentUserId) {
+    and.push({ id: "__no_current_user__" });
+  }
+
+  return and.length > 0 ? { AND: and } : {};
 };

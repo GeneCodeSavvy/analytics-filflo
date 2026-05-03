@@ -1,12 +1,10 @@
-import { NotificationListParamsSchema } from "@shared/schema/notifications";
-import { getQuerySource, toNumber, toStringArray } from "../../lib/controllers";
-import { notificationRows } from "./data";
-import type { ValidationIssue } from "../../lib/controllers";
-import type {
-  NotificationListParams,
-  NotificationRow,
-  NotificationType,
+import { Prisma } from "@prisma/client";
+import {
+  NotificationListParamsSchema,
+  type NotificationFilters,
 } from "@shared/schema/notifications";
+import { getQuerySource, toNumber, toStringArray } from "../../lib/controllers";
+import type { ValidationIssue } from "../../lib/controllers";
 
 type ParamParseResult<Key extends string> =
   | { success: true; data: Record<Key, string> }
@@ -54,7 +52,7 @@ export const parseNotificationListParams = (query: unknown) => {
 
   return NotificationListParamsSchema.safeParse({
     tab: source.tab ?? "inbox",
-    type: toTypeArray(source.type),
+    type: toTypeArray(source.type)?.map((value) => value.toUpperCase()),
     ticketId: source.ticketId,
     orgId: source.orgId,
     page: toNumber(source.page) ?? 1,
@@ -66,23 +64,18 @@ export const NotificationListParamsRequestSchema = {
   safeParse: parseNotificationListParams,
 };
 
-export const getNotificationById = (id: string) =>
-  notificationRows.find((notification) => notification.id === id);
-
-export const filterNotifications = (
-  rows: NotificationRow[],
-  params: NotificationListParams,
-) =>
-  rows.filter((row) => {
-    const matchesTab = params.tab === "all" || row.state === params.tab;
-    const matchesTypes =
-      params.type === undefined ||
-      params.type.length === 0 ||
-      params.type.includes(row.type as NotificationType);
-    const matchesTicket =
-      params.ticketId === undefined || row.ticket?.id === params.ticketId;
-    const matchesOrg =
-      params.orgId === undefined || row.ticket?.orgId === params.orgId;
-
-    return matchesTab && matchesTypes && matchesTicket && matchesOrg;
-  });
+export const buildNotificationWhere = (
+  currentUserId: string,
+  filters?: Pick<NotificationFilters, "type" | "ticketId" | "orgId">,
+): Prisma.NotificationWhereInput => ({
+  recipientId: currentUserId,
+  ...(filters?.type?.length ? { type: { in: filters.type } } : {}),
+  ...(filters?.ticketId ? { ticketId: filters.ticketId } : {}),
+  ...(filters?.orgId
+    ? {
+        ticket: {
+          orgId: filters.orgId,
+        },
+      }
+    : {}),
+});

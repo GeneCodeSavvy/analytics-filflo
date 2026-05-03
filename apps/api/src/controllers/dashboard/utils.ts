@@ -31,4 +31,4 @@ export const sendValidatedData = <Output>(
   res: import("express").Response,
   schema: Parameters<typeof sendControllerData<Output>>[1],
   data: unknown,
-) => sendControllerData(res, schema, data, "Dashboard dummy data");
+) => sendControllerData(res, schema, data);

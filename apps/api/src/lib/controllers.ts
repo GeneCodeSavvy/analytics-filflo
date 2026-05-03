@@ -17,9 +17,7 @@ export type SafeParseSchema<Output> = {
 export type QuerySource = Record<string, unknown>;
 
 export const getQuerySource = (query: unknown): QuerySource =>
-  typeof query === "object" && query !== null
-    ? (query as QuerySource)
-    : {};
+  typeof query === "object" && query !== null ? (query as QuerySource) : {};
 
 export const toStringArray = (value: unknown): string[] | undefined => {
   if (value === undefined) {
@@ -130,6 +128,10 @@ export const parseRequestData = <Output>(
   return parsed.data;
 };
 
-export const sendOk = (res: Response, schema: SafeParseSchema<{ ok: true }>, label: string) => {
+export const sendOk = (
+  res: Response,
+  schema: SafeParseSchema<{ ok: true }>,
+  label: string,
+) => {
   return sendValidatedData(res, schema, { ok: true }, label);
 };

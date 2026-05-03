@@ -9,15 +9,16 @@ import {
   sendNotFound,
   sendValidatedData,
 } from "../../lib/controllers";
-import { notificationEvents, notificationRows } from "./data";
+import type { DbClient } from "../../lib/db";
 import {
-  filterNotifications,
-  getNotificationById,
-  NotificationListParamsRequestSchema,
-  requiredParamSchema,
-} from "./utils";
+  getNotificationCount as fetchNotificationCount,
+  getNotificationList as fetchNotificationList,
+  getNotificationThread as fetchNotificationThread,
+} from "./data";
+import { NotificationListParamsRequestSchema, requiredParamSchema } from "./utils";
 
-export const getNotifications: RequestHandler = (req, res) => {
+export const getNotifications: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = parseRequestData(
     res,
     NotificationListParamsRequestSchema,
@@ -27,34 +28,30 @@ export const getNotifications: RequestHandler = (req, res) => {
 
   if (!params) return;
 
-  const filteredRows = filterNotifications(notificationRows, params);
-  const start = (params.page - 1) * params.pageSize;
+  const notifications = await fetchNotificationList(db, params);
 
   return sendValidatedData(
     res,
     NotificationListResponseSchema,
-    {
-      rows: filteredRows.slice(start, start + params.pageSize),
-      total: filteredRows.length,
-      page: params.page,
-      pageSize: params.pageSize,
-    },
-    "Notification list dummy data",
+    notifications,
+    "Notification list data",
   );
 };
 
-export const getNotificationCount: RequestHandler = (_req, res) => {
+export const getNotificationCount: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
+  const count = await fetchNotificationCount(db);
+
   return sendValidatedData(
     res,
     NotificationCountResponseSchema,
-    {
-      inbox: notificationRows.filter((row) => row.state === "inbox").length,
-    },
-    "Notification count dummy data",
+    count,
+    "Notification count data",
   );
 };
 
-export const getNotificationThread: RequestHandler = (req, res) => {
+export const getNotificationThread: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = parseRequestData(
     res,
     requiredParamSchema("id"),
@@ -64,17 +61,16 @@ export const getNotificationThread: RequestHandler = (req, res) => {
 
   if (!params) return;
 
-  if (!getNotificationById(params.id)) {
+  const thread = await fetchNotificationThread(db, params.id);
+
+  if (!thread) {
     return sendNotFound(res, "Notification");
   }
 
   return sendValidatedData(
     res,
     NotificationThreadSchema,
-    {
-      notificationGroupId: params.id,
-      events: notificationEvents[params.id] ?? [],
-    },
-    "Notification thread dummy data",
+    thread,
+    "Notification thread data",
   );
 };

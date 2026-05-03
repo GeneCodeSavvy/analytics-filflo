@@ -6,22 +6,23 @@ import {
 import { EmptyResponseSchema } from "@shared/schema/domain";
 import type { RequestHandler } from "express";
 import { parseRequestData, sendNotFound, sendOk } from "../../lib/controllers";
-import { getNotificationById, requiredParamSchema } from "./utils";
+import type { DbClient } from "../../lib/db";
+import {
+  bulkNotifications as mutateBulkNotifications,
+  muteTicket as muteTicketRecord,
+  respondToInvitation as respondToInvitationRecord,
+  snoozeNotification as snoozeNotificationRecord,
+  unmuteTicket as unmuteTicketRecord,
+  updateNotificationState as updateNotificationStateRecord,
+} from "./data";
+import { requiredParamSchema } from "./utils";
 
 const notificationIdSchema = requiredParamSchema("id");
 const invitationIdSchema = requiredParamSchema("invitationId");
 const ticketIdSchema = requiredParamSchema("ticketId");
 
-const ensureNotification = (id: string, res: Parameters<RequestHandler>[1]) => {
-  if (!getNotificationById(id)) {
-    sendNotFound(res, "Notification");
-    return false;
-  }
-
-  return true;
-};
-
-export const updateNotificationState: RequestHandler = (req, res) => {
+export const updateNotificationState: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = parseRequestData(
     res,
     notificationIdSchema,
@@ -35,12 +36,19 @@ export const updateNotificationState: RequestHandler = (req, res) => {
     "notification state payload",
   );
 
-  if (!params || !state || !ensureNotification(params.id, res)) return;
+  if (!params || !state) return;
+
+  const updated = await updateNotificationStateRecord(db, params.id, state);
+
+  if (!updated) {
+    return sendNotFound(res, "Notification");
+  }
 
   return sendOk(res, EmptyResponseSchema, "Notification state update response");
 };
 
-export const snoozeNotification: RequestHandler = (req, res) => {
+export const snoozeNotification: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = parseRequestData(
     res,
     notificationIdSchema,
@@ -48,12 +56,19 @@ export const snoozeNotification: RequestHandler = (req, res) => {
     "notification id",
   );
 
-  if (!params || !ensureNotification(params.id, res)) return;
+  if (!params) return;
+
+  const snoozed = await snoozeNotificationRecord(db, params.id);
+
+  if (!snoozed) {
+    return sendNotFound(res, "Notification");
+  }
 
   return sendOk(res, EmptyResponseSchema, "Notification snooze response");
 };
 
-export const bulkNotifications: RequestHandler = (req, res) => {
+export const bulkNotifications: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const body = parseRequestData(
     res,
     BulkNotificationPayloadSchema,
@@ -63,10 +78,13 @@ export const bulkNotifications: RequestHandler = (req, res) => {
 
   if (!body) return;
 
+  await mutateBulkNotifications(db, body);
+
   return sendOk(res, EmptyResponseSchema, "Bulk notification response");
 };
 
-export const respondToInvitation: RequestHandler = (req, res) => {
+export const respondToInvitation: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = parseRequestData(
     res,
     invitationIdSchema,
@@ -82,10 +100,21 @@ export const respondToInvitation: RequestHandler = (req, res) => {
 
   if (!params || !body) return;
 
+  const updated = await respondToInvitationRecord(
+    db,
+    params.invitationId,
+    body.response,
+  );
+
+  if (!updated) {
+    return sendNotFound(res, "Invitation");
+  }
+
   return sendOk(res, EmptyResponseSchema, "Invitation response");
 };
 
-export const muteTicket: RequestHandler = (req, res) => {
+export const muteTicket: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const body = parseRequestData(
     res,
     ticketIdSchema,
@@ -95,13 +124,26 @@ export const muteTicket: RequestHandler = (req, res) => {
 
   if (!body) return;
 
+  const muted = await muteTicketRecord(db, body.ticketId);
+
+  if (!muted) {
+    return sendNotFound(res, "Ticket");
+  }
+
   return sendOk(res, EmptyResponseSchema, "Mute ticket response");
 };
 
-export const unmuteTicket: RequestHandler = (req, res) => {
+export const unmuteTicket: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = parseRequestData(res, ticketIdSchema, req.params, "ticket id");
 
   if (!params) return;
+
+  const unmuted = await unmuteTicketRecord(db, params.ticketId);
+
+  if (!unmuted) {
+    return sendNotFound(res, "Ticket");
+  }
 
   return sendOk(res, EmptyResponseSchema, "Unmute ticket response");
 };

@@ -1,697 +1,468 @@
+import { Prisma, UserRole } from "@prisma/client";
 import type {
+  NotificationCountResponse,
   NotificationEvent,
+  NotificationListResponse,
+  NotificationListParams,
   NotificationRow,
+  NotificationThread,
+  NotificationType,
 } from "@shared/schema/notifications";
+import type { TicketRef, UserRef } from "@shared/schema/domain";
+import type { DbClient } from "../../lib/db";
+import { buildNotificationWhere } from "./utils";
 
-export const notificationUsers = {
-  admin: {
-    id: "usr-301",
-    name: "Meera Iyer",
-    avatarUrl: "https://i.pravatar.cc/120?img=24",
-    role: "ADMIN",
-    orgId: "org-acme",
-  },
-  moderator: {
-    id: "usr-202",
-    name: "Kabir Rao",
-    avatarUrl: "https://i.pravatar.cc/120?img=52",
-    role: "MODERATOR",
-    orgId: "org-filflo",
-  },
-  user: {
-    id: "usr-101",
-    name: "Aarav Mehta",
-    avatarUrl: "https://i.pravatar.cc/120?img=11",
-    role: "USER",
-    orgId: "org-acme",
-  },
-} satisfies Record<string, NotificationEvent["actor"]>;
-
-export const notificationRows: NotificationRow[] = [
-  {
-    id: "ntf-1001",
-    type: "TICKET_INVITATION",
-    tier: "action_required",
-    state: "inbox",
-    ticket: {
-      id: "TCK-1001",
-      subject: "Unable to sync vendor invoices",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Meera invited you to review the invoice sync issue.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T06:15:00.000Z",
-    },
-    eventCount: 3,
-    invitationId: "inv-1001",
-    invitationStatus: "PENDING",
-  },
-  {
-    id: "ntf-1002",
-    type: "MESSAGE_ACTIVITY",
-    tier: "status_update",
-    state: "inbox",
-    ticket: {
-      id: "TCK-1002",
-      subject: "Approval queue shows duplicate items",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "Kabir added a reproduction note on the ticket thread.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T05:30:00.000Z",
-    },
-    eventCount: 5,
-  },
-  {
-    id: "ntf-1003",
-    type: "TICKET_ASSIGNED",
-    tier: "action_required",
-    state: "read",
-    ticket: {
-      id: "TCK-1003",
-      subject: "Exported audit report missing comments",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Aarav assigned the audit report ticket to you.",
-      actor: notificationUsers.user,
-      at: "2026-05-01T12:20:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1004",
-    type: "TICKET_RESOLVED",
-    tier: "fyi",
-    state: "done",
-    ticket: {
-      id: "TCK-1001",
-      subject: "Unable to sync vendor invoices",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Invoice sync was resolved and is ready for verification.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-01T10:05:00.000Z",
-    },
-    eventCount: 4,
-  },
-  {
-    id: "ntf-1005",
-    type: "TICKET_ASSIGNED",
-    tier: "action_required",
-    state: "inbox",
-    ticket: {
-      id: "a3f7c012",
-      subject: "Fix auth token refresh on session timeout",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "Kabir assigned the session timeout ticket to you.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T13:14:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1006",
-    type: "REVIEW_REQUESTED",
-    tier: "action_required",
-    state: "inbox",
-    ticket: {
-      id: "b88a41de",
-      subject: "Update rate limiter config for /api/v2/*",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Meera requested your review before rollout.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T13:05:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1007",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "inbox",
-    ticket: {
-      id: "cc21af09",
-      subject: "Investigate webhook retries after Stripe outage",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Aarav added three new debugging notes.",
-      actor: notificationUsers.user,
-      at: "2026-05-02T12:44:00.000Z",
-    },
-    eventCount: 4,
-  },
-  {
-    id: "ntf-1008",
-    type: "TICKET_RESOLVED",
-    tier: "status_update",
-    state: "inbox",
-    ticket: {
-      id: "d13e9b70",
-      subject: "Resolve incorrect SLA badge on escalated tickets",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "The SLA badge fix was resolved and awaits verification.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T11:36:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1009",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "inbox",
-    ticket: {
-      id: "ef64aa18",
-      subject: "Add audit trail for organization role changes",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Meera posted the expected audit payload shape.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T10:12:00.000Z",
-    },
-    eventCount: 3,
-  },
-  {
-    id: "ntf-1010",
-    type: "TICKET_ASSIGNED",
-    tier: "action_required",
-    state: "inbox",
-    ticket: {
-      id: "f5012b9c",
-      subject: "Patch message composer losing drafts on route change",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Kabir assigned the draft persistence issue to you.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T08:25:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1011",
-    type: "REVIEW_REQUESTED",
-    tier: "action_required",
-    state: "read",
-    ticket: {
-      id: "102ab8ce",
-      subject: "Review query cache invalidation for notifications",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Meera requested review on the notification cache patch.",
-      actor: notificationUsers.admin,
-      at: "2026-05-01T16:42:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1012",
-    type: "TICKET_CLOSED",
-    tier: "status_update",
-    state: "read",
-    ticket: {
-      id: "21d4ce90",
-      subject: "Close stale sandbox provisioning incident",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "Sandbox provisioning incident was closed.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-01T09:55:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1013",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "read",
-    ticket: {
-      id: "349bd01f",
-      subject: "Clarify billing export column naming",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Aarav replied with the finance team's preferred labels.",
-      actor: notificationUsers.user,
-      at: "2026-04-30T14:10:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1014",
-    type: "TICKET_RESOLVED",
-    tier: "status_update",
-    state: "read",
-    ticket: {
-      id: "45ae10c2",
-      subject: "Fix CSV import hanging on blank final rows",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "CSV import fix was resolved after parser guards landed.",
-      actor: notificationUsers.admin,
-      at: "2026-04-30T08:18:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1015",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "done",
-    ticket: {
-      id: "56f01acd",
-      subject: "Document retry behavior for failed uploads",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Kabir confirmed the docs now match production behavior.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-29T17:25:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1016",
-    type: "NEW_TICKET_IN_ORG",
-    tier: "status_update",
-    state: "done",
-    ticket: {
-      id: "6780fa3b",
-      subject: "Add org-level toggle for digest emails",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "A new ticket was opened in Nova Retail.",
-      actor: notificationUsers.user,
-      at: "2026-04-28T15:31:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1017",
-    type: "TICKET_ASSIGNED",
-    tier: "action_required",
-    state: "read",
-    ticket: {
-      id: "789c12de",
-      subject: "Investigate API 409s when accepting invitations",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Meera assigned the invitation conflict bug to you.",
-      actor: notificationUsers.admin,
-      at: "2026-04-27T12:09:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1018",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "inbox",
-    ticket: {
-      id: "8ab33c90",
-      subject: "Tune search ranking for exact ticket IDs",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Kabir shared before-and-after ranking examples.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-27T08:44:00.000Z",
-    },
-    eventCount: 3,
-  },
-  {
-    id: "ntf-1019",
-    type: "TICKET_CLOSED",
-    tier: "status_update",
-    state: "done",
-    ticket: {
-      id: "9cdef201",
-      subject: "Remove deprecated moderator permission flag",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Deprecated permission flag cleanup was closed.",
-      actor: notificationUsers.admin,
-      at: "2026-04-25T11:22:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1020",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "done",
-    ticket: {
-      id: "aa014bfe",
-      subject: "Add clearer copy for expired invite links",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "Aarav approved the final expired invite copy.",
-      actor: notificationUsers.user,
-      at: "2026-04-24T10:04:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1021",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "read",
-    ticket: {
-      id: "bc72ef43",
-      subject: "Trace slow websocket reconnect after laptop sleep",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Meera attached a timeline from the reconnect test.",
-      actor: notificationUsers.admin,
-      at: "2026-04-23T18:48:00.000Z",
-    },
-    eventCount: 4,
-  },
-  {
-    id: "ntf-1022",
-    type: "TICKET_RESOLVED",
-    tier: "status_update",
-    state: "done",
-    ticket: {
-      id: "cd90a721",
-      subject: "Resolve attachment preview failing for PDFs",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "PDF attachment previews were resolved.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-22T07:33:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1023",
-    type: "NEW_TICKET_IN_ORG",
-    tier: "status_update",
-    state: "read",
-    ticket: {
-      id: "de18fb44",
-      subject: "Add webhook delivery metrics to org settings",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "A new ticket was opened in Nova Retail.",
-      actor: notificationUsers.user,
-      at: "2026-04-21T13:19:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1024",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "done",
-    ticket: {
-      id: "e01c77ab",
-      subject: "Check flaky notification count polling in Safari",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Kabir confirmed Safari no longer double-polls.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-20T16:11:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1025",
-    type: "REVIEW_REQUESTED",
-    tier: "action_required",
-    state: "done",
-    ticket: {
-      id: "f3a42c09",
-      subject: "Review optimistic updates for bulk notification actions",
-      orgId: "org-filflo",
-      orgName: "Filflo Core",
-    },
-    latestEvent: {
-      description: "Meera requested review on the bulk action mutation patch.",
-      actor: notificationUsers.admin,
-      at: "2026-04-19T09:26:00.000Z",
-    },
-    eventCount: 2,
-  },
-  {
-    id: "ntf-1026",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "read",
-    ticket: {
-      id: "01bc99ef",
-      subject: "Normalize ticket search params before API calls",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Aarav posted the failing URL example.",
-      actor: notificationUsers.user,
-      at: "2026-04-18T14:37:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1027",
-    type: "TICKET_CLOSED",
-    tier: "status_update",
-    state: "done",
-    ticket: {
-      id: "12aa40bd",
-      subject: "Close duplicate ticket from billing import retry",
-      orgId: "org-acme",
-      orgName: "Acme Finance",
-    },
-    latestEvent: {
-      description: "Duplicate billing import ticket was closed.",
-      actor: notificationUsers.admin,
-      at: "2026-04-18T10:08:00.000Z",
-    },
-    eventCount: 1,
-  },
-  {
-    id: "ntf-1028",
-    type: "MESSAGE_ACTIVITY",
-    tier: "fyi",
-    state: "done",
-    ticket: {
-      id: "23dcb80a",
-      subject: "Clarify escalation handoff when admin is offline",
-      orgId: "org-nova",
-      orgName: "Nova Retail",
-    },
-    latestEvent: {
-      description: "Kabir summarized the agreed handoff rule.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-17T08:21:00.000Z",
-    },
-    eventCount: 3,
-  },
+const currentUserRoles: UserRole[] = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.MODERATOR,
 ];
 
-export const notificationEvents: Record<string, NotificationEvent[]> = {
-  "ntf-1001": [
-    {
-      id: "evt-1001-1",
-      type: "TICKET_INVITATION",
-      description: "Meera invited you to review the invoice sync issue.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T06:15:00.000Z",
+const doneTypes = new Set<NotificationType>([
+  "TICKET_RESOLVED",
+  "TICKET_CLOSED",
+]);
+
+const notificationInclude = {
+  actor: true,
+  recipient: true,
+  ticket: {
+    include: {
+      org: true,
     },
-    {
-      id: "evt-1001-2",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir shared connector logs in the ticket thread.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T06:05:00.000Z",
+  },
+  thread: {
+    include: {
+      ticket: {
+        include: {
+          org: true,
+        },
+      },
     },
-  ],
-  "ntf-1002": [
-    {
-      id: "evt-1002-1",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir added a reproduction note on the ticket thread.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T05:30:00.000Z",
+  },
+  message: {
+    include: {
+      sender: true,
+      thread: {
+        include: {
+          ticket: {
+            include: {
+              org: true,
+            },
+          },
+        },
+      },
+      ticketRefs: {
+        include: {
+          ticket: {
+            include: {
+              org: true,
+            },
+          },
+        },
+      },
     },
-  ],
-  "ntf-1006": [
-    {
-      id: "evt-1006-1",
-      type: "REVIEW_REQUESTED",
-      description: "Meera requested your review before rollout.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T13:05:00.000Z",
+  },
+} satisfies Prisma.NotificationInclude;
+
+type NotificationRecord = Prisma.NotificationGetPayload<{
+  include: typeof notificationInclude;
+}>;
+
+const toUserRef = (user: {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: UserRole;
+  orgId: string;
+}): UserRef => ({
+  id: user.id,
+  name: user.displayName,
+  email: user.email,
+  ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
+  role: user.role,
+  orgId: user.orgId,
+});
+
+const resolveActor = (notification: NotificationRecord) =>
+  notification.actor ?? notification.recipient;
+
+const resolveTicket = (notification: NotificationRecord): TicketRef | undefined => {
+  const ticket =
+    notification.ticket ??
+    notification.thread?.ticket ??
+    notification.message?.thread.ticket ??
+    notification.message?.ticketRefs[0]?.ticket;
+
+  if (!ticket) {
+    return undefined;
+  }
+
+  return {
+    id: ticket.id,
+    subject: ticket.subject,
+    status: ticket.status,
+    priority: ticket.priority,
+    ...(ticket.category ? { category: ticket.category } : {}),
+    orgId: ticket.orgId,
+    orgName: ticket.org.displayName,
+  };
+};
+
+const getNotificationScopeKey = (notification: NotificationRecord) =>
+  notification.threadId ?? notification.messageId ?? notification.ticketId ?? notification.id;
+
+const getNotificationGroupKey = (notification: NotificationRecord) =>
+  `${getNotificationScopeKey(notification)}:${notification.type}`;
+
+const getNotificationState = (notification: NotificationRecord) => {
+  if (doneTypes.has(notification.type)) {
+    return "done" as const;
+  }
+
+  return notification.readAt ? ("read" as const) : ("inbox" as const);
+};
+
+const toNotificationEvent = (notification: NotificationRecord): NotificationEvent => ({
+  id: notification.id,
+  type: notification.type,
+  description: notification.body ?? notification.title,
+  actor: toUserRef(resolveActor(notification)),
+  at: notification.createdAt.toISOString(),
+});
+
+const toNotificationRow = (
+  notification: NotificationRecord,
+  eventCount: number,
+): NotificationRow => {
+  const ticket = resolveTicket(notification);
+
+  return {
+    id: notification.id,
+    type: notification.type,
+    tier:
+      notification.type === "TICKET_INVITATION" ||
+      notification.type === "TICKET_ASSIGNED" ||
+      notification.type === "REVIEW_REQUESTED"
+        ? "action_required"
+        : notification.type === "TICKET_RESOLVED" ||
+            notification.type === "TICKET_CLOSED" ||
+            notification.type === "NEW_TICKET_IN_ORG"
+          ? "status_update"
+          : "fyi",
+    state: getNotificationState(notification),
+    ...(ticket ? { ticket } : {}),
+    latestEvent: {
+      description: notification.body ?? notification.title,
+      actor: toUserRef(resolveActor(notification)),
+      at: notification.createdAt.toISOString(),
     },
-    {
-      id: "evt-1006-2",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir added the proposed limiter window and burst size.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T12:58:00.000Z",
+    eventCount,
+    ...(notification.readAt ? { readAt: notification.readAt.toISOString() } : {}),
+  };
+};
+
+const getCurrentUser = async (db: DbClient) => {
+  return db.user.findFirst({
+    where: { role: { in: currentUserRoles } },
+    orderBy: { createdAt: "asc" },
+  });
+};
+
+const getNotificationsForCurrentUser = async (db: DbClient) => {
+  const currentUser = await getCurrentUser(db);
+
+  if (!currentUser) {
+    return { currentUser: null, notifications: [] as NotificationRecord[] };
+  }
+
+  const notifications = await db.notification.findMany({
+    where: buildNotificationWhere(currentUser.id),
+    include: notificationInclude,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  });
+
+  return { currentUser, notifications };
+};
+
+const groupNotifications = (notifications: NotificationRecord[]) => {
+  const groups = new Map<string, NotificationRecord[]>();
+
+  for (const notification of notifications) {
+    const key = getNotificationGroupKey(notification);
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.push(notification);
+    } else {
+      groups.set(key, [notification]);
+    }
+  }
+
+  return [...groups.values()].map((group) =>
+    group.sort(
+      (left, right) =>
+        right.createdAt.getTime() - left.createdAt.getTime() ||
+        right.id.localeCompare(left.id),
+    ),
+  );
+};
+
+const getInvitationForNotification = async (
+  db: DbClient,
+  notification: NotificationRecord,
+) => {
+  const ticket = resolveTicket(notification);
+  const recipient = notification.recipient;
+
+  if (!ticket || notification.type !== "TICKET_INVITATION") {
+    return null;
+  }
+
+  return db.invitation.findFirst({
+    where: {
+      orgId: ticket.orgId,
+      email: recipient.email,
     },
-  ],
-  "ntf-1007": [
-    {
-      id: "evt-1007-1",
-      type: "MESSAGE_ACTIVITY",
-      description: "Aarav added three new debugging notes.",
-      actor: notificationUsers.user,
-      at: "2026-05-02T12:44:00.000Z",
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      status: true,
     },
-    {
-      id: "evt-1007-2",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir linked the retry job traces.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T12:31:00.000Z",
+  });
+};
+
+export const getNotificationList = async (
+  db: DbClient,
+  filters: NotificationListParams,
+): Promise<NotificationListResponse> => {
+  const { currentUser, notifications } = await getNotificationsForCurrentUser(db);
+
+  if (!currentUser) {
+    return {
+      rows: [],
+      total: 0,
+      page: 1,
+      pageSize: 25,
+    };
+  }
+
+  const grouped = groupNotifications(notifications);
+  const rows = await Promise.all(
+    grouped.map(async (group) => {
+      const head = group[0];
+
+      if (!head) {
+        return null;
+      }
+
+      const row = toNotificationRow(head, group.length);
+      const invitation = await getInvitationForNotification(db, head);
+
+      return invitation
+        ? {
+            ...row,
+            invitationId: invitation.id,
+            invitationStatus: invitation.status,
+          }
+        : row;
+    }),
+  );
+
+  const filteredRows = rows.filter((row): row is NotificationRow => row !== null).filter((row) => {
+      const matchesTab =
+        filters.tab === "all" || row.state === filters.tab;
+      const matchesTypes =
+        filters.type === undefined ||
+        filters.type.length === 0 ||
+        filters.type.includes(row.type);
+      const matchesTicket =
+        filters.ticketId === undefined || row.ticket?.id === filters.ticketId;
+      const matchesOrg =
+        filters.orgId === undefined || row.ticket?.orgId === filters.orgId;
+
+      return matchesTab && matchesTypes && matchesTicket && matchesOrg;
+    });
+
+  const start = (filters.page - 1) * filters.pageSize;
+  const pageRows = filteredRows.slice(start, start + filters.pageSize);
+
+  return {
+    rows: pageRows,
+    total: filteredRows.length,
+    page: filters.page,
+    pageSize: filters.pageSize,
+  };
+};
+
+export const getNotificationCount = async (
+  db: DbClient,
+): Promise<NotificationCountResponse> => {
+  const { notifications } = await getNotificationsForCurrentUser(db);
+  const grouped = groupNotifications(notifications);
+
+  return {
+    inbox: grouped.filter((group) => {
+      const head = group[0];
+      return head ? getNotificationState(head) === "inbox" : false;
+    }).length,
+  };
+};
+
+export const getNotificationThread = async (
+  db: DbClient,
+  id: string,
+): Promise<NotificationThread | null> => {
+  const { notifications } = await getNotificationsForCurrentUser(db);
+  const current = notifications.find((notification) => notification.id === id);
+
+  if (!current) {
+    return null;
+  }
+
+  const groupKey = getNotificationGroupKey(current);
+  const events = notifications
+    .filter((notification) => getNotificationGroupKey(notification) === groupKey)
+    .sort(
+      (left, right) =>
+        left.createdAt.getTime() - right.createdAt.getTime() ||
+        left.id.localeCompare(right.id),
+    )
+    .map(toNotificationEvent);
+
+  return {
+    notificationGroupId: id,
+    events,
+  };
+};
+
+export const getNotificationById = async (db: DbClient, id: string) => {
+  const { notifications } = await getNotificationsForCurrentUser(db);
+  return notifications.find((notification) => notification.id === id) ?? null;
+};
+
+export const updateNotificationState = async (
+  db: DbClient,
+  id: string,
+  state: "inbox" | "read" | "done",
+) => {
+  const notification = await getNotificationById(db, id);
+
+  if (!notification) {
+    return false;
+  }
+
+  await db.notification.update({
+    where: { id },
+    data: {
+      readAt: state === "inbox" ? null : notification.readAt ?? new Date(),
     },
-    {
-      id: "evt-1007-3",
-      type: "MESSAGE_ACTIVITY",
-      description: "Meera asked whether failed attempts are idempotent.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T12:08:00.000Z",
+  });
+
+  return true;
+};
+
+export const snoozeNotification = async (
+  db: DbClient,
+  id: string,
+) => {
+  const notification = await getNotificationById(db, id);
+
+  if (!notification) {
+    return false;
+  }
+
+  await db.notification.update({
+    where: { id },
+    data: {
+      readAt: notification.readAt ?? new Date(),
     },
-  ],
-  "ntf-1009": [
-    {
-      id: "evt-1009-1",
-      type: "MESSAGE_ACTIVITY",
-      description: "Meera posted the expected audit payload shape.",
-      actor: notificationUsers.admin,
-      at: "2026-05-02T10:12:00.000Z",
+  });
+
+  return true;
+};
+
+export const bulkNotifications = async (
+  db: DbClient,
+  payload: {
+    op: "read" | "done" | "unread";
+    scope: "ids" | "ticket";
+    ids?: string[];
+    ticketId?: string;
+  },
+) => {
+  const targetIds =
+    payload.scope === "ids"
+      ? payload.ids ?? []
+      : (
+          await db.notification.findMany({
+            where: {
+              ticketId: payload.ticketId,
+            },
+            select: { id: true },
+          })
+        ).map((notification) => notification.id);
+
+  if (targetIds.length === 0) {
+    return true;
+  }
+
+  if (payload.op === "unread") {
+    await db.notification.updateMany({
+      where: { id: { in: targetIds } },
+      data: { readAt: null },
+    });
+    return true;
+  }
+
+  await db.notification.updateMany({
+    where: { id: { in: targetIds } },
+    data: { readAt: new Date() },
+  });
+
+  return true;
+};
+
+export const respondToInvitation = async (
+  db: DbClient,
+  invitationId: string,
+  response: "ACCEPTED" | "CANCELLED",
+) => {
+  const invitation = await db.invitation.findUnique({
+    where: { id: invitationId },
+    select: { id: true },
+  });
+
+  if (!invitation) {
+    return false;
+  }
+
+  await db.invitation.update({
+    where: { id: invitationId },
+    data: {
+      status: response,
+      acceptedAt: response === "ACCEPTED" ? new Date() : null,
     },
-    {
-      id: "evt-1009-2",
-      type: "MESSAGE_ACTIVITY",
-      description: "Aarav confirmed compliance needs actor and target roles.",
-      actor: notificationUsers.user,
-      at: "2026-05-02T09:48:00.000Z",
-    },
-    {
-      id: "evt-1009-3",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir attached the current role-change controller path.",
-      actor: notificationUsers.moderator,
-      at: "2026-05-02T09:34:00.000Z",
-    },
-  ],
-  "ntf-1018": [
-    {
-      id: "evt-1018-1",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir shared before-and-after ranking examples.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-27T08:44:00.000Z",
-    },
-    {
-      id: "evt-1018-2",
-      type: "MESSAGE_ACTIVITY",
-      description:
-        "Meera suggested exact ID matches should skip fuzzy scoring.",
-      actor: notificationUsers.admin,
-      at: "2026-04-27T08:12:00.000Z",
-    },
-    {
-      id: "evt-1018-3",
-      type: "MESSAGE_ACTIVITY",
-      description: "Aarav provided a ticket ID that currently ranks second.",
-      actor: notificationUsers.user,
-      at: "2026-04-27T07:55:00.000Z",
-    },
-  ],
-  "ntf-1021": [
-    {
-      id: "evt-1021-1",
-      type: "MESSAGE_ACTIVITY",
-      description: "Meera attached a timeline from the reconnect test.",
-      actor: notificationUsers.admin,
-      at: "2026-04-23T18:48:00.000Z",
-    },
-    {
-      id: "evt-1021-2",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir noted the stale socket closes after foregrounding.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-23T18:22:00.000Z",
-    },
-    {
-      id: "evt-1021-3",
-      type: "MESSAGE_ACTIVITY",
-      description: "Aarav reproduced the issue after two sleep cycles.",
-      actor: notificationUsers.user,
-      at: "2026-04-23T17:59:00.000Z",
-    },
-  ],
-  "ntf-1028": [
-    {
-      id: "evt-1028-1",
-      type: "MESSAGE_ACTIVITY",
-      description: "Kabir summarized the agreed handoff rule.",
-      actor: notificationUsers.moderator,
-      at: "2026-04-17T08:21:00.000Z",
-    },
-    {
-      id: "evt-1028-2",
-      type: "MESSAGE_ACTIVITY",
-      description: "Meera asked for escalation ownership to stay visible.",
-      actor: notificationUsers.admin,
-      at: "2026-04-17T07:54:00.000Z",
-    },
-    {
-      id: "evt-1028-3",
-      type: "MESSAGE_ACTIVITY",
-      description: "Aarav confirmed the support team can follow the rule.",
-      actor: notificationUsers.user,
-      at: "2026-04-17T07:32:00.000Z",
-    },
-  ],
+  });
+
+  return true;
+};
+
+export const muteTicket = async (db: DbClient, ticketId: string) => {
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true },
+  });
+
+  return !!ticket;
+};
+
+export const unmuteTicket = async (db: DbClient, ticketId: string) => {
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true },
+  });
+
+  return !!ticket;
 };
