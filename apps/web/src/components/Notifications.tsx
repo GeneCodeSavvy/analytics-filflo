@@ -8,12 +8,11 @@ import {
   LoaderCircle,
   Mail,
   MessageSquare,
-  Settings,
   UserPlus,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import type { NotificationRow, NotificationType } from "../lib/notificationParams";
 import {
   mergeFilters,
@@ -618,13 +617,6 @@ export const Notifications = () => {
             </h1>
           </div>
           <div className="notifications-header-actions">
-            <Link
-              to="/settings/notifications"
-              className="notifications-settings-link"
-              aria-label="Notification settings"
-            >
-              <Settings className="size-3.5" />
-            </Link>
             {rows.length > 0 ? (
               <Button
                 type="button"

@@ -7,7 +7,6 @@ import type {
   SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
-  NotificationApiSettings,
 } from "../lib/notificationParams";
 
 export const notificationApi = {
@@ -25,9 +24,6 @@ export const notificationApi = {
     signal?: AbortSignal
   ): Promise<NotificationThread> =>
     api.get<NotificationThread>(`/notifications/${id}/thread`, { signal }),
-
-  getSettings: (signal?: AbortSignal): Promise<NotificationApiSettings> =>
-    api.get<NotificationApiSettings>("/notifications/settings", { signal }),
 
   markRead: (id: string): Promise<void> =>
     api.patch(`/notifications/${id}`, { state: "read" }),
@@ -55,9 +51,4 @@ export const notificationApi = {
 
   unmuteTicket: (ticketId: string): Promise<void> =>
     api.delete(`/notifications/mute/${ticketId}`),
-
-  updateSettings: (
-    data: Partial<NotificationApiSettings>
-  ): Promise<NotificationApiSettings> =>
-    api.patch<NotificationApiSettings>("/notifications/settings", data),
 };

@@ -9,15 +9,10 @@ import {
   type NavItem,
 } from "@/components/ui/sidebar";
 import {
-  IconAdjustments,
-  IconAlertTriangle,
   IconBell,
-  IconBuilding,
   IconChartBar,
   IconLayoutDashboard,
-  IconLock,
   IconMessage,
-  IconPalette,
   IconUser,
   IconUsers,
 } from "@tabler/icons-react";
@@ -59,45 +54,6 @@ const items: NavItem[] = [
     label: "Team",
     icon: <IconUsers className={iconClass} />,
     href: "/teams",
-  },
-  {
-    kind: "group",
-    group: {
-      label: "Settings",
-      icon: <IconAdjustments className={iconClass} />,
-      links: [
-        {
-          label: "Profile",
-          href: "/settings/profile",
-          icon: <IconUser className={iconClass} />,
-        },
-        {
-          label: "Security",
-          href: "/settings/security",
-          icon: <IconLock className={iconClass} />,
-        },
-        {
-          label: "Notifications",
-          href: "/settings/notifications",
-          icon: <IconBell className={iconClass} />,
-        },
-        {
-          label: "Appearance",
-          href: "/settings/appearance",
-          icon: <IconPalette className={iconClass} />,
-        },
-        {
-          label: "Org Settings",
-          href: "/settings/org",
-          icon: <IconBuilding className={iconClass} />,
-        },
-        {
-          label: "Danger Zone",
-          href: "/settings/danger",
-          icon: <IconAlertTriangle className={iconClass} />,
-        },
-      ],
-    },
   },
 ];
 
@@ -150,7 +106,7 @@ export default function NavSidebar({ children }: { children: ReactNode }) {
             <SidebarLink
               link={{
                 label: "Harsh Sharma",
-                href: "/settings",
+                href: "/teams",
                 icon: (
                   <IconUser
                     className="h-7 w-7 shrink-0 rounded-full"

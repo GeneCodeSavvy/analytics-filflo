@@ -10,7 +10,6 @@ import type {
   NotificationListResponse,
   NotificationCountResponse,
   NotificationThread,
-  NotificationApiSettings,
 } from "../lib/notificationParams";
 
 export function useNotificationsQuery(params: NotificationListParams) {
@@ -51,14 +50,5 @@ export function useNotificationThreadQuery(notificationId: string | null) {
       notificationApi.getThread(notificationId!, signal),
     enabled: !!notificationId,
     staleTime: 60_000,
-  });
-}
-
-export function useNotificationSettingsQuery() {
-  return useQuery<NotificationApiSettings>({
-    queryKey: ["notifications", "settings"],
-    queryFn: ({ signal }) => notificationApi.getSettings(signal),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
   });
 }

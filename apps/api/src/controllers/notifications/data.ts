@@ -1,5 +1,4 @@
 import type {
-  NotificationApiSettings,
   NotificationEvent,
   NotificationRow,
 } from "@shared/schema";
@@ -694,22 +693,4 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
       at: "2026-04-17T07:32:00.000Z",
     },
   ],
-};
-
-export const notificationSettings: NotificationApiSettings = {
-  preferences: [
-    { type: "ticket_invitation", inApp: true, email: true, digest: false },
-    { type: "ticket_assigned", inApp: true, email: true, digest: false },
-    { type: "review_requested", inApp: true, email: true, digest: false },
-    { type: "ticket_resolved", inApp: true, email: false, digest: true },
-    { type: "ticket_closed", inApp: true, email: false, digest: true },
-    { type: "new_ticket_in_org", inApp: true, email: false, digest: true },
-    { type: "message_activity", inApp: true, email: true, digest: false },
-  ],
-  mutedTicketIds: ["TCK-1004"],
-  quietHours: {
-    from: "18:00",
-    to: "09:00",
-    timezone: "Asia/Kolkata",
-  },
 };

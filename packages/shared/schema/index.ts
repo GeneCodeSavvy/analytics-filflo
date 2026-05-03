@@ -37,10 +37,10 @@ export type {
   ThreadMessageParams,
 } from "./messages";
 export * from "./teams";
-export * from "./settings";
 export {
   NotificationStateSchema,
   NotificationTierSchema,
+  NotificationTypeSchema,
   NotificationRowSchema,
   NotificationListResponseSchema,
   NotificationCountResponseSchema,
@@ -51,8 +51,6 @@ export {
   SnoozePayloadSchema,
   BulkNotificationPayloadSchema,
   InvitationResponsePayloadSchema,
-  NotificationApiPreferenceSchema,
-  NotificationApiSettingsSchema,
 } from "./notifications";
 export type {
   NotificationState,
@@ -68,6 +66,4 @@ export type {
   SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
-  NotificationApiPreference,
-  NotificationApiSettings,
 } from "./notifications";

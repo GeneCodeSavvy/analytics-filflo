@@ -12,8 +12,6 @@ export {
   SnoozePayloadSchema,
   BulkNotificationPayloadSchema,
   InvitationResponsePayloadSchema,
-  NotificationApiPreferenceSchema,
-  NotificationApiSettingsSchema,
 } from "@shared/schema";
 
 export type {
@@ -30,8 +28,6 @@ export type {
   SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
-  NotificationApiPreference,
-  NotificationApiSettings,
 } from "@shared/schema";
 
 import type { NotificationFilters, NotificationType } from "@shared/schema";

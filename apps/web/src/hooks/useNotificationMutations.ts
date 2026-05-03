@@ -8,7 +8,6 @@ import type {
   BulkNotificationPayload,
   SnoozePayload,
   InvitationResponsePayload,
-  NotificationApiSettings,
 } from "../lib/notificationParams";
 
 function restoreSnapshots(
@@ -246,17 +245,6 @@ export function useMuteTicketMutation() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications", "list"] });
       queryClient.invalidateQueries({ queryKey: ["notifications", "count"] });
-    },
-  });
-}
-
-export function useUpdateNotificationSettingsMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: Partial<NotificationApiSettings>) =>
-      notificationApi.updateSettings(data),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(["notifications", "settings"], updated);
     },
   });
 }

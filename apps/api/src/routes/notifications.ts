@@ -12,16 +12,10 @@ import {
   unmuteTicket,
   updateNotificationState,
 } from "../controllers/notifications/mutations";
-import {
-  getNotificationSettings,
-  updateNotificationSettings,
-} from "../controllers/notifications/settings";
 
 const notificationsRouter: Router = Router();
 
 notificationsRouter.get("/count", getNotificationCount);
-notificationsRouter.get("/settings", getNotificationSettings);
-notificationsRouter.patch("/settings", updateNotificationSettings);
 notificationsRouter.post("/bulk", bulkNotifications);
 notificationsRouter.post("/invitations/:invitationId/respond", respondToInvitation);
 notificationsRouter.post("/mute", muteTicket);

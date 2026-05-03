@@ -219,22 +219,6 @@ body {
     gap: 6px;
 }
 
-.notifications-settings-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 0.375rem;
-    color: oklch(0.18 0 0);
-    text-decoration: none;
-    transition: background 150ms ease;
-}
-
-.notifications-settings-link:hover {
-    background: oklch(0.967 0.003 264);
-}
-
 .notifications-sticky {
     position: sticky;
     top: -28px;

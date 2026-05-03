@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Theme, Density } from "../lib/settingsParams";
+
+type Theme = "light" | "dark" | "system";
+type Density = "comfortable" | "compact";
 
 type UIState = {
   sidebarOpen: boolean;
