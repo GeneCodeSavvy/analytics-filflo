@@ -5,16 +5,20 @@ import {
 } from "@shared/schema/messages";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
-import { getThreadById } from "./utils";
+import type { DbClient } from "../../lib/db";
+import { createFileUploadResponse, deleteThreadFile } from "./data";
 
-export const uploadFile: RequestHandler = (req, res) => {
+export const uploadFile: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = ThreadFileParamsSchema.safeParse(req.params);
 
   if (!params.success) {
     return sendInvalidRequest(res, "file upload params", params.error.issues);
   }
 
-  if (!getThreadById(params.data.threadId)) {
+  const file = await createFileUploadResponse(db, params.data.threadId);
+
+  if (!file) {
     return res.status(404).json({
       success: false,
       error: "Thread not found",
@@ -24,20 +28,30 @@ export const uploadFile: RequestHandler = (req, res) => {
   return sendValidatedData(
     res,
     FileUploadResponseSchema,
-    {
-      fileId: "file-new",
-      url: "https://example.com/files/file-new",
-      thumbnailUrl: "https://example.com/files/file-new-thumb",
-    },
-    "File upload dummy data",
+    file,
+    "File upload data",
   );
 };
 
-export const deleteFile: RequestHandler = (req, res) => {
+export const deleteFile: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = ThreadFileParamsSchema.safeParse(req.params);
 
   if (!params.success) {
     return sendInvalidRequest(res, "file delete params", params.error.issues);
+  }
+
+  const deleted = await deleteThreadFile(
+    db,
+    params.data.threadId,
+    params.data.fileId,
+  );
+
+  if (!deleted) {
+    return res.status(404).json({
+      success: false,
+      error: "File not found",
+    });
   }
 
   return sendValidatedData(

@@ -6,31 +6,41 @@ import {
 } from "@shared/schema/messages";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
-import { filterThreadRows, getThreadById, parseMessageFilters } from "./utils";
+import type { DbClient } from "../../lib/db";
+import {
+  getThreadById,
+  getThreadList,
+  getThreadParticipants,
+} from "./data";
+import { parseMessageFilters } from "./utils";
 
-export const getThreads: RequestHandler = (req, res) => {
+export const getThreads: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const filters = parseMessageFilters(req.query);
 
   if (!filters.success) {
     return sendInvalidRequest(res, "message filters", filters.error.issues);
   }
 
+  const threads = await getThreadList(db, filters.data);
+
   return sendValidatedData(
     res,
     ThreadListSchema,
-    filterThreadRows(filters.data),
-    "Thread list dummy data",
+    threads,
+    "Thread list data",
   );
 };
 
-export const getThread: RequestHandler = (req, res) => {
+export const getThread: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = IdParamsSchema.safeParse(req.params);
 
   if (!params.success) {
     return sendInvalidRequest(res, "thread id", params.error.issues);
   }
 
-  const thread = getThreadById(params.data.id);
+  const thread = await getThreadById(db, params.data.id);
 
   if (!thread) {
     return res.status(404).json({
@@ -43,20 +53,21 @@ export const getThread: RequestHandler = (req, res) => {
     res,
     ThreadSchema,
     thread,
-    "Thread detail dummy data",
+    "Thread detail data",
   );
 };
 
-export const getParticipants: RequestHandler = (req, res) => {
+export const getParticipants: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
   const params = IdParamsSchema.safeParse(req.params);
 
   if (!params.success) {
     return sendInvalidRequest(res, "thread id", params.error.issues);
   }
 
-  const thread = getThreadById(params.data.id);
+  const participants = await getThreadParticipants(db, params.data.id);
 
-  if (!thread) {
+  if (!participants) {
     return res.status(404).json({
       success: false,
       error: "Thread not found",
@@ -66,7 +77,7 @@ export const getParticipants: RequestHandler = (req, res) => {
   return sendValidatedData(
     res,
     ParticipantsSchema,
-    thread.participants,
-    "Thread participants dummy data",
+    participants,
+    "Thread participants data",
   );
 };
