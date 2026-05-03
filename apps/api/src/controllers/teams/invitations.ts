@@ -120,7 +120,7 @@ export const cancelInvitation: RequestHandler = async (req, res) => {
 
   await db.teamAuditLog.create({
     data: {
-      actorId: invitation.invitedById,
+      actorId: req.dbUser.id,
       targetEmail: invitation.email,
       orgId: invitation.orgId,
       action: "INVITATION_CANCELLED",
