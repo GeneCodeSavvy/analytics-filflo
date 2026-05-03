@@ -1,11 +1,13 @@
 import express from "express";
 import cors, { CorsOptions } from "cors";
+import { clerkMiddleware } from "@clerk/express";
 import dashboardRouter from "./routes/dashboard";
 import messageRouter from "./routes/messages";
 import notificationsRouter from "./routes/notifications";
 import teamsRouter from "./routes/teams";
 import ticketsRouter from "./routes/tickets";
 import type { DbClient } from "./lib/db";
+import { requireDbUser } from "./lib/auth";
 
 const corsOptions: CorsOptions = {
   origin: process.env.CORS_URLS || "http://localhost:5173",
@@ -17,6 +19,9 @@ export const createApp = (db: DbClient): express.Application => {
   app.use(express.json());
   app.use(cors(corsOptions));
   app.locals.db = db;
+
+  app.use(clerkMiddleware());
+  app.use(requireDbUser);
 
   app.use("/dashboard", dashboardRouter);
   app.use("/tickets", ticketsRouter);
