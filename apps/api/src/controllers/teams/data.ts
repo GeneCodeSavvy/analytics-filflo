@@ -1,184 +1,240 @@
+import { InvitationStatus, TicketStatus, UserRole } from "@prisma/client";
 import type {
   AuditEntry,
   Invitation,
   MemberDetail,
+  MemberRow,
   OrgSummary,
+  TeamMemberListParams,
 } from "@shared/schema/teams";
+import type { DbClient } from "../../lib/db";
 
-const filfloAdmin = {
-  id: "usr-900",
-  name: "Meera Iyer",
+const inactiveThresholdMs = 30 * 24 * 60 * 60 * 1000;
+const staleTicketMs = 3 * 24 * 60 * 60 * 1000;
+
+const openStatuses: TicketStatus[] = [
+  TicketStatus.OPEN,
+  TicketStatus.IN_PROGRESS,
+  TicketStatus.ON_HOLD,
+  TicketStatus.REVIEW,
+];
+
+const appBaseUrl = process.env.APP_BASE_URL ?? "https://app.filflo.example";
+
+export const getMembers = async (
+  db: DbClient,
+  params: TeamMemberListParams,
+): Promise<{ rows: MemberRow[]; total: number }> => {
+  const query = params.q?.trim().toLowerCase();
+  const where = {
+    ...(params.orgId ? { orgId: params.orgId } : {}),
+    ...(params.role?.length ? { role: { in: params.role as UserRole[] } } : {}),
+    ...(query
+      ? {
+          OR: [
+            { displayName: { contains: query, mode: "insensitive" as const } },
+            { email: { contains: query, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const [users, total] = await Promise.all([
+    db.user.findMany({
+      where,
+      include: { org: true },
+      orderBy: { displayName: "asc" },
+      skip: (params.page - 1) * params.pageSize,
+      take: params.pageSize,
+    }),
+    db.user.count({ where }),
+  ]);
+
+  const now = Date.now();
+
+  return {
+    rows: users.map((user) => ({
+      id: user.id,
+      name: user.displayName,
+      email: user.email,
+      ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
+      role: user.role,
+      orgId: user.orgId,
+      joinedAt: user.createdAt.toISOString(),
+      lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
+      isInactive:
+        !user.lastActiveAt ||
+        now - user.lastActiveAt.getTime() > inactiveThresholdMs,
+      permissions: {
+        canChangeRole: true,
+        canRemove: user.role !== UserRole.ADMIN,
+      },
+    })),
+    total,
+  };
 };
 
-export const members: MemberDetail[] = [
-  {
-    id: "usr-201",
-    name: "Riya Sen",
-    email: "riya@filflo.example",
-    avatarUrl: "https://i.pravatar.cc/120?img=45",
-    role: "ADMIN",
-    orgId: "org-filflo",
-    joinedAt: "2025-11-18T10:15:00.000Z",
-    lastActiveAt: "2026-05-02T08:45:00.000Z",
-    isInactive: false,
-    permissions: {
-      canChangeRole: true,
-      canRemove: false,
-    },
-    org: { id: "org-filflo", name: "Filflo Support" },
-    stats: {
-      ticketsRequested: 18,
-      ticketsAssigned: 142,
-      avgResolutionMs: 16200000,
-    },
-  },
-  {
-    id: "usr-202",
-    name: "Kabir Rao",
-    email: "kabir@filflo.example",
-    avatarUrl: "https://i.pravatar.cc/120?img=52",
-    role: "MODERATOR",
-    orgId: "org-filflo",
-    joinedAt: "2026-01-08T09:00:00.000Z",
-    lastActiveAt: "2026-05-01T17:25:00.000Z",
-    isInactive: false,
-    permissions: {
-      canChangeRole: true,
-      canRemove: true,
-    },
-    org: { id: "org-filflo", name: "Filflo Support" },
-    stats: {
-      ticketsRequested: 7,
-      ticketsAssigned: 86,
-      avgResolutionMs: 21100000,
-    },
-  },
-  {
-    id: "usr-301",
-    name: "Anika Shah",
-    email: "anika@acme.example",
-    avatarUrl: "https://i.pravatar.cc/120?img=21",
-    role: "USER",
-    orgId: "org-acme",
-    joinedAt: "2026-03-04T14:20:00.000Z",
-    lastActiveAt: "2026-04-28T11:05:00.000Z",
-    isInactive: false,
-    permissions: {
-      canChangeRole: true,
-      canRemove: true,
-    },
-    org: { id: "org-acme", name: "Acme Finance" },
-    stats: {
-      ticketsRequested: 23,
-      ticketsAssigned: 0,
-      avgResolutionMs: null,
-    },
-  },
-  {
-    id: "usr-302",
-    name: "Dev Malhotra",
-    email: "dev@nova.example",
-    role: "USER",
-    orgId: "org-nova",
-    joinedAt: "2026-02-12T08:40:00.000Z",
-    lastActiveAt: null,
-    isInactive: true,
-    permissions: {
-      canChangeRole: true,
-      canRemove: true,
-    },
-    org: { id: "org-nova", name: "Nova Retail" },
-    stats: {
-      ticketsRequested: 5,
-      ticketsAssigned: 0,
-      avgResolutionMs: null,
-    },
-  },
-];
+export const getMemberById = async (
+  db: DbClient,
+  id: string,
+): Promise<MemberDetail | null> => {
+  const user = await db.user.findUnique({
+    where: { id },
+    include: { org: true },
+  });
 
-export const invitations: Invitation[] = [
-  {
-    id: "inv-1001",
-    email: "samira@acme.example",
-    role: "USER",
-    orgId: "org-acme",
-    orgName: "Acme Finance",
-    invitedBy: filfloAdmin,
-    sentAt: "2026-05-01T09:15:00.000Z",
-    expiresAt: "2026-05-08T09:15:00.000Z",
-    status: "PENDING",
-    inviteUrl: "https://app.filflo.example/invitations/inv-1001",
-  },
-  {
-    id: "inv-1002",
-    email: "opslead@nova.example",
-    role: "MODERATOR",
-    orgId: "org-nova",
-    orgName: "Nova Retail",
-    invitedBy: filfloAdmin,
-    sentAt: "2026-04-29T16:20:00.000Z",
-    expiresAt: "2026-05-06T16:20:00.000Z",
-    status: "ACCEPTED",
-    inviteUrl: "https://app.filflo.example/invitations/inv-1002",
-  },
-];
+  if (!user) return null;
 
-export const auditEntries: AuditEntry[] = [
-  {
-    id: "aud-1001",
-    at: "2026-05-01T09:15:00.000Z",
-    actor: filfloAdmin,
-    action: "INVITED",
-    targetUser: { id: "invitee-samira", name: "samira@acme.example" },
-    org: { id: "org-acme", name: "Acme Finance" },
-    toRole: "USER",
-    reason: "Finance operations rollout",
-  },
-  {
-    id: "aud-1002",
-    at: "2026-04-30T13:30:00.000Z",
-    actor: filfloAdmin,
-    action: "ROLE_CHANGED",
-    targetUser: { id: "usr-202", name: "Kabir Rao" },
-    org: { id: "org-filflo", name: "Filflo Support" },
-    fromRole: "USER",
-    toRole: "MODERATOR",
-    reason: "Expanded queue ownership",
-  },
-  {
-    id: "aud-1003",
-    at: "2026-04-28T10:05:00.000Z",
-    actor: filfloAdmin,
-    action: "REMOVED",
-    targetUser: { id: "usr-399", name: "Former Contractor" },
-    org: { id: "org-nova", name: "Nova Retail" },
-    fromRole: "USER",
-  },
-];
+  const [ticketsRequested, ticketsAssigned, resolvedAssigned] =
+    await Promise.all([
+      db.ticketParticipant.count({ where: { userId: id, role: "REQUESTER" } }),
+      db.ticketParticipant.count({ where: { userId: id, role: "ASSIGNEE" } }),
+      db.ticketParticipant.findMany({
+        where: { userId: id, role: "ASSIGNEE" },
+        include: {
+          ticket: { select: { createdAt: true, resolvedAt: true, status: true } },
+        },
+      }),
+    ]);
 
-export const orgSummaries: OrgSummary[] = [
-  {
-    org: { id: "org-filflo", name: "Filflo Support" },
-    memberCount: 12,
-    adminCount: 2,
-    openTickets: 31,
-    staleTickets: 4,
-    lastActivityAt: "2026-05-02T08:45:00.000Z",
-  },
-  {
-    org: { id: "org-acme", name: "Acme Finance" },
-    memberCount: 8,
-    adminCount: 1,
-    openTickets: 14,
-    staleTickets: 2,
-    lastActivityAt: "2026-05-01T15:10:00.000Z",
-  },
-  {
-    org: { id: "org-nova", name: "Nova Retail" },
-    memberCount: 6,
-    adminCount: 1,
-    openTickets: 9,
-    staleTickets: 1,
-    lastActivityAt: "2026-04-30T18:40:00.000Z",
-  },
-];
+  const resolved = resolvedAssigned.filter(
+    (p) => p.ticket.status === TicketStatus.RESOLVED && p.ticket.resolvedAt,
+  );
+
+  const avgResolutionMs =
+    resolved.length > 0
+      ? resolved.reduce(
+          (sum, p) =>
+            sum +
+            (p.ticket.resolvedAt!.getTime() - p.ticket.createdAt.getTime()),
+          0,
+        ) / resolved.length
+      : null;
+
+  const now = Date.now();
+
+  return {
+    id: user.id,
+    name: user.displayName,
+    email: user.email,
+    ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
+    role: user.role,
+    orgId: user.orgId,
+    joinedAt: user.createdAt.toISOString(),
+    lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
+    isInactive:
+      !user.lastActiveAt ||
+      now - user.lastActiveAt.getTime() > inactiveThresholdMs,
+    permissions: {
+      canChangeRole: true,
+      canRemove: user.role !== UserRole.ADMIN,
+    },
+    org: { id: user.org.id, name: user.org.displayName },
+    stats: {
+      ticketsRequested,
+      ticketsAssigned,
+      avgResolutionMs,
+    },
+  };
+};
+
+export const getInvitations = async (
+  db: DbClient,
+  filters: { orgId?: string; status?: InvitationStatus },
+): Promise<Invitation[]> => {
+  const invitations = await db.invitation.findMany({
+    where: {
+      ...(filters.orgId ? { orgId: filters.orgId } : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+    },
+    include: { org: true, invitedBy: true },
+    orderBy: { sentAt: "desc" },
+  });
+
+  return invitations.map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role,
+    orgId: inv.orgId,
+    orgName: inv.org.displayName,
+    invitedBy: { id: inv.invitedBy.id, name: inv.invitedBy.displayName },
+    sentAt: inv.sentAt.toISOString(),
+    expiresAt: inv.expiresAt.toISOString(),
+    status: inv.status,
+    inviteUrl: `${appBaseUrl}/invitations/${inv.id}`,
+  }));
+};
+
+export const getAuditEntries = async (
+  db: DbClient,
+  params: { orgId?: string; limit: number; cursor?: string },
+): Promise<AuditEntry[]> => {
+  const entries = await db.teamAuditLog.findMany({
+    where: {
+      ...(params.orgId ? { orgId: params.orgId } : {}),
+      ...(params.cursor ? { createdAt: { lt: new Date(params.cursor) } } : {}),
+    },
+    include: {
+      actor: true,
+      targetUser: true,
+      org: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: params.limit,
+  });
+
+  return entries.map((entry) => ({
+    id: entry.id,
+    at: entry.createdAt.toISOString(),
+    actor: { id: entry.actor.id, name: entry.actor.displayName },
+    action: entry.action,
+    ...(entry.targetUser
+      ? { targetUser: { id: entry.targetUser.id, name: entry.targetUser.displayName } }
+      : entry.targetEmail
+        ? { targetUser: { id: entry.id, name: entry.targetEmail } }
+        : {}),
+    org: { id: entry.org.id, name: entry.org.displayName },
+    ...(entry.fromRole ? { fromRole: entry.fromRole } : {}),
+    ...(entry.toRole ? { toRole: entry.toRole } : {}),
+    ...(entry.reason ? { reason: entry.reason } : {}),
+  }));
+};
+
+export const getOrgSummaries = async (db: DbClient): Promise<OrgSummary[]> => {
+  const now = Date.now();
+  const orgs = await db.org.findMany({
+    include: {
+      users: { select: { role: true } },
+      tickets: {
+        where: { status: { in: openStatuses } },
+        select: { status: true, createdAt: true },
+      },
+    },
+    orderBy: { displayName: "asc" },
+  });
+
+  return Promise.all(
+    orgs.map(async (org) => {
+      const lastActivity = await db.ticketActivity.findFirst({
+        where: { ticket: { orgId: org.id } },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      });
+
+      return {
+        org: { id: org.id, name: org.displayName },
+        memberCount: org.users.length,
+        adminCount: org.users.filter(
+          (u) => u.role === UserRole.ADMIN || u.role === UserRole.SUPER_ADMIN,
+        ).length,
+        openTickets: org.tickets.length,
+        staleTickets: org.tickets.filter(
+          (t) => now - t.createdAt.getTime() >= staleTicketMs,
+        ).length,
+        ...(lastActivity
+          ? { lastActivityAt: lastActivity.createdAt.toISOString() }
+          : {}),
+      };
+    }),
+  );
+};

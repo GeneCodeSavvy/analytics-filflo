@@ -12,105 +12,152 @@ import {
   sendNotFound,
   sendValidatedData,
 } from "../../lib/controllers";
-import { auditEntries, orgSummaries } from "./data";
+import type { DbClient } from "../../lib/db";
 import {
-  filterInvitations,
-  getInvitationById,
+  getAuditEntries,
+  getInvitations,
+  getOrgSummaries,
+} from "./data";
+import {
   parseTeamAuditParams,
   parseTeamInvitationListParams,
 } from "./utils";
 
-export const getInvitations: RequestHandler = (req, res) => {
+const appBaseUrl = process.env.APP_BASE_URL ?? "https://app.filflo.example";
+const inviteExpiryDays = 7;
+
+export const getInvitations_: RequestHandler = async (req, res) => {
   const params = parseTeamInvitationListParams(req.query);
 
   if (!params.success) {
-    return sendInvalidRequest(
-      res,
-      "team invitation list params",
-      params.error.issues,
-    );
+    return sendInvalidRequest(res, "team invitation list params", params.error.issues);
   }
 
-  return sendValidatedData(
-    res,
-    InvitationSchema.array(),
-    filterInvitations(params.data),
-    "Team invitation list dummy data",
-  );
+  const db = req.app.locals.db as DbClient;
+  const invitations = await getInvitations(db, params.data);
+
+  return sendValidatedData(res, InvitationSchema.array(), invitations);
 };
 
-export const createInvitation: RequestHandler = (req, res) => {
+export { getInvitations_ as getInvitations };
+
+export const createInvitation: RequestHandler = async (req, res) => {
   const body = InvitePayloadSchema.safeParse(req.body);
 
   if (!body.success) {
     return sendInvalidRequest(res, "invite payload", body.error.issues);
   }
 
-  return sendValidatedData(
-    res,
-    InvitationSchema,
-    {
-      id: "inv-new",
+  const db = req.app.locals.db as DbClient;
+  const org = await db.org.findUnique({ where: { id: body.data.orgId } });
+
+  if (!org) {
+    return sendNotFound(res, "Org");
+  }
+
+  // TODO: replace with actual authenticated actor id from session
+  const actor = await db.user.findFirst({ where: { role: "ADMIN" } });
+
+  if (!actor) {
+    return sendNotFound(res, "Actor");
+  }
+
+  const sentAt = new Date();
+  const expiresAt = new Date(sentAt.getTime() + inviteExpiryDays * 24 * 60 * 60 * 1000);
+
+  const invitation = await db.invitation.create({
+    data: {
       email: body.data.email,
       role: body.data.role,
       orgId: body.data.orgId,
-      orgName: body.data.orgId === "org-nova" ? "Nova Retail" : "Acme Finance",
-      invitedBy: {
-        id: "usr-900",
-        name: "Meera Iyer",
-      },
-      sentAt: "2026-05-02T09:45:00.000Z",
-      expiresAt: "2026-05-09T09:45:00.000Z",
-      status: "pending",
-      inviteUrl: "https://app.filflo.example/invitations/inv-new",
+      invitedById: actor.id,
+      sentAt,
+      expiresAt,
+      ...(body.data.message ? { message: body.data.message } : {}),
     },
-    "Created invitation dummy data",
-  );
+    include: { org: true, invitedBy: true },
+  });
+
+  await db.teamAuditLog.create({
+    data: {
+      actorId: actor.id,
+      targetEmail: body.data.email,
+      orgId: body.data.orgId,
+      action: "INVITED",
+      toRole: body.data.role,
+    },
+  });
+
+  return sendValidatedData(res, InvitationSchema, {
+    id: invitation.id,
+    email: invitation.email,
+    role: invitation.role,
+    orgId: invitation.orgId,
+    orgName: invitation.org.displayName,
+    invitedBy: { id: invitation.invitedBy.id, name: invitation.invitedBy.displayName },
+    sentAt: invitation.sentAt.toISOString(),
+    expiresAt: invitation.expiresAt.toISOString(),
+    status: invitation.status,
+    inviteUrl: `${appBaseUrl}/invitations/${invitation.id}`,
+  });
 };
 
-export const cancelInvitation: RequestHandler = (req, res) => {
+export const cancelInvitation: RequestHandler = async (req, res) => {
   const params = TeamInvitationParamsSchema.safeParse(req.params);
 
   if (!params.success) {
     return sendInvalidRequest(res, "team invitation id", params.error.issues);
   }
 
-  if (!getInvitationById(params.data.id)) {
+  const db = req.app.locals.db as DbClient;
+  const invitation = await db.invitation.findUnique({
+    where: { id: params.data.id },
+  });
+
+  if (!invitation) {
     return sendNotFound(res, "Invitation");
   }
 
-  return sendValidatedData(
-    res,
-    BulkMemberResultSchema,
-    { succeeded: [params.data.id], failed: [] },
-    "Cancel invitation dummy data",
-  );
+  await db.invitation.update({
+    where: { id: params.data.id },
+    data: { status: "CANCELLED" },
+  });
+
+  await db.teamAuditLog.create({
+    data: {
+      actorId: invitation.invitedById,
+      targetEmail: invitation.email,
+      orgId: invitation.orgId,
+      action: "INVITATION_CANCELLED",
+    },
+  });
+
+  return sendValidatedData(res, BulkMemberResultSchema, {
+    succeeded: [params.data.id],
+    failed: [],
+  });
 };
 
-export const getAuditEntries: RequestHandler = (req, res) => {
+export const getAuditEntries_: RequestHandler = async (req, res) => {
   const params = parseTeamAuditParams(req.query);
 
   if (!params.success) {
     return sendInvalidRequest(res, "team audit params", params.error.issues);
   }
 
-  const filtered = auditEntries
-    .filter((entry) => params.data.orgId === undefined || entry.org.id === params.data.orgId)
-    .slice(0, params.data.limit);
+  const db = req.app.locals.db as DbClient;
+  const entries = await getAuditEntries(db, params.data);
 
-  return sendValidatedData(
-    res,
-    AuditEntrySchema.array(),
-    filtered,
-    "Team audit dummy data",
-  );
+  return sendValidatedData(res, AuditEntrySchema.array(), entries);
 };
 
-export const getOrgSummaries: RequestHandler = (_req, res) => {
-  return sendValidatedData(
-    res,
-    OrgSummarySchema.array(),
-    orgSummaries,
-    "Team org summary dummy data",
-  );
+export { getAuditEntries_ as getAuditEntries };
+
+export const getOrgSummaries_: RequestHandler = async (_req, res) => {
+  const db = _req.app.locals.db as DbClient;
+  const summaries = await getOrgSummaries(db);
+
+  return sendValidatedData(res, OrgSummarySchema.array(), summaries);
 };
+
+export { getOrgSummaries_ as getOrgSummaries };
