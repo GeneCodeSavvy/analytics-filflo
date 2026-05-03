@@ -7,9 +7,11 @@
         "build": "tsc",
         "check-types": "tsc --noEmit",
         "dev": "tsx watch src/index.ts",
-        "lint": "eslint . --max-warnings 0"
+        "lint": "eslint . --max-warnings 0",
+        "prisma": "prisma"
     },
     "dependencies": {
+        "@prisma/client": "^7.0.1",
         "@shared": "workspace:*",
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
@@ -23,6 +25,7 @@
         "@repo/typescript-config": "workspace:*",
         "@types/node": "^22.15.3",
         "eslint": "^9.39.1",
+        "prisma": "^7.0.1",
         "tsx": "^4.21.0",
         "typescript": "5.9.2"
     }

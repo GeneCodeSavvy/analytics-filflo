@@ -1,0 +1,367 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+enum UserRole {
+    SUPER_ADMIN
+    ADMIN
+    MODERATOR
+    USER
+}
+
+enum TicketStatus {
+    OPEN
+    IN_PROGRESS
+    ON_HOLD
+    REVIEW
+    RESOLVED
+    CLOSED
+}
+
+enum TicketPriority {
+    HIGH
+    MEDIUM
+    LOW
+}
+
+enum TicketCategory {
+    BUG
+    FEATURE_REQUEST
+}
+
+enum TicketParticipantRole {
+    REQUESTER
+    ASSIGNEE
+}
+
+enum MessageKind {
+    USER_MESSAGE
+    FILE_ATTACHMENT
+}
+
+enum InvitationStatus {
+    PENDING
+    ACCEPTED
+    EXPIRED
+    CANCELLED
+}
+
+enum ViewScope {
+    BUILTIN
+    USER
+}
+
+enum AuditAction {
+    ROLE_CHANGED
+    REMOVED
+    INVITED
+    INVITATION_CANCELLED
+}
+
+enum NotificationType {
+    TICKET_ASSIGNED
+    REVIEW_REQUESTED
+    TICKET_INVITATION
+    TICKET_RESOLVED
+    TICKET_CLOSED
+    NEW_TICKET_IN_ORG
+    MESSAGE_ACTIVITY
+}
+
+model Org {
+    id                String         @id @default(cuid())
+    displayName       String
+    logoUrl           String?
+    defaultPriority   TicketPriority @default(LOW)
+    defaultCategories TicketCategory @default(BUG)
+    createdAt         DateTime       @default(now())
+    updatedAt         DateTime       @updatedAt
+
+    users         User[]
+    tickets       Ticket[]
+    invitations   Invitation[]
+    teamAuditLogs TeamAuditLog[]
+    fileAssets    FileAsset[]
+
+    @@index([displayName])
+}
+
+model User {
+    id           String    @id @default(cuid())
+    clerkUserId  String    @unique
+    email        String
+    displayName  String
+    avatarUrl    String?
+    role         UserRole
+    orgId        String
+    lastActiveAt DateTime?
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+
+    org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+    ticketParticipants TicketParticipant[] @relation("TicketParticipantUser")
+    addedParticipants  TicketParticipant[] @relation("TicketParticipantAddedBy")
+    ticketActivities   TicketActivity[]
+    ticketViews        TicketView[]
+    sentMessages       Message[]
+    messageReadStates  MessageReadState[]
+    uploadedFiles      FileAsset[]
+    invitedUsers       Invitation[]
+    teamAuditActors    TeamAuditLog[]      @relation("TeamAuditActor")
+    teamAuditTargets   TeamAuditLog[]      @relation("TeamAuditTarget")
+    receivedNotifs     Notification[]      @relation("NotificationRecipient")
+    actedNotifs        Notification[]      @relation("NotificationActor")
+
+    @@index([orgId])
+    @@index([role])
+    @@index([displayName])
+    @@index([email])
+}
+
+model Ticket {
+    id          String         @id @default(cuid())
+    subject     String
+    description String
+    status      TicketStatus   @default(OPEN)
+    priority    TicketPriority @default(LOW)
+    category    TicketCategory @default(BUG)
+    orgId       String
+    closedAt    DateTime?
+    resolvedAt  DateTime?
+    createdAt   DateTime       @default(now())
+    updatedAt   DateTime       @updatedAt
+
+    org           Org                 @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    participants  TicketParticipant[]
+    activities    TicketActivity[]
+    thread        Thread?
+    ticketRefs    MessageTicketRef[]
+    notifications Notification[]
+
+    @@index([orgId, status, priority])
+    @@index([updatedAt])
+    @@index([createdAt])
+}
+
+model TicketParticipant {
+    id        String                @id @default(cuid())
+    ticketId  String
+    userId    String
+    role      TicketParticipantRole
+    isPrimary Boolean               @default(false)
+    addedById String?
+    createdAt DateTime              @default(now())
+
+    ticket  Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+    user    User   @relation("TicketParticipantUser", fields: [userId], references: [id], onDelete: Cascade)
+    addedBy User?  @relation("TicketParticipantAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+
+    @@unique([ticketId, userId, role])
+    @@index([ticketId, role, isPrimary])
+    @@index([userId, role])
+}
+
+model TicketActivity {
+    id        String   @id @default(cuid())
+    ticketId  String
+    actorId   String
+    type      String
+    changes   Json?
+    comment   String?
+    createdAt DateTime @default(now())
+
+    ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+    actor  User   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+    @@index([ticketId, createdAt])
+    @@index([actorId, createdAt])
+}
+
+model TicketView {
+    id        String    @id @default(cuid())
+    name      String
+    scope     ViewScope
+    ownerId   String?
+    role      UserRole?
+    filters   Json
+    sort      Json
+    groupBy   String?
+    columns   String[]  @default([])
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+    @@index([scope, role])
+    @@index([ownerId])
+}
+
+model Thread {
+    id            String    @id @default(cuid())
+    ticketId      String    @unique
+    lastMessageId String?   @unique
+    lastMessageAt DateTime?
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+
+    ticket           Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+    lastMessage      Message?           @relation("ThreadLastMessage", fields: [lastMessageId], references: [id], onDelete: SetNull)
+    messages         Message[]          @relation("ThreadMessages")
+    messageReadState MessageReadState[]
+    notifications    Notification[]
+
+    @@index([lastMessageAt])
+}
+
+model Message {
+    id        String      @id @default(cuid())
+    threadId  String
+    senderId  String
+    kind      MessageKind
+    content   String?
+    createdAt DateTime    @default(now())
+    editedAt  DateTime?
+    deletedAt DateTime?
+
+    thread        Thread             @relation("ThreadMessages", fields: [threadId], references: [id], onDelete: Cascade)
+    sender        User               @relation(fields: [senderId], references: [id], onDelete: Restrict)
+    lastForThread Thread?            @relation("ThreadLastMessage")
+    readStates    MessageReadState[]
+    ticketRefs    MessageTicketRef[]
+    files         MessageFile[]
+    notifications Notification[]
+
+    @@index([threadId, createdAt])
+    @@index([senderId, createdAt])
+}
+
+model MessageReadState {
+    id                String    @id @default(cuid())
+    threadId          String
+    userId            String
+    lastReadAt        DateTime?
+    lastReadMessageId String?
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+
+    thread          Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+    user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    lastReadMessage Message? @relation(fields: [lastReadMessageId], references: [id], onDelete: SetNull)
+
+    @@unique([threadId, userId])
+    @@index([userId, lastReadAt])
+}
+
+model MessageTicketRef {
+    id        String @id @default(cuid())
+    messageId String
+    ticketId  String
+
+    message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+    ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+    @@unique([messageId, ticketId])
+    @@index([ticketId])
+}
+
+model FileAsset {
+    id           String   @id @default(cuid())
+    orgId        String
+    uploadedById String
+    name         String
+    size         Int
+    mimeType     String
+    url          String
+    thumbnailUrl String?
+    createdAt    DateTime @default(now())
+
+    org        Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    uploadedBy User          @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+    messages   MessageFile[]
+
+    @@index([orgId, createdAt])
+    @@index([uploadedById, createdAt])
+}
+
+model MessageFile {
+    id        String @id @default(cuid())
+    messageId String
+    fileId    String
+
+    message Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+    file    FileAsset @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+    @@unique([messageId, fileId])
+}
+
+model Invitation {
+    id          String           @id @default(cuid())
+    email       String
+    role        UserRole
+    orgId       String
+    invitedById String
+    status      InvitationStatus @default(PENDING)
+    tokenHash   String?          @unique
+    message     String?
+    sentAt      DateTime         @default(now())
+    expiresAt   DateTime
+    acceptedAt  DateTime?
+    createdAt   DateTime         @default(now())
+    updatedAt   DateTime         @updatedAt
+
+    org       Org  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+    invitedBy User @relation(fields: [invitedById], references: [id], onDelete: Restrict)
+
+    @@index([orgId, status])
+    @@index([email, status])
+}
+
+model TeamAuditLog {
+    id           String      @id @default(cuid())
+    actorId      String
+    targetUserId String?
+    targetEmail  String?
+    orgId        String
+    action       AuditAction
+    fromRole     UserRole?
+    toRole       UserRole?
+    reason       String?
+    createdAt    DateTime    @default(now())
+
+    actor      User  @relation("TeamAuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+    targetUser User? @relation("TeamAuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+    org        Org   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+    @@index([orgId, createdAt])
+    @@index([actorId, createdAt])
+    @@index([targetUserId, createdAt])
+}
+
+model Notification {
+    id          String           @id @default(cuid())
+    recipientId String
+    actorId     String?
+    type        NotificationType
+    ticketId    String?
+    threadId    String?
+    messageId   String?
+    title       String
+    body        String?
+    readAt      DateTime?
+    createdAt   DateTime         @default(now())
+
+    recipient User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+    actor     User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+    ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+    thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+    message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+    @@index([recipientId, readAt, createdAt])
+    @@index([ticketId])
+    @@index([threadId])
+}
