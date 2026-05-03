@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./schema": "./schema/index.ts",
     "./schema/*": "./schema/*.ts"
   },
   "scripts": {

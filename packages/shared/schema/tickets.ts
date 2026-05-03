@@ -1,19 +1,21 @@
 import { z } from "zod";
-
-export const TicketStatusSchema = z.enum([
-  "OPEN",
-  "IN_PROGRESS",
-  "ON_HOLD",
-  "REVIEW",
-  "RESOLVED",
-  "CLOSED",
-]);
-export const TicketPrioritySchema = z.enum(["HIGH", "MEDIUM", "LOW"]);
+import {
+  DeleteResponseSchema,
+  IdParamsSchema,
+  OrgRefSchema,
+  TicketCategorySchema,
+  TicketParticipantRoleSchema,
+  TicketPrioritySchema,
+  TicketStatusSchema,
+  UserRefSchema,
+  UserRoleSchema,
+  ViewScopeSchema,
+} from "./domain";
 
 export const TicketFiltersSchema = z.object({
   status: TicketStatusSchema.array().optional(),
   priority: TicketPrioritySchema.array().optional(),
-  category: z.string().array().optional(),
+  category: TicketCategorySchema.array().optional(),
   assigneeIds: z.string().array().optional(),
   requesterIds: z.string().array().optional(),
   orgIds: z.string().array().optional(),
@@ -43,9 +45,9 @@ export const TicketFilterParamsSchema = TicketFiltersSchema.extend({
 export const ViewSchema = z.object({
   id: z.string(),
   name: z.string(),
-  scope: z.enum(["builtin", "user"]),
+  scope: ViewScopeSchema,
   ownerId: z.string().optional(),
-  role: z.string().optional(),
+  role: UserRoleSchema.optional(),
   filters: TicketFiltersSchema,
   sort: TicketSortSchema.array(),
   groupBy: z.enum(["org", "status", "priority", "assignee"]).optional(),
@@ -58,26 +60,12 @@ export const TicketRowSchema = z.object({
   descriptionPreview: z.string(),
   status: z.string(),
   priority: z.string(),
-  category: z.string().optional(),
-  org: z.object({ id: z.string(), name: z.string() }),
-  requester: z.object({
-    id: z.string(),
-    name: z.string(),
-    avatarUrl: z.string().optional(),
-    role: z.string(),
-    orgId: z.string(),
-  }),
-  primaryAssignee: z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      avatarUrl: z.string().optional(),
-      role: z.string(),
-      orgId: z.string(),
-    })
-    .optional(),
+  category: TicketCategorySchema.optional(),
+  org: OrgRefSchema,
+  requester: UserRefSchema,
+  primaryAssignee: UserRefSchema.optional(),
   assigneeCount: z.number(),
-  assigneesPreview: z.array(z.any()),
+  assigneesPreview: UserRefSchema.array(),
   createdAt: z.string(),
   updatedAt: z.string(),
   isStale: z.boolean(),
@@ -124,9 +112,9 @@ export const TicketDetailSchema = TicketRowSchema.extend({
 export const NewTicketDraftSchema = z.object({
   subject: z.string().min(1),
   description: z.string().min(1),
-  category: z.string().optional(),
+  category: TicketCategorySchema.optional(),
   priority: TicketPrioritySchema.optional(),
-  inviteeIds: z.string().array().default([]),
+  assigneeIds: z.string().array().default([]),
 });
 
 export const AssignPayloadSchema = z.object({
@@ -134,15 +122,23 @@ export const AssignPayloadSchema = z.object({
   remove: z.string().array().default([]),
 });
 
+export const TicketParticipantSchema = z.object({
+  id: z.string(),
+  ticketId: z.string(),
+  user: UserRefSchema,
+  role: TicketParticipantRoleSchema,
+  isPrimary: z.boolean(),
+  addedBy: UserRefSchema.optional(),
+  createdAt: z.string(),
+});
+
 export const UpdateTicketPayloadSchema = z
   .object({
     subject: z.string().min(1).optional(),
     description: z.string().min(1).optional(),
-    category: z.string().optional(),
+    category: TicketCategorySchema.optional(),
     status: TicketStatusSchema.optional(),
     priority: TicketPrioritySchema.optional(),
-    requesterId: z.string().optional(),
-    orgId: z.string().optional(),
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one ticket field is required",
@@ -181,16 +177,9 @@ export const TicketSearchParamsSchema = TicketFiltersSchema.extend({
 
 export const ViewListSchema = ViewSchema.array();
 
-export const IdParamsSchema = z.object({
-  id: z.string().min(1),
-});
-
-export const DeleteResponseSchema = z.object({
-  deleted: z.boolean(),
-});
-
 export type TicketStatus = z.infer<typeof TicketStatusSchema>;
 export type TicketPriority = z.infer<typeof TicketPrioritySchema>;
+export type TicketCategory = z.infer<typeof TicketCategorySchema>;
 export type TicketFilters = z.infer<typeof TicketFiltersSchema>;
 export type TicketSort = z.infer<typeof TicketSortSchema>;
 export type TicketListParams = z.infer<typeof TicketListParamsSchema>;
@@ -203,6 +192,7 @@ export type ActivityEntry = z.infer<typeof ActivityEntrySchema>;
 export type TicketDetail = z.infer<typeof TicketDetailSchema>;
 export type NewTicketDraft = z.infer<typeof NewTicketDraftSchema>;
 export type AssignPayload = z.infer<typeof AssignPayloadSchema>;
+export type TicketParticipant = z.infer<typeof TicketParticipantSchema>;
 export type UpdateTicketPayload = z.infer<typeof UpdateTicketPayloadSchema>;
 export type BulkTicketPayload = z.infer<typeof BulkTicketPayloadSchema>;
 export type BulkResult = z.infer<typeof BulkResultSchema>;

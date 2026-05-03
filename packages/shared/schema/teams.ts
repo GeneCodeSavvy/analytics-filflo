@@ -1,25 +1,19 @@
 import { z } from "zod";
+import {
+  AuditActionSchema,
+  InvitationStatusSchema,
+  OrgRefSchema,
+  PageParamsSchema,
+  UserRefSchema,
+  UserRoleSchema,
+} from "./domain";
 
-export const TeamRoleSchema = z.enum([
-  "SUPER_ADMIN",
-  "ADMIN",
-  "MODERATOR",
-  "USER",
-]);
+export const TeamRoleSchema = UserRoleSchema;
 
-export const InvitationStatusSchema = z.enum([
-  "pending",
-  "accepted",
-  "expired",
-  "cancelled",
-]);
-
-export const TeamMemberListParamsSchema = z.object({
+export const TeamMemberListParamsSchema = PageParamsSchema.extend({
   orgId: z.string().optional(),
-  role: TeamRoleSchema.array().optional(),
+  role: UserRoleSchema.array().optional(),
   q: z.string().optional(),
-  page: z.number().int().positive().default(1),
-  pageSize: z.number().int().positive().default(25),
 });
 
 export const TeamAuditParamsSchema = z.object({
@@ -33,20 +27,9 @@ export const TeamInvitationListParamsSchema = z.object({
   status: InvitationStatusSchema.optional(),
 });
 
-const UserRefSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-});
-
-const OrgRefSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-});
-
 export const MemberPermissionsSchema = z.object({
   canChangeRole: z.boolean(),
   canRemove: z.boolean(),
-  canMoveTo: z.boolean(),
 });
 
 export const MemberRowSchema = z.object({
@@ -54,7 +37,7 @@ export const MemberRowSchema = z.object({
   name: z.string(),
   email: z.string(),
   avatarUrl: z.string().optional(),
-  role: TeamRoleSchema,
+  role: UserRoleSchema,
   orgId: z.string(),
   joinedAt: z.string(),
   lastActiveAt: z.string().nullable().optional(),
@@ -63,15 +46,9 @@ export const MemberRowSchema = z.object({
 });
 
 export const MemberDetailSchema = MemberRowSchema.extend({
-  orgMemberships: z.array(
-    z.object({
-      org: OrgRefSchema,
-      role: TeamRoleSchema,
-      joinedAt: z.string(),
-    }),
-  ),
+  org: OrgRefSchema,
   stats: z.object({
-    ticketsCreated: z.number(),
+    ticketsRequested: z.number(),
     ticketsAssigned: z.number(),
     avgResolutionMs: z.number().nullable().optional(),
   }),
@@ -88,10 +65,10 @@ export const TeamMemberListResponseSchema = z.object({
 export const InvitationSchema = z.object({
   id: z.string(),
   email: z.string(),
-  role: TeamRoleSchema,
+  role: UserRoleSchema,
   orgId: z.string(),
   orgName: z.string(),
-  invitedBy: UserRefSchema,
+  invitedBy: UserRefSchema.pick({ id: true, name: true }),
   sentAt: z.string(),
   expiresAt: z.string(),
   status: InvitationStatusSchema,
@@ -101,17 +78,13 @@ export const InvitationSchema = z.object({
 export const AuditEntrySchema = z.object({
   id: z.string(),
   at: z.string(),
-  actor: UserRefSchema,
-  action: z.enum([
-    "role_changed",
-    "removed",
-    "invited",
-    "invitation_cancelled",
-  ]),
-  targetUser: UserRefSchema,
+  actor: UserRefSchema.pick({ id: true, name: true }),
+  action: AuditActionSchema,
+  targetUser: UserRefSchema.pick({ id: true, name: true }).optional(),
+  targetEmail: z.string().optional(),
   org: OrgRefSchema,
-  fromRole: TeamRoleSchema.optional(),
-  toRole: TeamRoleSchema.optional(),
+  fromRole: UserRoleSchema.optional(),
+  toRole: UserRoleSchema.optional(),
   reason: z.string().optional(),
 });
 
@@ -126,20 +99,14 @@ export const OrgSummarySchema = z.object({
 
 export const InvitePayloadSchema = z.object({
   email: z.string(),
-  role: TeamRoleSchema,
+  role: UserRoleSchema,
   orgId: z.string(),
   message: z.string().optional(),
 });
 
 export const RoleChangePayloadSchema = z.object({
-  role: TeamRoleSchema,
-  orgId: z.string().optional(),
+  role: UserRoleSchema,
   reason: z.string().optional(),
-});
-
-export const MoveMemberPayloadSchema = z.object({
-  fromOrgId: z.string().optional(),
-  toOrgId: z.string(),
 });
 
 export const RemoveMemberParamsSchema = z.object({
@@ -184,7 +151,6 @@ export type AuditEntry = z.infer<typeof AuditEntrySchema>;
 export type OrgSummary = z.infer<typeof OrgSummarySchema>;
 export type InvitePayload = z.infer<typeof InvitePayloadSchema>;
 export type RoleChangePayload = z.infer<typeof RoleChangePayloadSchema>;
-export type MoveMemberPayload = z.infer<typeof MoveMemberPayloadSchema>;
 export type RemoveMemberParams = z.infer<typeof RemoveMemberParamsSchema>;
 export type TeamMemberParams = z.infer<typeof TeamMemberParamsSchema>;
 export type TeamInvitationParams = z.infer<typeof TeamInvitationParamsSchema>;

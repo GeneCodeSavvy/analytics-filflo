@@ -1,19 +1,21 @@
 import { z } from "zod";
-import { UserRefSchema } from "./user";
+import {
+  EmptyResponseSchema,
+  FileAssetSchema,
+  IdParamsSchema,
+  MessageKindSchema,
+  TicketRefSchema,
+  UserRefSchema,
+} from "./domain";
 
-export const MessageKindSchema = z.enum([
-  "user_message",
-  "system_event",
-  "file_attachment",
-]);
-
-export const SystemEventKindSchema = z.enum([
-  "status_change",
-  "priority_change",
-  "assignee_added",
-  "assignee_removed",
-  "ticket_created",
-]);
+export const MessageFileSchema = FileAssetSchema.pick({
+  id: true,
+  name: true,
+  size: true,
+  mimeType: true,
+  url: true,
+  thumbnailUrl: true,
+});
 
 export const MessageSchema = z.object({
   id: z.string(),
@@ -22,60 +24,32 @@ export const MessageSchema = z.object({
   sender: UserRefSchema,
   at: z.string(),
   content: z.string().optional(),
-  mentions: UserRefSchema.array().optional(),
   ticketRefs: z.string().array().optional(),
-  file: z
-    .object({
-      name: z.string(),
-      size: z.number(),
-      mimeType: z.string(),
-      url: z.string(),
-      thumbnailUrl: z.string().optional(),
-    })
-    .optional(),
-  eventKind: SystemEventKindSchema.optional(),
-  eventDescription: z.string().optional(),
+  file: MessageFileSchema.optional(),
 });
 
 export const ThreadListRowSchema = z.object({
   id: z.string(),
-  ticket: z.object({
-    id: z.string(),
-    subject: z.string(),
-    status: z.string(),
-    priority: z.string(),
-    orgId: z.string(),
-    orgName: z.string(),
-  }),
+  ticket: TicketRefSchema,
   lastMessage: z.object({
     snippet: z.string(),
     senderName: z.string(),
     at: z.string(),
-    isSystemEvent: z.boolean(),
   }),
   unreadCount: z.number(),
   participantsPreview: UserRefSchema.array(),
   participantCount: z.number(),
   isUnanswered: z.boolean(),
-  isMuted: z.boolean(),
 });
 
 export const ThreadSchema = z.object({
   id: z.string(),
-  ticket: z.object({
-    id: z.string(),
-    subject: z.string(),
-    status: z.string(),
-    priority: z.string(),
-    orgId: z.string(),
-    orgName: z.string(),
-  }),
+  ticket: TicketRefSchema,
   participants: UserRefSchema.array(),
   permissions: z.object({
     canSend: z.boolean(),
-    canAddParticipants: z.boolean(),
-    canJoin: z.boolean(),
-    canMute: z.boolean(),
+    canAddParticipants: z.literal(false).default(false),
+    canJoin: z.literal(false).default(false),
   }),
 });
 
@@ -92,13 +66,8 @@ export const MessagePageParamsSchema = z.object({
 
 export const SendMessagePayloadSchema = z.object({
   content: z.string().optional(),
-  mentionIds: z.string().array().optional(),
   ticketRefs: z.string().array().optional(),
   fileIds: z.string().array().optional(),
-});
-
-export const AddParticipantPayloadSchema = z.object({
-  userId: z.string(),
 });
 
 export const FileUploadResponseSchema = z.object({
@@ -115,10 +84,6 @@ export const MessagesPageSchema = z.object({
 export const ThreadListSchema = ThreadListRowSchema.array();
 export const ParticipantsSchema = UserRefSchema.array();
 
-export const IdParamsSchema = z.object({
-  id: z.string().min(1),
-});
-
 export const ThreadMessageParamsSchema = z.object({
   threadId: z.string().min(1),
   messageId: z.string().min(1).optional(),
@@ -129,19 +94,14 @@ export const ThreadFileParamsSchema = z.object({
   fileId: z.string().min(1).optional(),
 });
 
-export const EmptyResponseSchema = z.object({
-  ok: z.literal(true),
-});
-
 export type MessageKind = z.infer<typeof MessageKindSchema>;
-export type SystemEventKind = z.infer<typeof SystemEventKindSchema>;
+export type MessageFile = z.infer<typeof MessageFileSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 export type ThreadListRow = z.infer<typeof ThreadListRowSchema>;
 export type Thread = z.infer<typeof ThreadSchema>;
 export type MessageFilters = z.infer<typeof MessageFiltersSchema>;
 export type MessagePageParams = z.infer<typeof MessagePageParamsSchema>;
 export type SendMessagePayload = z.infer<typeof SendMessagePayloadSchema>;
-export type AddParticipantPayload = z.infer<typeof AddParticipantPayloadSchema>;
 export type FileUploadResponse = z.infer<typeof FileUploadResponseSchema>;
 export type MessagesPage = z.infer<typeof MessagesPageSchema>;
 export type ThreadList = z.infer<typeof ThreadListSchema>;
