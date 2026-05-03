@@ -91,12 +91,17 @@ export const createInvitation: RequestHandler = async (req, res) => {
 
   const inviteLink = `${appBaseUrl}/invitations/${rawToken}`;
 
-  await sendInviteMail(
-    body.data.email,
-    actor.displayName,
-    org.displayName,
-    inviteLink,
-  );
+  try {
+    await sendInviteMail(
+      body.data.email,
+      actor.displayName,
+      org.displayName,
+      inviteLink,
+    );
+  } catch {
+    res.status(502).json({ success: false, error: "Failed to send invitation email" });
+    return;
+  }
 
   return sendValidatedData(res, InvitationSchema, {
     id: invitation.id,

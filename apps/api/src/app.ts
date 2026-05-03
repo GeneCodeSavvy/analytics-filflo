@@ -18,17 +18,19 @@ const corsOptions: CorsOptions = {
 
 export const createApp = (db: DbClient): express.Application => {
   const app = express();
-  app.use(express.json());
   app.use(cors(corsOptions));
   app.locals.db = db;
 
+  // Webhook route must be before express.json() to get raw body for svix verification
+  app.use("/webhooks", express.raw({ type: "application/json" }), webhooksRouter);
+
+  app.use(express.json());
   app.use(clerkMiddleware());
 
-  // Public routes (no authentication required)
+  // Public routes — no auth required
   app.use("/invitations", invitationsRouter);
-  app.use("/webhooks", webhooksRouter);
 
-  // Protected routes (authentication required)
+  // Authenticated routes
   app.use(requireDbUser);
 
   app.use("/dashboard", dashboardRouter);

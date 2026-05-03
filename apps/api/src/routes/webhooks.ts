@@ -26,7 +26,7 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
   let evt: { type: string; data: Record<string, unknown> };
 
   try {
-    evt = wh.verify(JSON.stringify(req.body), {
+    evt = wh.verify(req.body as Buffer, {
       "svix-id": svixId,
       "svix-timestamp": svixTimestamp,
       "svix-signature": svixSignature,
@@ -57,24 +57,31 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
 
   const db = req.app.locals.db as DbClient;
 
-  const stubUser = await db.user.findFirst({
-    where: { email, clerkUserId: null },
-  });
+  try {
+    const stubUsers = await db.user.findMany({
+      where: { email, clerkUserId: null },
+    });
 
-  if (!stubUser) {
-    console.warn(`[webhook] user.created for ${email} — no stub user found (organic sign-up?)`);
-    res.status(200).json({ received: true });
+    if (stubUsers.length === 0) {
+      console.warn(`[webhook] user.created for ${email} — no stub user found (organic sign-up?)`);
+      res.status(200).json({ received: true });
+      return;
+    }
+
+    const firstName = data.first_name ?? "";
+    const lastName = data.last_name ?? "";
+    const displayName = [firstName, lastName].filter(Boolean).join(" ") || email;
+
+    // Link all stub users (handles multi-org invitations)
+    await db.user.updateMany({
+      where: { email, clerkUserId: null },
+      data: { clerkUserId: data.id, displayName },
+    });
+  } catch {
+    console.error(`[webhook] DB error processing user.created for ${email}`);
+    res.status(500).json({ error: "Internal error" });
     return;
   }
-
-  const firstName = data.first_name ?? "";
-  const lastName = data.last_name ?? "";
-  const displayName = [firstName, lastName].filter(Boolean).join(" ") || email;
-
-  await db.user.update({
-    where: { id: stubUser.id },
-    data: { clerkUserId: data.id, displayName },
-  });
 
   res.status(200).json({ received: true });
 });

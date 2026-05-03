@@ -13,51 +13,66 @@ export const verifyInvitation: RequestHandler = async (req, res) => {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const db = req.app.locals.db as DbClient;
 
-  const invitation = await db.invitation.findUnique({
-    where: { tokenHash },
-    include: { org: true },
-  });
+  let invitation: Awaited<ReturnType<typeof db.invitation.findUnique>> & { org: { displayName: string } } | null;
+
+  try {
+    invitation = await db.invitation.findUnique({
+      where: { tokenHash },
+      include: { org: true },
+    }) as typeof invitation;
+  } catch {
+    res.status(500).json({ success: false, error: "Internal error" });
+    return;
+  }
 
   if (!invitation) {
-    res.status(404).json({ success: false, error: "Invalid invitation" });
+    res.status(400).json({ success: false, error: "Invalid or expired invitation" });
     return;
   }
 
   if (invitation.status !== "PENDING") {
-    res.status(400).json({ success: false, error: "Invitation already used or cancelled" });
+    res.status(400).json({ success: false, error: "Invalid or expired invitation" });
     return;
   }
 
   if (invitation.expiresAt < new Date()) {
-    await db.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "EXPIRED" },
-    });
-    res.status(400).json({ success: false, error: "Invitation expired" });
+    try {
+      await db.invitation.update({
+        where: { id: invitation.id },
+        data: { status: "EXPIRED" },
+      });
+    } catch {
+      // Best-effort expiry update — don't block the response
+    }
+    res.status(400).json({ success: false, error: "Invalid or expired invitation" });
     return;
   }
 
-  // Idempotency: skip creation if stub user already exists for this email+org
-  const existingUser = await db.user.findFirst({
-    where: { email: invitation.email, orgId: invitation.orgId },
-  });
-
-  if (!existingUser) {
-    await db.user.create({
-      data: {
-        email: invitation.email,
-        displayName: invitation.email,
-        role: invitation.role,
-        orgId: invitation.orgId,
-        clerkUserId: null,
-      },
+  try {
+    const existingUser = await db.user.findFirst({
+      where: { email: invitation.email, orgId: invitation.orgId },
     });
-  }
 
-  await db.invitation.update({
-    where: { id: invitation.id },
-    data: { status: "ACCEPTED", acceptedAt: new Date() },
-  });
+    if (!existingUser) {
+      await db.user.create({
+        data: {
+          email: invitation.email,
+          displayName: invitation.email,
+          role: invitation.role,
+          orgId: invitation.orgId,
+          clerkUserId: null,
+        },
+      });
+    }
+
+    await db.invitation.update({
+      where: { id: invitation.id },
+      data: { status: "ACCEPTED", acceptedAt: new Date() },
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "Internal error" });
+    return;
+  }
 
   res.json({
     success: true,
