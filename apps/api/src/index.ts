@@ -1,3 +1,4 @@
+import "dotenv/config";
 import http from "http";
 import express from "express";
 import cors, { CorsOptions } from "cors";
@@ -11,13 +12,18 @@ import { createDbClient } from "./lib/db";
 import { setupMessageWebSocket } from "./lib/ws";
 
 const PORT = process.env.PORT || 3000;
+const DB_CONNECTION_STRING = process.env.DATABASE_URL;
 const corsOptions: CorsOptions = {
   origin: process.env.CORS_URLS || "http://localhost:5173",
   credentials: true,
 };
 
 const app = express();
-app.locals.db = createDbClient();
+if (DB_CONNECTION_STRING) {
+  app.locals.db = createDbClient(DB_CONNECTION_STRING);
+} else {
+    console.error("DB String not passed")
+}
 app.use(express.json());
 app.use(cors(corsOptions));
 

@@ -11,6 +11,7 @@
         "prisma": "prisma"
     },
     "dependencies": {
+        "@prisma/adapter-pg": "^7.8.0",
         "@prisma/client": "^7.0.1",
         "@shared": "workspace:*",
         "@types/cors": "^2.8.19",
@@ -18,12 +19,14 @@
         "@types/ws": "^8.18.1",
         "cors": "^2.8.6",
         "express": "^5.2.1",
+        "pg": "^8.20.0",
         "ws": "^8.20.0"
     },
     "devDependencies": {
         "@repo/eslint-config": "workspace:*",
         "@repo/typescript-config": "workspace:*",
         "@types/node": "^22.15.3",
+        "@types/pg": "^8.20.0",
         "dotenv": "^17.4.2",
         "eslint": "^9.39.1",
         "prisma": "^7.0.1",
