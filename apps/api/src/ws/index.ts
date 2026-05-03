@@ -26,7 +26,7 @@ export const setupMessageWebSocket = (wss: WebSocketServer) => {
       JSON.stringify({
         type: "thread_connected",
         threadId: params.data.threadId,
-        at: "2026-05-02T09:45:00.000Z",
+        at: `${new Date().toISOString()}`,
       }),
     );
   });
