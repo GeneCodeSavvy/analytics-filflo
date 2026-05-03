@@ -14,7 +14,6 @@ import type {
   Invitation,
   InvitePayload,
   MemberDetail,
-  MoveMemberPayload,
   OrgSummary,
   RemoveMemberParams,
   RoleChangePayload,
@@ -75,14 +74,6 @@ export const teamsApi = {
     );
     return AuditEntrySchema.array().parse(data);
   },
-
-  moveMember: (
-    userId: string,
-    payload: MoveMemberPayload,
-  ): Promise<MemberDetail> =>
-    api
-      .post<MemberDetail>(`/teams/members/${userId}/move`, payload)
-      .then((data) => MemberDetailSchema.parse(data)),
 
   getInvitations: async (
     params: TeamInvitationListParams,

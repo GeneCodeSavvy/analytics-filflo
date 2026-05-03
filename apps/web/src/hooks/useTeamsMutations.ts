@@ -7,7 +7,6 @@ import type {
   Invitation,
   InvitePayload,
   MemberDetail,
-  MoveMemberPayload,
   RemoveMemberParams,
   RoleChangePayload,
 } from "../lib/teamParams";
@@ -117,24 +116,6 @@ export function useBulkTeamMembersMutation() {
         }
         invalidateTeamMemberHistory(queryClient, id);
       });
-      queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
-    },
-  });
-}
-
-export function useMoveTeamMemberMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    MemberDetail,
-    Error,
-    { userId: string; payload: MoveMemberPayload }
-  >({
-    mutationFn: ({ userId, payload }) => teamsApi.moveMember(userId, payload),
-    onSettled: (_data, _error, { userId }) => {
-      invalidateTeamLists(queryClient);
-      invalidateTeamMemberDetail(queryClient, userId);
-      invalidateTeamMemberHistory(queryClient, userId);
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });

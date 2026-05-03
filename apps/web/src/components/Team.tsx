@@ -212,7 +212,6 @@ function ActionMenu({
               ))}
             </div>
           ) : null}
-          {actorRole === "SUPER_ADMIN" ? <button type="button">Move to org...</button> : null}
           <button onClick={onProfile} type="button">View profile</button>
           <div className="teams-menu-divider" />
           <button className="teams-danger-text" onClick={onRemove} type="button">
