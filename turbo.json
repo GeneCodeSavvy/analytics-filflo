@@ -1,7 +1,15 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["PORT", "CORS_URLS"],
+  "globalEnv": [
+    "PORT",
+    "CORS_URLS",
+    "DATABASE_URL",
+    "CLERK_SECRET_KEY",
+    "VITE_CLERK_PUBLISHABLE_KEY",
+    "APP_BASE_URL",
+    "RESEND_API_KEY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
