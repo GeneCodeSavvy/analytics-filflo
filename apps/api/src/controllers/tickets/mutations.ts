@@ -2,13 +2,15 @@ import {
   AssignPayloadSchema,
   BulkResultSchema,
   BulkTicketPayloadSchema,
-  DeleteResponseSchema,
   NewTicketDraftSchema,
   TicketDetailSchema,
-  TicketPrioritySchema,
-  TicketStatusSchema,
   UpdateTicketPayloadSchema,
 } from "@shared/schema/tickets";
+import {
+  DeleteResponseSchema,
+  TicketPrioritySchema,
+  TicketStatusSchema,
+} from "@shared/schema/domain";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import { people, ticketDetails } from "./data";

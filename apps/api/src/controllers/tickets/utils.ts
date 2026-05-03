@@ -15,7 +15,7 @@ import {
   toStringArray,
 } from "../../lib/controllers";
 
-export { IdParamsSchema } from "@shared/schema/tickets";
+export { IdParamsSchema } from "@shared/schema/domain";
 
 export const parseTicketListParams = (query: unknown) => {
   const source = getQuerySource(query);
@@ -122,7 +122,11 @@ export const filterTickets = <Ticket extends TicketDetail>(
         filters.assigneeIds.length === 0 ||
         filters.assigneeIds.some((id) => assigneeIds.includes(id))) &&
       (filters.stale === undefined || ticket.isStale === filters.stale) &&
-      matchesDateRange(ticket.createdAt, filters.createdFrom, filters.createdTo) &&
+      matchesDateRange(
+        ticket.createdAt,
+        filters.createdFrom,
+        filters.createdTo,
+      ) &&
       matchesQuery
     );
   });

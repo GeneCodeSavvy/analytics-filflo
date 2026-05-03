@@ -1,5 +1,5 @@
+import { EmptyResponseSchema } from "@shared/schema/domain";
 import {
-  EmptyResponseSchema,
   MessageSchema,
   MessagesPageSchema,
   SendMessagePayloadSchema,
@@ -8,7 +8,11 @@ import {
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import { users } from "./data";
-import { getThreadById, getThreadMessages, parseMessagePageParams } from "./utils";
+import {
+  getThreadById,
+  getThreadMessages,
+  parseMessagePageParams,
+} from "./utils";
 
 export const getMessages: RequestHandler = (req, res) => {
   const params = ThreadMessageParamsSchema.safeParse(req.params);
@@ -30,9 +34,7 @@ export const getMessages: RequestHandler = (req, res) => {
   }
 
   const cursorIndex =
-    page.data.cursor === undefined
-      ? 0
-      : Number.parseInt(page.data.cursor, 10);
+    page.data.cursor === undefined ? 0 : Number.parseInt(page.data.cursor, 10);
   const start = Number.isFinite(cursorIndex) ? cursorIndex : 0;
   const messages = getThreadMessages(params.data.threadId);
   const nextStart = start + page.data.limit;
@@ -74,14 +76,14 @@ export const sendMessage: RequestHandler = (req, res) => {
     {
       id: "msg-new",
       threadId: params.data.threadId,
-      kind: body.data.fileIds?.length ? "file_attachment" : "user_message",
+      kind: body.data.fileIds?.length ? "FILE_ATTACHMENT" : "USER_MESSAGE",
       sender: users.agentA,
       at: "2026-05-02T09:30:00.000Z",
       content: body.data.content ?? "",
-      mentions: body.data.mentionIds?.map((id) => ({ ...users.moderatorA, id })),
       ticketRefs: body.data.ticketRefs,
       file: body.data.fileIds?.length
         ? {
+            id: body.data.fileIds[0] ?? "file-new",
             name: "uploaded-file.pdf",
             size: 24576,
             mimeType: "application/pdf",

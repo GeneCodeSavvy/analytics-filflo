@@ -2,7 +2,6 @@ import {
   BulkMemberOpSchema,
   BulkMemberResultSchema,
   MemberDetailSchema,
-  MoveMemberPayloadSchema,
   RemoveMemberParamsSchema,
   RoleChangePayloadSchema,
   TeamMemberListResponseSchema,
@@ -86,12 +85,6 @@ export const changeMemberRole: RequestHandler = (req, res) => {
     {
       ...member,
       role: body.data.role,
-      orgId: body.data.orgId ?? member.orgId,
-      orgMemberships: member.orgMemberships.map((membership) =>
-        membership.org.id === (body.data.orgId ?? member.orgId)
-          ? { ...membership, role: body.data.role }
-          : membership,
-      ),
     },
     "Changed member role dummy data",
   );
@@ -99,14 +92,9 @@ export const changeMemberRole: RequestHandler = (req, res) => {
 
 export const moveMember: RequestHandler = (req, res) => {
   const params = TeamMemberParamsSchema.safeParse(req.params);
-  const body = MoveMemberPayloadSchema.safeParse(req.body);
 
   if (!params.success) {
     return sendInvalidRequest(res, "team member id", params.error.issues);
-  }
-
-  if (!body.success) {
-    return sendInvalidRequest(res, "move member payload", body.error.issues);
   }
 
   const member = getMemberById(params.data.id);
@@ -115,26 +103,10 @@ export const moveMember: RequestHandler = (req, res) => {
     return sendNotFound(res, "Team member");
   }
 
-  return sendValidatedData(
-    res,
-    MemberDetailSchema,
-    {
-      ...member,
-      orgId: body.data.toOrgId,
-      orgMemberships: [
-        ...member.orgMemberships,
-        {
-          org: {
-            id: body.data.toOrgId,
-            name: body.data.toOrgId === "org-nova" ? "Nova Retail" : "Acme Finance",
-          },
-          role: member.role,
-          joinedAt: "2026-05-02T09:45:00.000Z",
-        },
-      ],
-    },
-    "Moved member dummy data",
-  );
+  return res.status(405).json({
+    success: false,
+    error: "Org moves are not supported",
+  });
 };
 
 export const removeMember: RequestHandler = (req, res) => {

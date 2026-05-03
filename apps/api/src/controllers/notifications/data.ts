@@ -1,7 +1,7 @@
 import type {
   NotificationEvent,
   NotificationRow,
-} from "@shared/schema";
+} from "@shared/schema/notifications";
 
 export const notificationUsers = {
   admin: {
@@ -30,7 +30,7 @@ export const notificationUsers = {
 export const notificationRows: NotificationRow[] = [
   {
     id: "ntf-1001",
-    type: "ticket_invitation",
+    type: "TICKET_INVITATION",
     tier: "action_required",
     state: "inbox",
     ticket: {
@@ -46,11 +46,11 @@ export const notificationRows: NotificationRow[] = [
     },
     eventCount: 3,
     invitationId: "inv-1001",
-    invitationStatus: "pending",
+    invitationStatus: "PENDING",
   },
   {
     id: "ntf-1002",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "status_update",
     state: "inbox",
     ticket: {
@@ -68,7 +68,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1003",
-    type: "ticket_assigned",
+    type: "TICKET_ASSIGNED",
     tier: "action_required",
     state: "read",
     ticket: {
@@ -86,7 +86,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1004",
-    type: "ticket_resolved",
+    type: "TICKET_RESOLVED",
     tier: "fyi",
     state: "done",
     ticket: {
@@ -104,7 +104,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1005",
-    type: "ticket_assigned",
+    type: "TICKET_ASSIGNED",
     tier: "action_required",
     state: "inbox",
     ticket: {
@@ -122,7 +122,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1006",
-    type: "review_requested",
+    type: "REVIEW_REQUESTED",
     tier: "action_required",
     state: "inbox",
     ticket: {
@@ -140,7 +140,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1007",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "inbox",
     ticket: {
@@ -158,7 +158,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1008",
-    type: "ticket_resolved",
+    type: "TICKET_RESOLVED",
     tier: "status_update",
     state: "inbox",
     ticket: {
@@ -176,7 +176,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1009",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "inbox",
     ticket: {
@@ -194,7 +194,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1010",
-    type: "ticket_assigned",
+    type: "TICKET_ASSIGNED",
     tier: "action_required",
     state: "inbox",
     ticket: {
@@ -212,7 +212,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1011",
-    type: "review_requested",
+    type: "REVIEW_REQUESTED",
     tier: "action_required",
     state: "read",
     ticket: {
@@ -230,7 +230,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1012",
-    type: "ticket_closed",
+    type: "TICKET_CLOSED",
     tier: "status_update",
     state: "read",
     ticket: {
@@ -248,7 +248,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1013",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "read",
     ticket: {
@@ -266,7 +266,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1014",
-    type: "ticket_resolved",
+    type: "TICKET_RESOLVED",
     tier: "status_update",
     state: "read",
     ticket: {
@@ -284,7 +284,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1015",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "done",
     ticket: {
@@ -302,7 +302,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1016",
-    type: "new_ticket_in_org",
+    type: "NEW_TICKET_IN_ORG",
     tier: "status_update",
     state: "done",
     ticket: {
@@ -320,7 +320,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1017",
-    type: "ticket_assigned",
+    type: "TICKET_ASSIGNED",
     tier: "action_required",
     state: "read",
     ticket: {
@@ -338,7 +338,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1018",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "inbox",
     ticket: {
@@ -356,7 +356,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1019",
-    type: "ticket_closed",
+    type: "TICKET_CLOSED",
     tier: "status_update",
     state: "done",
     ticket: {
@@ -374,7 +374,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1020",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "done",
     ticket: {
@@ -392,7 +392,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1021",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "read",
     ticket: {
@@ -410,7 +410,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1022",
-    type: "ticket_resolved",
+    type: "TICKET_RESOLVED",
     tier: "status_update",
     state: "done",
     ticket: {
@@ -428,7 +428,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1023",
-    type: "new_ticket_in_org",
+    type: "NEW_TICKET_IN_ORG",
     tier: "status_update",
     state: "read",
     ticket: {
@@ -446,7 +446,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1024",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "done",
     ticket: {
@@ -464,7 +464,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1025",
-    type: "review_requested",
+    type: "REVIEW_REQUESTED",
     tier: "action_required",
     state: "done",
     ticket: {
@@ -482,7 +482,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1026",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "read",
     ticket: {
@@ -500,7 +500,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1027",
-    type: "ticket_closed",
+    type: "TICKET_CLOSED",
     tier: "status_update",
     state: "done",
     ticket: {
@@ -518,7 +518,7 @@ export const notificationRows: NotificationRow[] = [
   },
   {
     id: "ntf-1028",
-    type: "message_activity",
+    type: "MESSAGE_ACTIVITY",
     tier: "fyi",
     state: "done",
     ticket: {
@@ -540,14 +540,14 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1001": [
     {
       id: "evt-1001-1",
-      type: "ticket_invitation",
+      type: "TICKET_INVITATION",
       description: "Meera invited you to review the invoice sync issue.",
       actor: notificationUsers.admin,
       at: "2026-05-02T06:15:00.000Z",
     },
     {
       id: "evt-1001-2",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir shared connector logs in the ticket thread.",
       actor: notificationUsers.moderator,
       at: "2026-05-02T06:05:00.000Z",
@@ -556,7 +556,7 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1002": [
     {
       id: "evt-1002-1",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir added a reproduction note on the ticket thread.",
       actor: notificationUsers.moderator,
       at: "2026-05-02T05:30:00.000Z",
@@ -565,14 +565,14 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1006": [
     {
       id: "evt-1006-1",
-      type: "review_requested",
+      type: "REVIEW_REQUESTED",
       description: "Meera requested your review before rollout.",
       actor: notificationUsers.admin,
       at: "2026-05-02T13:05:00.000Z",
     },
     {
       id: "evt-1006-2",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir added the proposed limiter window and burst size.",
       actor: notificationUsers.moderator,
       at: "2026-05-02T12:58:00.000Z",
@@ -581,21 +581,21 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1007": [
     {
       id: "evt-1007-1",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Aarav added three new debugging notes.",
       actor: notificationUsers.user,
       at: "2026-05-02T12:44:00.000Z",
     },
     {
       id: "evt-1007-2",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir linked the retry job traces.",
       actor: notificationUsers.moderator,
       at: "2026-05-02T12:31:00.000Z",
     },
     {
       id: "evt-1007-3",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Meera asked whether failed attempts are idempotent.",
       actor: notificationUsers.admin,
       at: "2026-05-02T12:08:00.000Z",
@@ -604,21 +604,21 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1009": [
     {
       id: "evt-1009-1",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Meera posted the expected audit payload shape.",
       actor: notificationUsers.admin,
       at: "2026-05-02T10:12:00.000Z",
     },
     {
       id: "evt-1009-2",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Aarav confirmed compliance needs actor and target roles.",
       actor: notificationUsers.user,
       at: "2026-05-02T09:48:00.000Z",
     },
     {
       id: "evt-1009-3",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir attached the current role-change controller path.",
       actor: notificationUsers.moderator,
       at: "2026-05-02T09:34:00.000Z",
@@ -627,21 +627,22 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1018": [
     {
       id: "evt-1018-1",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir shared before-and-after ranking examples.",
       actor: notificationUsers.moderator,
       at: "2026-04-27T08:44:00.000Z",
     },
     {
       id: "evt-1018-2",
-      type: "message_activity",
-      description: "Meera suggested exact ID matches should skip fuzzy scoring.",
+      type: "MESSAGE_ACTIVITY",
+      description:
+        "Meera suggested exact ID matches should skip fuzzy scoring.",
       actor: notificationUsers.admin,
       at: "2026-04-27T08:12:00.000Z",
     },
     {
       id: "evt-1018-3",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Aarav provided a ticket ID that currently ranks second.",
       actor: notificationUsers.user,
       at: "2026-04-27T07:55:00.000Z",
@@ -650,21 +651,21 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1021": [
     {
       id: "evt-1021-1",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Meera attached a timeline from the reconnect test.",
       actor: notificationUsers.admin,
       at: "2026-04-23T18:48:00.000Z",
     },
     {
       id: "evt-1021-2",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir noted the stale socket closes after foregrounding.",
       actor: notificationUsers.moderator,
       at: "2026-04-23T18:22:00.000Z",
     },
     {
       id: "evt-1021-3",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Aarav reproduced the issue after two sleep cycles.",
       actor: notificationUsers.user,
       at: "2026-04-23T17:59:00.000Z",
@@ -673,21 +674,21 @@ export const notificationEvents: Record<string, NotificationEvent[]> = {
   "ntf-1028": [
     {
       id: "evt-1028-1",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Kabir summarized the agreed handoff rule.",
       actor: notificationUsers.moderator,
       at: "2026-04-17T08:21:00.000Z",
     },
     {
       id: "evt-1028-2",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Meera asked for escalation ownership to stay visible.",
       actor: notificationUsers.admin,
       at: "2026-04-17T07:54:00.000Z",
     },
     {
       id: "evt-1028-3",
-      type: "message_activity",
+      type: "MESSAGE_ACTIVITY",
       description: "Aarav confirmed the support team can follow the rule.",
       actor: notificationUsers.user,
       at: "2026-04-17T07:32:00.000Z",

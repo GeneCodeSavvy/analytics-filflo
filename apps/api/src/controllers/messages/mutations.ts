@@ -1,7 +1,4 @@
-import {
-  EmptyResponseSchema,
-  IdParamsSchema,
-} from "@shared/schema/messages";
+import { EmptyResponseSchema, IdParamsSchema } from "@shared/schema/domain";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import { getThreadById } from "./utils";

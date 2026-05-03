@@ -1,10 +1,10 @@
 import {
   CreateViewPayloadSchema,
-  DeleteResponseSchema,
   UpdateViewPayloadSchema,
   ViewListSchema,
   ViewSchema,
 } from "@shared/schema/tickets";
+import { DeleteResponseSchema } from "@shared/schema/domain";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import { views } from "./data";

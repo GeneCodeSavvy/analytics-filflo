@@ -2,7 +2,7 @@ import {
   NotificationCountResponseSchema,
   NotificationListResponseSchema,
   NotificationThreadSchema,
-} from "@shared/schema";
+} from "@shared/schema/notifications";
 import type { RequestHandler } from "express";
 import {
   parseRequestData,

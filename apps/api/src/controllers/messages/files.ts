@@ -1,5 +1,5 @@
+import { EmptyResponseSchema } from "@shared/schema/domain";
 import {
-  EmptyResponseSchema,
   FileUploadResponseSchema,
   ThreadFileParamsSchema,
 } from "@shared/schema/messages";

@@ -2,19 +2,11 @@ import {
   BulkNotificationPayloadSchema,
   InvitationResponsePayloadSchema,
   NotificationStateSchema,
-  SnoozePayloadSchema,
-} from "@shared/schema";
-import { EmptyResponseSchema } from "@shared/schema/messages";
+} from "@shared/schema/notifications";
+import { EmptyResponseSchema } from "@shared/schema/domain";
 import type { RequestHandler } from "express";
-import {
-  parseRequestData,
-  sendNotFound,
-  sendOk,
-} from "../../lib/controllers";
-import {
-  getNotificationById,
-  requiredParamSchema,
-} from "./utils";
+import { parseRequestData, sendNotFound, sendOk } from "../../lib/controllers";
+import { getNotificationById, requiredParamSchema } from "./utils";
 
 const notificationIdSchema = requiredParamSchema("id");
 const invitationIdSchema = requiredParamSchema("invitationId");
@@ -55,14 +47,8 @@ export const snoozeNotification: RequestHandler = (req, res) => {
     req.params,
     "notification id",
   );
-  const body = parseRequestData(
-    res,
-    SnoozePayloadSchema,
-    req.body,
-    "notification snooze payload",
-  );
 
-  if (!params || !body || !ensureNotification(params.id, res)) return;
+  if (!params || !ensureNotification(params.id, res)) return;
 
   return sendOk(res, EmptyResponseSchema, "Notification snooze response");
 };
@@ -100,7 +86,12 @@ export const respondToInvitation: RequestHandler = (req, res) => {
 };
 
 export const muteTicket: RequestHandler = (req, res) => {
-  const body = parseRequestData(res, ticketIdSchema, req.body, "mute ticket payload");
+  const body = parseRequestData(
+    res,
+    ticketIdSchema,
+    req.body,
+    "mute ticket payload",
+  );
 
   if (!body) return;
 

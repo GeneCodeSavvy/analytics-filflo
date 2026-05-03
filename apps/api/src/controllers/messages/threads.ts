@@ -1,5 +1,5 @@
+import { IdParamsSchema } from "@shared/schema/domain";
 import {
-  IdParamsSchema,
   ParticipantsSchema,
   ThreadListSchema,
   ThreadSchema,

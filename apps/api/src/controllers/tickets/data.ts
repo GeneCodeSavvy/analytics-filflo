@@ -1,35 +1,36 @@
 import type { TicketDetail, View } from "@shared/schema/tickets";
+import type { UserRef } from "@shared/schema/domain";
 
 export const people = {
   requesterA: {
     id: "usr-101",
     name: "Aarav Mehta",
     avatarUrl: "https://i.pravatar.cc/120?img=11",
-    role: "Requester",
+    role: "USER",
     orgId: "org-acme",
   },
   requesterB: {
     id: "usr-102",
     name: "Nina Kapoor",
     avatarUrl: "https://i.pravatar.cc/120?img=32",
-    role: "Requester",
+    role: "USER",
     orgId: "org-nova",
   },
   agentA: {
     id: "usr-201",
     name: "Riya Sen",
     avatarUrl: "https://i.pravatar.cc/120?img=45",
-    role: "Support Agent",
+    role: "ADMIN",
     orgId: "org-filflo",
   },
   agentB: {
     id: "usr-202",
     name: "Kabir Rao",
     avatarUrl: "https://i.pravatar.cc/120?img=52",
-    role: "Moderator",
+    role: "MODERATOR",
     orgId: "org-filflo",
   },
-};
+} satisfies Record<string, UserRef>;
 
 export const ticketDetails: TicketDetail[] = [
   {
@@ -41,7 +42,7 @@ export const ticketDetails: TicketDetail[] = [
       "Invoice sync jobs are failing for three vendors after the latest connector refresh. The user can manually upload CSV files, but automated reconciliation is blocked for the finance team.",
     status: "IN_PROGRESS",
     priority: "HIGH",
-    category: "Integrations",
+    category: "BUG",
     org: { id: "org-acme", name: "Acme Finance" },
     requester: people.requesterA,
     primaryAssignee: people.agentA,
@@ -77,7 +78,7 @@ export const ticketDetails: TicketDetail[] = [
       "Managers are seeing duplicate approval cards after switching teams. Refreshing clears the issue temporarily, but duplicates return after the next notification poll.",
     status: "REVIEW",
     priority: "MEDIUM",
-    category: "Workflow",
+    category: "BUG",
     org: { id: "org-nova", name: "Nova Retail" },
     requester: people.requesterB,
     primaryAssignee: people.agentB,
@@ -113,7 +114,7 @@ export const ticketDetails: TicketDetail[] = [
       "CSV export includes status changes but omits reviewer comments. Compliance needs the full audit trail for the month-end review packet.",
     status: "OPEN",
     priority: "LOW",
-    category: "Reports",
+    category: "FEATURE_REQUEST",
     org: { id: "org-acme", name: "Acme Finance" },
     requester: people.requesterA,
     assigneeCount: 0,
@@ -127,7 +128,7 @@ export const ticketDetails: TicketDetail[] = [
         id: "act-1003-1",
         type: "created",
         actor: people.requesterA,
-        comment: "Report export requested from audit settings.",
+        comment: "Report export requested from audit tools.",
         createdAt: "2026-05-01T07:45:00.000Z",
       },
     ],
@@ -138,8 +139,8 @@ export const views: View[] = [
   {
     id: "view-open",
     name: "Open tickets",
-    scope: "builtin",
-    role: "all",
+    scope: "BUILTIN",
+    role: "SUPER_ADMIN",
     filters: { status: ["OPEN", "IN_PROGRESS", "ON_HOLD", "REVIEW"] },
     sort: [{ field: "updatedAt", dir: "desc" }],
     columns: ["subject", "status", "priority", "assignee", "updatedAt"],
@@ -147,7 +148,7 @@ export const views: View[] = [
   {
     id: "view-my-high-priority",
     name: "My high priority",
-    scope: "user",
+    scope: "USER",
     ownerId: "usr-201",
     filters: { priority: ["HIGH"], assigneeIds: ["usr-201"] },
     sort: [{ field: "createdAt", dir: "desc" }],

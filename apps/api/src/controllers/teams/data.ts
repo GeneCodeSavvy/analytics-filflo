@@ -24,17 +24,10 @@ export const members: MemberDetail[] = [
     permissions: {
       canChangeRole: true,
       canRemove: false,
-      canMoveTo: true,
     },
-    orgMemberships: [
-      {
-        org: { id: "org-filflo", name: "Filflo Support" },
-        role: "ADMIN",
-        joinedAt: "2025-11-18T10:15:00.000Z",
-      },
-    ],
+    org: { id: "org-filflo", name: "Filflo Support" },
     stats: {
-      ticketsCreated: 18,
+      ticketsRequested: 18,
       ticketsAssigned: 142,
       avgResolutionMs: 16200000,
     },
@@ -52,22 +45,10 @@ export const members: MemberDetail[] = [
     permissions: {
       canChangeRole: true,
       canRemove: true,
-      canMoveTo: true,
     },
-    orgMemberships: [
-      {
-        org: { id: "org-filflo", name: "Filflo Support" },
-        role: "MODERATOR",
-        joinedAt: "2026-01-08T09:00:00.000Z",
-      },
-      {
-        org: { id: "org-acme", name: "Acme Finance" },
-        role: "MODERATOR",
-        joinedAt: "2026-02-20T12:30:00.000Z",
-      },
-    ],
+    org: { id: "org-filflo", name: "Filflo Support" },
     stats: {
-      ticketsCreated: 7,
+      ticketsRequested: 7,
       ticketsAssigned: 86,
       avgResolutionMs: 21100000,
     },
@@ -85,17 +66,10 @@ export const members: MemberDetail[] = [
     permissions: {
       canChangeRole: true,
       canRemove: true,
-      canMoveTo: true,
     },
-    orgMemberships: [
-      {
-        org: { id: "org-acme", name: "Acme Finance" },
-        role: "USER",
-        joinedAt: "2026-03-04T14:20:00.000Z",
-      },
-    ],
+    org: { id: "org-acme", name: "Acme Finance" },
     stats: {
-      ticketsCreated: 23,
+      ticketsRequested: 23,
       ticketsAssigned: 0,
       avgResolutionMs: null,
     },
@@ -112,17 +86,10 @@ export const members: MemberDetail[] = [
     permissions: {
       canChangeRole: true,
       canRemove: true,
-      canMoveTo: true,
     },
-    orgMemberships: [
-      {
-        org: { id: "org-nova", name: "Nova Retail" },
-        role: "USER",
-        joinedAt: "2026-02-12T08:40:00.000Z",
-      },
-    ],
+    org: { id: "org-nova", name: "Nova Retail" },
     stats: {
-      ticketsCreated: 5,
+      ticketsRequested: 5,
       ticketsAssigned: 0,
       avgResolutionMs: null,
     },
@@ -139,7 +106,7 @@ export const invitations: Invitation[] = [
     invitedBy: filfloAdmin,
     sentAt: "2026-05-01T09:15:00.000Z",
     expiresAt: "2026-05-08T09:15:00.000Z",
-    status: "pending",
+    status: "PENDING",
     inviteUrl: "https://app.filflo.example/invitations/inv-1001",
   },
   {
@@ -151,7 +118,7 @@ export const invitations: Invitation[] = [
     invitedBy: filfloAdmin,
     sentAt: "2026-04-29T16:20:00.000Z",
     expiresAt: "2026-05-06T16:20:00.000Z",
-    status: "accepted",
+    status: "ACCEPTED",
     inviteUrl: "https://app.filflo.example/invitations/inv-1002",
   },
 ];
@@ -161,7 +128,7 @@ export const auditEntries: AuditEntry[] = [
     id: "aud-1001",
     at: "2026-05-01T09:15:00.000Z",
     actor: filfloAdmin,
-    action: "invited",
+    action: "INVITED",
     targetUser: { id: "invitee-samira", name: "samira@acme.example" },
     org: { id: "org-acme", name: "Acme Finance" },
     toRole: "USER",
@@ -171,7 +138,7 @@ export const auditEntries: AuditEntry[] = [
     id: "aud-1002",
     at: "2026-04-30T13:30:00.000Z",
     actor: filfloAdmin,
-    action: "role_changed",
+    action: "ROLE_CHANGED",
     targetUser: { id: "usr-202", name: "Kabir Rao" },
     org: { id: "org-filflo", name: "Filflo Support" },
     fromRole: "USER",
@@ -182,7 +149,7 @@ export const auditEntries: AuditEntry[] = [
     id: "aud-1003",
     at: "2026-04-28T10:05:00.000Z",
     actor: filfloAdmin,
-    action: "removed",
+    action: "REMOVED",
     targetUser: { id: "usr-399", name: "Former Contractor" },
     org: { id: "org-nova", name: "Nova Retail" },
     fromRole: "USER",

@@ -1,18 +1,12 @@
-import {
-  NotificationListParamsSchema,
-} from "@shared/schema";
-import {
-  getQuerySource,
-  toNumber,
-  toStringArray,
-} from "../../lib/controllers";
+import { NotificationListParamsSchema } from "@shared/schema/notifications";
+import { getQuerySource, toNumber, toStringArray } from "../../lib/controllers";
 import { notificationRows } from "./data";
 import type { ValidationIssue } from "../../lib/controllers";
 import type {
   NotificationListParams,
   NotificationRow,
   NotificationType,
-} from "@shared/schema";
+} from "@shared/schema/notifications";
 
 type ParamParseResult<Key extends string> =
   | { success: true; data: Record<Key, string> }
@@ -86,8 +80,9 @@ export const filterNotifications = (
       params.type.length === 0 ||
       params.type.includes(row.type as NotificationType);
     const matchesTicket =
-      params.ticketId === undefined || row.ticket.id === params.ticketId;
-    const matchesOrg = params.orgId === undefined || row.ticket.orgId === params.orgId;
+      params.ticketId === undefined || row.ticket?.id === params.ticketId;
+    const matchesOrg =
+      params.orgId === undefined || row.ticket?.orgId === params.orgId;
 
     return matchesTab && matchesTypes && matchesTicket && matchesOrg;
   });
