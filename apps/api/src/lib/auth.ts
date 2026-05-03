@@ -4,7 +4,7 @@ import type { DbClient } from "./db";
 
 export type DbUser = {
   id: string;
-  clerkUserId: string;
+  clerkUserId: string | null;
   email: string;
   displayName: string;
   avatarUrl: string | null;
