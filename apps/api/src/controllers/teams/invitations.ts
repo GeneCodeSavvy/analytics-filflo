@@ -49,17 +49,12 @@ export const createInvitation: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const actor = req.dbUser;
+
   const org = await db.org.findUnique({ where: { id: body.data.orgId } });
 
   if (!org) {
     return sendNotFound(res, "Org");
-  }
-
-  // TODO: replace with actual authenticated actor id from session
-  const actor = await db.user.findFirst({ where: { role: "ADMIN" } });
-
-  if (!actor) {
-    return sendNotFound(res, "Actor");
   }
 
   const sentAt = new Date();
