@@ -1,8 +1,12 @@
-import type { Message, MessageFilters, ThreadListRow } from "../types/messages";
+import type {
+  Message,
+  MessageFilterOption,
+  ThreadListRow,
+} from "../types/messages";
 
 export const CURRENT_USER_ID = "usr-201";
 
-export const filters: { label: string; value: MessageFilters["tab"] }[] = [
+export const filters: MessageFilterOption[] = [
   { label: "All", value: "all" },
   { label: "Unread", value: "unread" },
   { label: "Assigned", value: "mine" },

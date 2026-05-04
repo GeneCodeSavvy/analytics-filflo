@@ -17,10 +17,15 @@ import {
 } from "react";
 import { cn } from "../lib/utils";
 import type {
-  Message,
+  MessageBadgeProps,
+  MessageComposerProps,
+  MessageFileAttachmentProps,
   MessageFilters,
-  Thread,
-  ThreadListRow,
+  MessageParticipantAvatarProps,
+  MessageSystemMessageProps,
+  MessageThreadHeaderProps,
+  MessageThreadRowProps,
+  MessageUserMessageProps,
 } from "../types/messages";
 import {
   CURRENT_USER_ID,
@@ -46,13 +51,7 @@ import {
 import { useMessageWebSocket } from "../hooks/useMessageWebsocket";
 import { useMessageStore } from "../stores/useMessageStore";
 
-function Badge({
-  value,
-  tone,
-}: {
-  value: string;
-  tone: "status" | "priority";
-}) {
+function Badge({ value, tone }: MessageBadgeProps) {
   const classes =
     tone === "status" ? statusClasses[value] : priorityClasses[value];
   return (
@@ -70,10 +69,7 @@ function Badge({
 function ParticipantAvatar({
   user,
   index,
-}: {
-  user: Thread["participants"][number];
-  index: number;
-}) {
+}: MessageParticipantAvatarProps) {
   return (
     <span
       className={cn(
@@ -99,11 +95,7 @@ function ThreadRow({
   row,
   active,
   onSelect,
-}: {
-  row: ThreadListRow;
-  active: boolean;
-  onSelect: () => void;
-}) {
+}: MessageThreadRowProps) {
   const resolved = row.ticket.status === "RESOLVED";
   return (
     <button
@@ -149,7 +141,7 @@ function ThreadRow({
   );
 }
 
-function SystemMessage({ message }: { message: Message }) {
+function SystemMessage({ message }: MessageSystemMessageProps) {
   return (
     <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground">
       <span className="h-px flex-1 bg-border" />
@@ -164,7 +156,7 @@ function SystemMessage({ message }: { message: Message }) {
   );
 }
 
-function FileAttachment({ file }: { file: NonNullable<Message["file"]> }) {
+function FileAttachment({ file }: MessageFileAttachmentProps) {
   return (
     <a
       href={file.url}
@@ -182,10 +174,7 @@ function FileAttachment({ file }: { file: NonNullable<Message["file"]> }) {
 function UserMessage({
   message,
   justSent,
-}: {
-  message: Message;
-  justSent: boolean;
-}) {
+}: MessageUserMessageProps) {
   const own = message.sender.id === CURRENT_USER_ID;
   return (
     <div
@@ -220,7 +209,7 @@ function UserMessage({
   );
 }
 
-function ThreadHeader({ thread }: { thread: Thread }) {
+function ThreadHeader({ thread }: MessageThreadHeaderProps) {
   return (
     <header className="flex min-h-20 items-center justify-between gap-4 border-b border-border bg-white px-5 py-3">
       <div className="min-w-0">
@@ -266,13 +255,7 @@ function Composer({
   sending,
   onChange,
   onSend,
-}: {
-  value: string;
-  disabled: boolean;
-  sending: boolean;
-  onChange: (value: string) => void;
-  onSend: () => void;
-}) {
+}: MessageComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
