@@ -43,22 +43,21 @@ const tabs: Array<{ key: TabKey; label: string }> = [
 ];
 
 const filterChips: Array<{ label: string; types: NotificationType[] }> = [
-  { label: "Assignments", types: ["ticket_assigned"] },
-  { label: "Reviews", types: ["review_requested"] },
-  { label: "Invitations", types: ["ticket_invitation"] },
-  { label: "Resolutions", types: ["ticket_resolved", "ticket_closed"] },
-  { label: "Messages", types: ["message_activity"] },
+  { label: "Assignments", types: ["TICKET_ASSIGNED"] },
+  { label: "Reviews", types: ["REVIEW_REQUESTED"] },
+  { label: "Invitations", types: ["TICKET_INVITATION"] },
+  { label: "Resolutions", types: ["TICKET_RESOLVED", "TICKET_CLOSED"] },
+  { label: "Messages", types: ["MESSAGE_ACTIVITY"] },
 ];
 
 const typeSummaries: Record<NotificationType, string> = {
-  ticket_assigned: "You've been assigned",
-  review_requested: "Review requested",
-  ticket_invitation: "You've been invited",
-  mention: "You were mentioned",
-  ticket_resolved: "Ticket resolved",
-  ticket_closed: "Ticket closed",
-  new_ticket_in_org: "New ticket in org",
-  message_activity: "New messages",
+  TICKET_ASSIGNED: "You've been assigned",
+  REVIEW_REQUESTED: "Review requested",
+  TICKET_INVITATION: "You've been invited",
+  TICKET_RESOLVED: "Ticket resolved",
+  TICKET_CLOSED: "Ticket closed",
+  NEW_TICKET_IN_ORG: "New ticket in org",
+  MESSAGE_ACTIVITY: "New messages",
 };
 
 const snoozeOptions = [
@@ -80,10 +79,10 @@ const snoozeOptions = [
 ];
 
 function notificationIcon(type: NotificationType) {
-  if (type === "ticket_assigned") return UserPlus;
-  if (type === "review_requested") return Eye;
-  if (type === "ticket_invitation") return Mail;
-  if (type === "message_activity" || type === "mention") return MessageSquare;
+  if (type === "TICKET_ASSIGNED") return UserPlus;
+  if (type === "REVIEW_REQUESTED") return Eye;
+  if (type === "TICKET_INVITATION") return Mail;
+  if (type === "MESSAGE_ACTIVITY") return MessageSquare;
   return CheckCircle;
 }
 
@@ -109,11 +108,12 @@ function dateBand(value: string): DateBand {
 }
 
 function ticketHref(row: NotificationRow) {
+  if (!row.ticket) return "/tickets";
   return `/tickets/${encodeURIComponent(row.ticket.id)}`;
 }
 
 function rowSummary(row: NotificationRow) {
-  if (row.type === "message_activity" && row.eventCount > 1) {
+  if (row.type === "MESSAGE_ACTIVITY" && row.eventCount > 1) {
     return `${row.eventCount} new messages`;
   }
   return typeSummaries[row.type];
@@ -232,12 +232,12 @@ function NotificationActions({
   onOpen: () => void;
   onDone: () => void;
   onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: "accepted" | "rejected") => void;
+  onInvite: (response: "ACCEPTED" | "CANCELLED") => void;
 }) {
   const [snoozeOpen, setSnoozeOpen] = useState(false);
-  const alwaysVisible = row.type === "ticket_invitation";
+  const alwaysVisible = row.type === "TICKET_INVITATION";
 
-  if (row.type === "ticket_invitation") {
+  if (row.type === "TICKET_INVITATION") {
     return (
       <div className="notifications-actions notifications-actions-visible">
         <Button
@@ -246,7 +246,7 @@ function NotificationActions({
           size="sm"
           onClick={(event) => {
             event.stopPropagation();
-            onInvite("accepted");
+            onInvite("ACCEPTED");
           }}
         >
           <CheckCircle /> Accept
@@ -257,7 +257,7 @@ function NotificationActions({
           size="sm"
           onClick={(event) => {
             event.stopPropagation();
-            onInvite("rejected");
+            onInvite("CANCELLED");
           }}
         >
           <X /> Decline
@@ -282,14 +282,14 @@ function NotificationActions({
           onOpen();
         }}
       >
-        {row.type === "review_requested" ? <Eye /> : <MessageSquare />}
-        {row.type === "review_requested"
+        {row.type === "REVIEW_REQUESTED" ? <Eye /> : <MessageSquare />}
+        {row.type === "REVIEW_REQUESTED"
           ? "Review"
-          : row.type === "message_activity"
+          : row.type === "MESSAGE_ACTIVITY"
             ? "Open thread"
             : "Open"}
       </Button>
-      {row.type === "review_requested" ? (
+      {row.type === "REVIEW_REQUESTED" ? (
         <div className="notifications-snooze-wrap">
           <Button
             type="button"
@@ -352,7 +352,7 @@ function NotificationRowView({
   onOpen: () => void;
   onDone: () => void;
   onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: "accepted" | "rejected") => void;
+  onInvite: (response: "ACCEPTED" | "CANCELLED") => void;
 }) {
   const Icon = notificationIcon(row.type);
   const isAction = row.tier === "action_required";
@@ -409,16 +409,15 @@ function NotificationRowView({
                 <ChevronDown className={cn("size-3.5", expanded && "rotate-180")} />
               </button>
             ) : null}
-            <span className="notifications-ticket">#{row.ticket.id}</span>
+            <span className="notifications-ticket">#{row.ticket?.id ?? "ticket"}</span>
             <span className="notifications-summary">{rowSummary(row)}</span>
             {row.eventCount > 1 ? (
               <span className="notifications-count">{row.eventCount} updates</span>
             ) : null}
           </div>
-          <p className="notifications-title">{row.ticket.subject}</p>
+          <p className="notifications-title">{row.ticket?.subject ?? row.latestEvent.description}</p>
           <p className="notifications-time">
             {relativeTime(row.latestEvent.at)}
-            {row.snoozedUntil ? ` · snoozed until ${relativeTime(row.snoozedUntil)}` : ""}
           </p>
         </div>
 
@@ -551,11 +550,8 @@ export const Notifications = () => {
   const bulkSnooze = (date: Date, label: string) => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
-    bulk.mutate({
-      op: "snooze",
-      scope: "ids",
-      ids,
-      snoozedUntil: date.toISOString(),
+    ids.forEach((id) => {
+      snooze.mutate({ id, payload: { snoozedUntil: date.toISOString() } });
     });
     setSelectedIds(new Set());
     setBulkSnoozeOpen(false);
@@ -789,10 +785,11 @@ export const Notifications = () => {
                     onDone={() => markRowDone(row)}
                     onSnooze={(date, label) => snoozeRow(row, date, label)}
                     onInvite={(response) => {
-                      if (row.type !== "ticket_invitation") return;
+                      if (row.type !== "TICKET_INVITATION" || !row.invitationId) return;
+                      const invitationId = row.invitationId;
                       dismissThen(row.id, () =>
                         invitation.mutate({
-                          invitationId: row.invitationId,
+                          invitationId,
                           payload: { response },
                         }),
                       );

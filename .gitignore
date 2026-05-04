@@ -36,3 +36,5 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+filflo-api.postman_collection.json
+/.pnpm-store/v11

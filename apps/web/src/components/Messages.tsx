@@ -200,8 +200,7 @@ function SystemMessage({ message }: { message: Message }) {
       <span className="inline-flex max-w-[70%] items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1">
         <Clock className="size-3.5" />
         <span className="truncate">
-          {message.eventDescription ?? "Ticket activity"} •{" "}
-          {formatTime(message.at)}
+          Ticket activity • {formatTime(message.at)}
         </span>
       </span>
       <span className="h-px flex-1 bg-border" />
@@ -560,7 +559,7 @@ export const Messages = () => {
                   </div>
                 ) : (
                   messages.map((message) =>
-                    message.kind === "system_event" ? (
+                    message.kind === "FILE_ATTACHMENT" && !message.content ? (
                       <SystemMessage key={message.id} message={message} />
                     ) : (
                       <UserMessage

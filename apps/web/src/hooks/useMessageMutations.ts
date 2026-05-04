@@ -70,11 +70,10 @@ export function useSendMessageMutation(threadId: string) {
         const optimistic: Message = {
           id: _pendingId,
           threadId,
-          kind: "user_message",
-          sender: { id: "", name: "", email: "", role: "", orgId: "" },
+          kind: "USER_MESSAGE",
+          sender: { id: "", name: "", email: "", role: "USER", orgId: "" },
           at: new Date().toISOString(),
           content: payload.content,
-          mentions: [],
           ticketRefs: payload.ticketRefs ?? [],
         };
         queryClient.setQueryData<InfiniteData<MessagesPage>>(

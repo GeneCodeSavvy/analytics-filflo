@@ -27,6 +27,7 @@ import { useAuthState } from "../stores/useAuthStore";
 import { useTicketStore } from "../stores/useTicketStore";
 import type {
   ActivityEntry,
+  TicketCategory,
   TicketFilters,
   TicketPriority,
   TicketRow,
@@ -37,6 +38,7 @@ import type {
 
 const STATUSES: TicketStatus[] = ["OPEN", "IN_PROGRESS", "ON_HOLD", "REVIEW", "RESOLVED"];
 const PRIORITIES: TicketPriority[] = ["HIGH", "MEDIUM", "LOW"];
+const CATEGORIES: TicketCategory[] = ["BUG", "FEATURE_REQUEST"];
 const FILTERS = ["Status", "Priority", "Category", "Assignee", "Date"];
 const DEFAULT_VIEWS = [
   { id: null, name: "All tickets" },
@@ -223,7 +225,12 @@ export const Tickets = () => {
   const [hoveredTime, setHoveredTime] = useState<string | null>(null);
   const [groupByOrg, setGroupByOrg] = useState(false);
   const [toast, setToast] = useState("");
-  const [draft, setDraft] = useState({ subject: "", description: "", category: "", priority: "MEDIUM" as TicketPriority });
+  const [draft, setDraft] = useState({
+    subject: "",
+    description: "",
+    category: "" as TicketCategory | "",
+    priority: "MEDIUM" as TicketPriority,
+  });
   const [editSubject, setEditSubject] = useState(false);
   const [editDescription, setEditDescription] = useState(false);
   const [virtualScrollTop, setVirtualScrollTop] = useState(0);
@@ -391,7 +398,13 @@ export const Tickets = () => {
 
   const submitDraft = () => {
     if (!draft.subject.trim() || !draft.description.trim()) return;
-    createTicket.mutate({ ...draft, inviteeIds: [] }, {
+    createTicket.mutate({
+      subject: draft.subject,
+      description: draft.description,
+      category: draft.category || undefined,
+      priority: draft.priority,
+      assigneeIds: [],
+    }, {
       onSuccess: () => {
         localStorage.removeItem("ticket-create-draft");
         setDraft({ subject: "", description: "", category: "", priority: "MEDIUM" });
@@ -693,7 +706,12 @@ export const Tickets = () => {
               <input ref={modalSubjectRef} value={draft.subject} onChange={(event) => setDraft((value) => ({ ...value, subject: event.target.value }))} placeholder="Subject" className="tickets-form-input text-[18px]" />
               <textarea value={draft.description} onChange={(event) => setDraft((value) => ({ ...value, description: event.target.value }))} placeholder="Description" className="tickets-form-input min-h-32 resize-none" />
               <div className="grid grid-cols-2 gap-2">
-                <input value={draft.category} onChange={(event) => setDraft((value) => ({ ...value, category: event.target.value }))} placeholder="Category" className="tickets-form-input" />
+                <select value={draft.category} onChange={(event) => setDraft((value) => ({ ...value, category: event.target.value as TicketCategory | "" }))} className="tickets-form-input">
+                  <option value="">Category</option>
+                  {CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category.replace("_", " ")}</option>
+                  ))}
+                </select>
                 <select value={draft.priority} onChange={(event) => setDraft((value) => ({ ...value, priority: event.target.value as TicketPriority }))} className="tickets-form-input">
                   {PRIORITIES.map((priority) => <option key={priority}>{priority}</option>)}
                 </select>

@@ -7,7 +7,7 @@ import type {
   ThreadListRow,
   MessagesPage,
 } from "../lib/messageParams";
-import type { UserRef } from "@shared/schema";
+import type { UserRef } from "@shared/schema/domain";
 
 export function useThreadListQuery(filters: MessageFilters) {
   const validated = MessageFiltersSchema.parse(filters);

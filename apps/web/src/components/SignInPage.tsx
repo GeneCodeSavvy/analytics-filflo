@@ -1,19 +1,13 @@
-import { SignUp } from "@clerk/react";
+import { SignIn } from "@clerk/react";
 import { useSearchParams } from "react-router";
 
-export function SignUpPage() {
+export function SignInPage() {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get("email") ?? "";
   const redirectUrl = searchParams.get("redirect_url") ?? "/";
 
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-      <SignUp
-        initialValues={{ emailAddress: email }}
-        forceRedirectUrl={redirectUrl}
-        signInUrl="/sign-in"
-        routing="hash"
-      />
+      <SignIn forceRedirectUrl={redirectUrl} signUpUrl="/sign-up" routing="hash" />
     </div>
   );
 }

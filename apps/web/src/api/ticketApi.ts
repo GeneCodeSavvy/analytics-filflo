@@ -9,6 +9,7 @@ import type {
   NewTicketDraft,
   TicketStatus,
   TicketPriority,
+  TicketCategory,
   AssignPayload,
   BulkResult,
   ActivityEntry,
@@ -31,9 +32,9 @@ export interface UpdateViewPayload {
 export interface UpdateTicketPayload {
   subject?: string;
   description?: string;
-  category?: string;
-  priority?: string;
-  status?: string;
+  category?: TicketCategory;
+  priority?: TicketPriority;
+  status?: TicketStatus;
 }
 
 export interface BulkUpdatePayload {

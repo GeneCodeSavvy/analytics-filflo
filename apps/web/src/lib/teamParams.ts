@@ -1,6 +1,5 @@
 export {
   TeamRoleSchema,
-  InvitationStatusSchema,
   TeamMemberListParamsSchema,
   TeamAuditParamsSchema,
   TeamInvitationListParamsSchema,
@@ -13,11 +12,10 @@ export {
   OrgSummarySchema,
   InvitePayloadSchema,
   RoleChangePayloadSchema,
-  MoveMemberPayloadSchema,
   RemoveMemberParamsSchema,
   BulkMemberOpSchema,
   BulkMemberResultSchema,
-} from "@shared/schema";
+} from "@shared/schema/teams";
 
 export type {
   TeamRole,
@@ -34,18 +32,17 @@ export type {
   OrgSummary,
   InvitePayload,
   RoleChangePayload,
-  MoveMemberPayload,
   RemoveMemberParams,
   BulkMemberOp,
   BulkMemberResult,
-} from "@shared/schema";
+} from "@shared/schema/teams";
 
 import type {
   TeamMemberListParams,
   TeamInvitationListParams,
   TeamAuditParams,
   TeamRole,
-} from "@shared/schema";
+} from "@shared/schema/teams";
 
 export function normalizeTeamParams<T extends object>(params: T): T {
   const filtered = Object.fromEntries(

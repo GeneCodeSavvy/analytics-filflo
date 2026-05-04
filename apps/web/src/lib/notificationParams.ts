@@ -1,7 +1,6 @@
 export {
   NotificationStateSchema,
   NotificationTierSchema,
-  NotificationTypeSchema,
   NotificationRowSchema,
   NotificationListResponseSchema,
   NotificationCountResponseSchema,
@@ -9,10 +8,10 @@ export {
   NotificationEventSchema,
   NotificationFiltersSchema,
   NotificationListParamsSchema,
-  SnoozePayloadSchema,
   BulkNotificationPayloadSchema,
   InvitationResponsePayloadSchema,
-} from "@shared/schema";
+} from "@shared/schema/notifications";
+export { NotificationTypeSchema } from "@shared/schema/domain";
 
 export type {
   NotificationState,
@@ -25,12 +24,18 @@ export type {
   NotificationEvent,
   NotificationFilters,
   NotificationListParams,
-  SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
-} from "@shared/schema";
+} from "@shared/schema/notifications";
 
-import type { NotificationFilters, NotificationType } from "@shared/schema";
+export type SnoozePayload = {
+  snoozedUntil: string;
+};
+
+import type {
+  NotificationFilters,
+  NotificationType,
+} from "@shared/schema/notifications";
 
 export function parseFilters(params: URLSearchParams): NotificationFilters {
   const tab = (params.get("tab") ?? "inbox") as NotificationFilters["tab"];
@@ -48,7 +53,7 @@ export function parseFilters(params: URLSearchParams): NotificationFilters {
 
 export function mergeFilters(
   params: URLSearchParams,
-  patch: Partial<NotificationFilters>
+  patch: Partial<NotificationFilters>,
 ): URLSearchParams {
   const next = new URLSearchParams(params);
 
@@ -86,7 +91,7 @@ export function serializeTypes(types: NotificationType[]): string {
 
 export function buildListKey(params: object): Record<string, unknown> {
   const entries = Object.entries(params).filter(
-    ([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0)
+    ([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0),
   );
   const sorted = entries.sort(([a], [b]) => a.localeCompare(b));
   const result: Record<string, unknown> = {};

@@ -9,7 +9,8 @@
         "check-types": "turbo run check-types",
         "db:migrate:dev": "pnpm --filter api prisma migrate dev",
         "db:migrate:deploy": "pnpm --filter api prisma migrate deploy",
-        "db:reset": "pnpm --filter api prisma migrate reset"
+        "db:reset": "pnpm --filter api prisma migrate reset",
+        "db:generate": "pnpm --filter api prisma generate"
     },
     "devDependencies": {
         "prettier": "^3.7.4",

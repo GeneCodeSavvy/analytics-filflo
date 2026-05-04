@@ -366,7 +366,7 @@ function BulkBar({
             ids: selectedIds,
             orgId,
             op: "change_role",
-            payload: { role: event.target.value as TeamRole, orgId },
+            payload: { role: event.target.value as TeamRole },
           })
         }
         defaultValue=""
@@ -479,7 +479,7 @@ function ConfirmationModal({ modal, onClose }: { modal: ModalState; onClose: () 
   const member = modal.member;
   const confirm = () => {
     if (modal.type === "role") {
-      changeRole.mutate({ userId: member.id, payload: { role: modal.nextRole, orgId: member.orgId } });
+      changeRole.mutate({ userId: member.id, payload: { role: modal.nextRole } });
     } else {
       removeMember.mutate({ userId: member.id, params: { orgId: member.orgId } });
     }
@@ -544,7 +544,7 @@ function DetailDrawer({ orgs, actorRole }: { orgs: OrgSummary[]; actorRole: Prev
             <section>
               <h3>Activity</h3>
               <div className="teams-stat-grid">
-                <div><span>Tickets Created</span><strong>{member.stats.ticketsCreated}</strong></div>
+                <div><span>Tickets Requested</span><strong>{member.stats.ticketsRequested}</strong></div>
                 <div><span>Tickets Resolved</span><strong>{member.stats.ticketsAssigned}</strong></div>
                 <div><span>Avg Response Time</span><strong>{member.stats.avgResolutionMs ? `${(member.stats.avgResolutionMs / 3_600_000).toFixed(1)}h` : "n/a"}</strong></div>
                 <div><span>Last Active</span><strong>{relativeTime(member.lastActiveAt)}</strong></div>
@@ -554,12 +554,10 @@ function DetailDrawer({ orgs, actorRole }: { orgs: OrgSummary[]; actorRole: Prev
               <section>
                 <h3>Organizations</h3>
                 <div className="teams-org-list">
-                  {member.orgMemberships.map((membership) => (
-                    <div key={membership.org.id}>
-                      <span>{membership.org.name}</span>
-                      <RolePill role={membership.role} />
-                    </div>
-                  ))}
+                  <div>
+                    <span>{member.org.name}</span>
+                    <RolePill role={member.role} />
+                  </div>
                 </div>
               </section>
             ) : null}
@@ -596,7 +594,7 @@ function PendingInvitations({ invitations }: { invitations: Invitation[] }) {
         </thead>
         <tbody>
           {invitations.map((invite) => {
-            const expired = invite.status === "expired" || new Date(invite.expiresAt).getTime() < Date.now();
+            const expired = invite.status === "EXPIRED" || new Date(invite.expiresAt).getTime() < Date.now();
             return (
               <tr key={invite.id} className={expired ? "teams-invite-expired" : ""}>
                 <td>{invite.email}</td>
@@ -636,7 +634,7 @@ export const Teams = () => {
     pageSize: 250,
   });
   const orgQuery = useTeamOrgsQuery();
-  const invitationQuery = useTeamInvitationsQuery({ status: "pending" });
+  const invitationQuery = useTeamInvitationsQuery({ status: "PENDING" });
   const members = memberQuery.data?.rows ?? [];
   const orgs = orgQuery.data ?? [];
   const invitations = invitationQuery.data ?? [];

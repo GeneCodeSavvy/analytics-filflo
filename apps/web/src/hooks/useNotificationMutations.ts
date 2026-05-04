@@ -129,14 +129,13 @@ export function useSnoozeMutation() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: SnoozePayload }) =>
       notificationApi.snooze(id, payload),
-    onMutate: async ({ id, payload }) => {
+    onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: ["notifications", "list"] });
       const snapshots = queryClient.getQueriesData<NotificationListResponse>({
         queryKey: ["notifications", "list"],
       });
       patchNotificationState(queryClient, id, {
         state: "done",
-        snoozedUntil: payload.snoozedUntil,
       });
       return { snapshots };
     },
@@ -172,7 +171,7 @@ export function useBulkMutation() {
         payload.ticketId
       ) {
         patchNotificationRows(queryClient, (row) =>
-          row.ticket.id === payload.ticketId
+          row.ticket?.id === payload.ticketId
             ? { ...row, state: targetState }
             : row
         );
@@ -207,7 +206,7 @@ export function useInvitationResponseMutation() {
       });
       patchNotificationRows(queryClient, (row) => {
         if (
-          row.type === "ticket_invitation" &&
+          row.type === "TICKET_INVITATION" &&
           row.invitationId === invitationId
         ) {
           return { ...row, invitationStatus: payload.response };
@@ -235,7 +234,7 @@ export function useMuteTicketMutation() {
         queryKey: ["notifications", "list"],
       });
       patchNotificationRows(queryClient, (row) =>
-        row.ticket.id === ticketId ? { ...row, state: "done" } : row
+        row.ticket?.id === ticketId ? { ...row, state: "done" } : row
       );
       return { snapshots };
     },

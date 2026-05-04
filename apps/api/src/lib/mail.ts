@@ -1,15 +1,22 @@
 import { Resend } from "resend";
 
 export async function sendInviteMail(
-  to: string,
+  to: string[],
   inviterName: string,
   teamName: string,
   inviteLink: string,
+  invitationId: string,
 ) {
+  const from = process.env.RESEND_FROM_EMAIL;
+
+  if (!from) {
+    throw new Error("RESEND_FROM_EMAIL is required to send invite email");
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY);
-  try {
-    await resend.emails.send({
-      from: "onboarding@resend.dev",
+  const { error } = await resend.emails.send(
+    {
+      from,
       to,
       subject: `${inviterName} invited you to ${teamName} on Filflo`,
       html: `
@@ -32,8 +39,13 @@ export async function sendInviteMail(
   </table>
 </body>
 </html>`,
-    });
-  } catch {
-    throw new Error("Unable to send invite email");
+    },
+    {
+      idempotencyKey: `team-invite/${invitationId}`,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
   }
 }

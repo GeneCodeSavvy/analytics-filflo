@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import logoFull from "@/assets/blackBgBackground.png";
 import logoMark from "@/assets/blackBgBackground2.png";
 import { Link } from "react-router";
+import { useAuth } from "@clerk/react";
+import { useAuthState } from "@/stores/useAuthStore";
 
 const iconClass = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
 
@@ -60,6 +62,10 @@ const items: NavItem[] = [
 export default function NavSidebar({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const { signOut } = useAuth();
+  const isAuthenticated = useAuthState((state) => state.isAuthenticated);
+  const user = useAuthState((state) => state.user);
+  const logout = useAuthState((state) => state.logout);
 
   const toggleGroup = (label: string) =>
     setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -103,19 +109,40 @@ export default function NavSidebar({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div>
-            <SidebarLink
-              link={{
-                label: "Harsh Sharma",
-                href: "/teams",
-                icon: (
-                  <IconUser
-                    className="h-7 w-7 shrink-0 rounded-full"
-                    width={50}
-                    height={50}
-                  />
-                ),
-              }}
-            />
+            {isAuthenticated ? (
+              <div className="flex flex-col gap-2">
+                <SidebarLink
+                  link={{
+                    label: user?.displayName ?? "Account",
+                    href: "/teams",
+                    icon: (
+                      <IconUser
+                        className="h-7 w-7 shrink-0 rounded-full"
+                        width={50}
+                        height={50}
+                      />
+                    ),
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    void signOut({ redirectUrl: "/sign-in" });
+                  }}
+                  className="flex h-9 items-center rounded-md px-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/sign-in"
+                className="flex h-9 items-center rounded-md px-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700"
+              >
+                Log in
+              </Link>
+            )}
           </div>
         </SidebarBody>
       </Sidebar>

@@ -13,26 +13,23 @@ import {
   sendValidatedData,
 } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
-import {
-  getAuditEntries,
-  getInvitations,
-  getOrgSummaries,
-} from "./data";
-import {
-  parseTeamAuditParams,
-  parseTeamInvitationListParams,
-} from "./utils";
+import { getAuditEntries, getInvitations, getOrgSummaries } from "./data";
+import { parseTeamAuditParams, parseTeamInvitationListParams } from "./utils";
 import { randomBytes, createHash } from "node:crypto";
 import { sendInviteMail } from "../../lib/mail";
 
-const appBaseUrl = process.env.APP_BASE_URL ?? "https://app.filflo.example";
+const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 const inviteExpiryDays = 7;
 
 export const getInvitations_: RequestHandler = async (req, res) => {
   const params = parseTeamInvitationListParams(req.query);
 
   if (!params.success) {
-    return sendInvalidRequest(res, "team invitation list params", params.error.issues);
+    return sendInvalidRequest(
+      res,
+      "team invitation list params",
+      params.error.issues,
+    );
   }
 
   const db = req.app.locals.db as DbClient;
@@ -63,7 +60,9 @@ export const createInvitation: RequestHandler = async (req, res) => {
   const tokenHash = createHash("sha256").update(rawToken).digest("hex");
 
   const sentAt = new Date();
-  const expiresAt = new Date(sentAt.getTime() + inviteExpiryDays * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(
+    sentAt.getTime() + inviteExpiryDays * 24 * 60 * 60 * 1000,
+  );
 
   const invitation = await db.invitation.create({
     data: {
@@ -93,13 +92,16 @@ export const createInvitation: RequestHandler = async (req, res) => {
 
   try {
     await sendInviteMail(
-      body.data.email,
+      [body.data.email],
       actor.displayName,
       org.displayName,
       inviteLink,
+      invitation.id,
     );
   } catch {
-    res.status(502).json({ success: false, error: "Failed to send invitation email" });
+    res
+      .status(502)
+      .json({ success: false, error: "Failed to send invitation email" });
     return;
   }
 
@@ -109,7 +111,10 @@ export const createInvitation: RequestHandler = async (req, res) => {
     role: invitation.role,
     orgId: invitation.orgId,
     orgName: invitation.org.displayName,
-    invitedBy: { id: invitation.invitedBy.id, name: invitation.invitedBy.displayName },
+    invitedBy: {
+      id: invitation.invitedBy.id,
+      name: invitation.invitedBy.displayName,
+    },
     sentAt: invitation.sentAt.toISOString(),
     expiresAt: invitation.expiresAt.toISOString(),
     status: invitation.status,
