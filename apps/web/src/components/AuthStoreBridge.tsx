@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { useUser } from "@clerk/react";
 import { useAuthState } from "../stores/useAuthStore";
 
-type AppRole = NonNullable<ReturnType<typeof useAuthState.getState>["user"]>["role"];
+type AppRole = NonNullable<
+  ReturnType<typeof useAuthState.getState>["user"]
+>["role"];
 
 function metadataString(value: unknown) {
   return typeof value === "string" ? value : undefined;
@@ -36,10 +38,20 @@ export function AuthStoreBridge() {
       logout();
       return;
     }
+    console.log({
+      id: user.id,
+      displayName:
+        user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "User",
+      email: user.primaryEmailAddress?.emailAddress ?? "",
+      avatarUrl: user.imageUrl,
+      role: metadataRole(user.publicMetadata?.role),
+      orgId: metadataString(user.publicMetadata?.orgId) ?? "",
+    });
 
     setUser({
       id: user.id,
-      displayName: user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "User",
+      displayName:
+        user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "User",
       email: user.primaryEmailAddress?.emailAddress ?? "",
       avatarUrl: user.imageUrl,
       role: metadataRole(user.publicMetadata?.role),

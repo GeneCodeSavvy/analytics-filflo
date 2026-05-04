@@ -3,12 +3,15 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { config } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { sendBootstrapSuperAdminMail } from "../lib/mail";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, "../../../../.env") });
 
 const requiredEnvVars = [
   "DATABASE_URL",
+  "RESEND_API_KEY",
+  "RESEND_FROM_EMAIL",
   "BOOTSTRAP_SUPER_ADMIN_EMAIL",
   "BOOTSTRAP_SUPER_ADMIN_NAME",
   "BOOTSTRAP_ORG_NAME",
@@ -35,6 +38,7 @@ const databaseUrl = getRequiredEnv("DATABASE_URL")!;
 const email = getRequiredEnv("BOOTSTRAP_SUPER_ADMIN_EMAIL")!;
 const displayName = getRequiredEnv("BOOTSTRAP_SUPER_ADMIN_NAME")!;
 const orgName = getRequiredEnv("BOOTSTRAP_ORG_NAME")!;
+const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:5173";
 
 const adapter = new PrismaPg({ connectionString: databaseUrl });
 const db = new PrismaClient({ adapter, log: ["error"] });
@@ -85,7 +89,25 @@ const main = async () => {
   console.log("Bootstrapped Super Admin");
   console.log(`User: ${user.email}`);
   console.log(`Org: ${org.displayName}`);
-  console.log("Clerk link: pending user.created webhook");
+
+  const signUpLink = `${appBaseUrl}/sign-up?email=${encodeURIComponent(user.email)}`;
+
+  try {
+    await sendBootstrapSuperAdminMail(
+      user.email,
+      user.displayName,
+      org.displayName,
+      signUpLink,
+    );
+    console.log("Bootstrap email: sent");
+  } catch (error: unknown) {
+    console.error("Bootstrap email: failed to send");
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log("Clerk link: pending sign-up/webhook or auth reconciliation");
 };
 
 main()

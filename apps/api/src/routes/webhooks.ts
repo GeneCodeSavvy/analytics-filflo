@@ -46,9 +46,10 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
     email_addresses: Array<{ email_address: string }>;
     first_name: string | null;
     last_name: string | null;
+    image_url?: string | null;
   };
 
-  const email = data.email_addresses[0]?.email_address;
+  const email = data.email_addresses[0]?.email_address?.trim();
 
   if (!email) {
     res.status(200).json({ received: true });
@@ -58,11 +59,15 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
   const db = req.app.locals.db as DbClient;
 
   try {
-    const stubUsers = await db.user.findMany({
-      where: { email, clerkUserId: null },
+    const stubUser = await db.user.findFirst({
+      where: {
+        email: { equals: email.toLowerCase(), mode: "insensitive" },
+        clerkUserId: null,
+      },
+      orderBy: { createdAt: "asc" },
     });
 
-    if (stubUsers.length === 0) {
+    if (!stubUser) {
       console.warn(`[webhook] user.created for ${email} — no stub user found (organic sign-up?)`);
       res.status(200).json({ received: true });
       return;
@@ -72,10 +77,13 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
     const lastName = data.last_name ?? "";
     const displayName = [firstName, lastName].filter(Boolean).join(" ") || email;
 
-    // Link all stub users (handles multi-org invitations)
-    await db.user.updateMany({
-      where: { email, clerkUserId: null },
-      data: { clerkUserId: data.id, displayName },
+    await db.user.update({
+      where: { id: stubUser.id },
+      data: {
+        clerkUserId: data.id,
+        displayName,
+        ...(data.image_url ? { avatarUrl: data.image_url } : {}),
+      },
     });
   } catch {
     console.error(`[webhook] DB error processing user.created for ${email}`);
