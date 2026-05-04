@@ -17,7 +17,7 @@ export function Sparkline({ card, accent }: SparklineProps) {
         strokeLinejoin="round"
         strokeWidth="1.5"
         opacity="0.6"
-        className="dashboard-sparkline-path"
+        className="[stroke-dasharray:140] [stroke-dashoffset:140] animate-[dashboard-sparkline-draw_600ms_ease-in-out_400ms_forwards]"
       />
     </svg>
   );

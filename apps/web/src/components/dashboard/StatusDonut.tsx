@@ -3,6 +3,12 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { dashboardStatusColor } from "../../lib/dashboardComponent";
 import type { StatusDonutSlice } from "../../types/dashboard";
 
+const chartPanelClass =
+  "min-h-[280px] rounded-xl border border-[#E8E6E0] bg-white p-5 opacity-0 shadow-[0_1px_4px_0_hsl(0_0%_0%_/_0.05),0_1px_2px_-1px_hsl(0_0%_0%_/_0.05)] translate-y-20 animate-[dashboard-panel-enter_300ms_ease-out_forwards]";
+
+const donutCellClass =
+  "[transform-box:fill-box] origin-center transition-[transform,filter] duration-150 ease-out";
+
 export function StatusDonut({
   slices,
   total,
@@ -14,7 +20,7 @@ export function StatusDonut({
   const active = activeIndex === null ? null : slices[activeIndex];
 
   return (
-    <section className="dashboard-chart-panel dashboard-panel-enter [animation-delay:80ms]">
+    <section className={`${chartPanelClass} [animation-delay:80ms]`}>
       <h2 className="mb-2 text-[13px] font-medium text-[#08060d]">
         Status donut
       </h2>
@@ -40,8 +46,8 @@ export function StatusDonut({
                   fill={dashboardStatusColor[slice.status]}
                   className={
                     index === activeIndex
-                      ? "dashboard-donut-active"
-                      : "dashboard-donut-cell"
+                      ? `${donutCellClass} scale-[1.04] drop-shadow-[0_6px_10px_rgb(8_6_13_/_0.16)]`
+                      : donutCellClass
                   }
                 />
               ))}

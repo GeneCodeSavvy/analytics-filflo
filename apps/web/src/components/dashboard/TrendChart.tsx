@@ -9,6 +9,9 @@ import {
 import { getTrendChartData, muted, teal } from "../../lib/dashboardComponent";
 import type { TrendChartProps } from "../../types/dashboard";
 
+const chartPanelClass =
+  "min-h-[280px] rounded-xl border border-[#E8E6E0] bg-white p-5 opacity-0 shadow-[0_1px_4px_0_hsl(0_0%_0%_/_0.05),0_1px_2px_-1px_hsl(0_0%_0%_/_0.05)] translate-y-20 animate-[dashboard-panel-enter_300ms_ease-out_forwards]";
+
 function ChartTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -35,7 +38,7 @@ export function TrendChart({ points }: TrendChartProps) {
   const data = getTrendChartData(points);
 
   return (
-    <section className="dashboard-chart-panel dashboard-panel-enter">
+    <section className={chartPanelClass}>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-[13px] font-medium text-[#08060d]">Volume trend</h2>
         <div className="flex items-center gap-4 text-xs">

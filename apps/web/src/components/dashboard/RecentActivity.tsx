@@ -5,7 +5,7 @@ import { Panel } from "./Panel";
 export function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
   return (
     <Panel title="Recent activity" count={activity.length}>
-      <div className="dashboard-feed max-h-[330px] overflow-y-auto px-5 py-4">
+      <div className="max-h-[330px] overflow-y-auto px-5 py-4 [scrollbar-color:#D1CEC7_#E8E6E0] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#D1CEC7] [&::-webkit-scrollbar-track]:bg-[#E8E6E0]">
         {activity.map((entry, index) => (
           <div
             key={`${entry.ticket.id}-${entry.at}`}
