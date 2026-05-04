@@ -4,7 +4,7 @@ import { dashboardStatusColor } from "../../lib/dashboardComponent";
 import type { StatusDonutSlice } from "../../types/dashboard";
 
 const chartPanelClass =
-  "min-h-[280px] rounded-xl border border-[#E8E6E0] bg-white p-5 opacity-0 shadow-[0_1px_4px_0_hsl(0_0%_0%_/_0.05),0_1px_2px_-1px_hsl(0_0%_0%_/_0.05)] translate-y-20 animate-[dashboard-panel-enter_300ms_ease-out_forwards]";
+  "min-h-[280px] rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] p-5 opacity-0 shadow-[--elev-1] translate-y-20 animate-[dashboard-panel-enter_300ms_ease-out_forwards]";
 
 const donutCellClass =
   "[transform-box:fill-box] origin-center transition-[transform,filter] duration-150 ease-out";
@@ -21,7 +21,7 @@ export function StatusDonut({
 
   return (
     <section className={`${chartPanelClass} [animation-delay:80ms]`}>
-      <h2 className="mb-2 text-[13px] font-medium text-[#08060d]">
+      <h2 className="mb-2 text-[16px] font-semibold text-[--ink-1]">
         Status donut
       </h2>
       <div className="relative h-[180px] cursor-crosshair">
@@ -34,7 +34,7 @@ export function StatusDonut({
               innerRadius="60%"
               outerRadius="84%"
               paddingAngle={2}
-              stroke="#fff"
+              stroke="var(--surface-card)"
               strokeWidth={2}
               onMouseEnter={(_, index) => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(null)}
@@ -46,7 +46,7 @@ export function StatusDonut({
                   fill={dashboardStatusColor[slice.status]}
                   className={
                     index === activeIndex
-                      ? `${donutCellClass} scale-[1.04] drop-shadow-[0_6px_10px_rgb(8_6_13_/_0.16)]`
+                      ? `${donutCellClass} scale-[1.04] drop-shadow-[0_6px_10px_var(--surface-overlay)]`
                       : donutCellClass
                   }
                 />
@@ -55,10 +55,10 @@ export function StatusDonut({
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <div className="font-mono text-[32px] font-medium leading-none text-[#08060d]">
+          <div className="font-[var(--font-sans)] text-[32px] font-semibold leading-none text-[--ink-1]">
             {active ? active.count : total}
           </div>
-          <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[#9CA3AF]">
+          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[--ink-3]">
             {active ? active.status.replace("_", " ") : "All tickets"}
           </div>
         </div>
@@ -67,15 +67,15 @@ export function StatusDonut({
         {slices.map((slice) => (
           <div
             key={slice.status}
-            className="flex items-center gap-1.5 text-xs text-[#6B7280]"
+            className="flex items-center gap-1.5 text-xs text-[--ink-2]"
           >
             <span
               className="h-2 w-2 rounded-full"
               style={{ backgroundColor: dashboardStatusColor[slice.status] }}
             />
             <span>{slice.status.replace("_", " ")}</span>
-            <span className="font-mono text-[#08060d]">{slice.count}</span>
-            <span className="font-mono text-[#9CA3AF]">{slice.percent}%</span>
+            <span className="text-[--ink-1]">{slice.count}</span>
+            <span className="text-[--ink-3]">{slice.percent}%</span>
           </div>
         ))}
       </div>

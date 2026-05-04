@@ -20,39 +20,60 @@ import type {
 
 export const dashboardRanges: Range[] = ["7d", "30d", "90d", "all"];
 
-export const muted = "#9CA3AF";
-export const amber = "oklch(0.6716 0.1368 48.5130)";
-export const teal = "oklch(0.5360 0.0398 196)";
-export const resolved = "oklch(0.5940 0.0443 196)";
-export const review = "oklch(0.6268 0 0)";
-export const warning = "oklch(0.6368 0.2078 25)";
+export const dashboardInkMuted = "var(--ink-3)";
+export const dashboardAction = "var(--action-bg)";
+export const dashboardInfo = "var(--status-info-fg)";
+export const dashboardSuccess = "var(--status-success-fg)";
+export const dashboardNeutral = "var(--status-neutral-fg)";
+export const dashboardWarning = "var(--status-warn-fg)";
+export const dashboardDanger = "var(--status-danger-fg)";
 
 export const dashboardStatusColor: Record<Status, string> = {
-  OPEN: "#D97706",
-  IN_PROGRESS: teal,
-  REVIEW: review,
-  ON_HOLD: "#D97706",
-  CLOSED: "#D1CEC7",
-  RESOLVED: resolved,
+  OPEN: dashboardAction,
+  IN_PROGRESS: dashboardInfo,
+  REVIEW: dashboardNeutral,
+  ON_HOLD: dashboardWarning,
+  CLOSED: "var(--border-strong)",
+  RESOLVED: dashboardSuccess,
 };
 
 export const dashboardPriorityColor = {
-  HIGH: warning,
-  MEDIUM: "#D97706",
-  LOW: resolved,
+  HIGH: dashboardDanger,
+  MEDIUM: dashboardWarning,
+  LOW: dashboardSuccess,
 } as const;
 
 export const dashboardKpiMeta = [
-  { key: "totalTickets", icon: IconTicket, accent: amber, positive: "up" },
-  { key: "pending", icon: IconClock, accent: "#D97706", positive: "down" },
+  {
+    key: "totalTickets",
+    icon: IconTicket,
+    accent: dashboardAction,
+    positive: "up",
+  },
+  {
+    key: "pending",
+    icon: IconClock,
+    accent: dashboardWarning,
+    positive: "down",
+  },
   {
     key: "awaitingReview",
     icon: IconTrendingUp,
-    accent: review,
+    accent: dashboardNeutral,
     positive: "down",
   },
-  { key: "resolved", icon: IconCircleCheck, accent: resolved, positive: "up" },
-  { key: "avgResolutionTime", icon: IconCheck, accent: teal, positive: "down" },
+  {
+    key: "resolved",
+    icon: IconCircleCheck,
+    accent: dashboardSuccess,
+    positive: "up",
+  },
+  {
+    key: "avgResolutionTime",
+    icon: IconCheck,
+    accent: dashboardInfo,
+    positive: "down",
+  },
 ] satisfies DashboardKpiMeta[];
 
 export const dashboardResolutionBreakdown: DashboardResolutionBreakdown[] = [
@@ -76,9 +97,7 @@ export function parseKpiValue(value: KpiCard["value"]): ParsedKpiValue {
   };
 }
 
-export function getSparklinePath(
-  points: SparklinePathInput[],
-): SparklinePath {
+export function getSparklinePath(points: SparklinePathInput[]): SparklinePath {
   if (!points.length) return { line: "", fill: "" };
 
   const values = points.map((point) => point.value);
@@ -146,7 +165,13 @@ export function initials(name: string) {
 }
 
 export function avatarColor(name: string) {
-  const colors = ["#0F766E", "#92400E", "#525252", "#047857", "#A16207"];
+  const colors = [
+    "var(--status-info-fg)",
+    "var(--status-warn-fg)",
+    "var(--status-neutral-fg)",
+    "var(--status-success-fg)",
+    "var(--action-bg)",
+  ];
   const total = name
     .split("")
     .reduce((sum, char) => sum + char.charCodeAt(0), 0);

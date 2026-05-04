@@ -1,28 +1,36 @@
 import {
   dashboardResolutionBreakdown,
+  dashboardDanger,
   formatDashboardNumber,
   parseKpiValue,
-  warning,
 } from "../../lib/dashboardComponent";
 import type { KpiCardViewProps } from "../../types/dashboard";
 import { Sparkline } from "./Sparkline";
 import { useCountUp } from "./useCountUp";
 
-export function KpiCardView({ card, accent, positive, icon: Icon }: KpiCardViewProps) {
+const kpiCardClass =
+  "rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] p-5 shadow-[--elev-1]";
+
+export function KpiCardView({
+  card,
+  accent,
+  positive,
+  icon: Icon,
+}: KpiCardViewProps) {
   const parsed = parseKpiValue(card.value);
   const count = useCountUp(parsed.numeric);
   const isGood = card.delta?.direction === positive;
-  const deltaColor = isGood ? "#059669" : warning;
+  const deltaColor = isGood ? "var(--status-success-fg)" : dashboardDanger;
 
   return (
-    <section className="rounded-xl border border-[#E8E6E0] bg-white p-5 shadow-sm">
+    <section className={kpiCardClass}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#9CA3AF]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[--ink-3]">
           {card.label}
         </p>
-        <Icon size={14} className="text-[#9CA3AF]" />
+        <Icon size={14} className="text-[--ink-3]" />
       </div>
-      <div className="mt-3 font-mono text-5xl font-medium leading-none text-[#08060d]">
+      <div className="mt-3 font-[var(--font-sans)] text-5xl font-semibold leading-none text-[--ink-1]">
         {typeof card.value === "number"
           ? formatDashboardNumber(count)
           : `${count}${parsed.suffix}`}
@@ -32,10 +40,10 @@ export function KpiCardView({ card, accent, positive, icon: Icon }: KpiCardViewP
           {dashboardResolutionBreakdown.map(({ label, value, color }) => (
             <span
               key={label}
-              className="rounded-full border-l-2 bg-[#FAFAF8] px-2 py-0.5 text-[10px] font-medium text-[#6B7280]"
+              className="rounded-[--radius-pill] border-l-2 bg-[--surface-sunken] px-2 py-0.5 text-[10px] font-medium text-[--ink-2]"
               style={{ borderLeftColor: color }}
             >
-              <span className="font-mono text-[#08060d]">{label}</span> {value}
+              <span className="text-[--ink-1]">{label}</span> {value}
             </span>
           ))}
         </div>
@@ -45,7 +53,7 @@ export function KpiCardView({ card, accent, positive, icon: Icon }: KpiCardViewP
           {card.delta?.direction === "up" ? "↑" : "↓"}{" "}
           {card.delta?.percent ?? 0}%
         </span>
-        <span className="text-[10px] text-[#9CA3AF]">vs last 30d</span>
+        <span className="text-[10px] text-[--ink-3]">vs last 30d</span>
       </div>
       <div className="mt-4">
         <Sparkline card={card} accent={accent} />

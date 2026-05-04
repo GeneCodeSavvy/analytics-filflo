@@ -4,7 +4,10 @@ import { useDashboardFilters } from "../../hooks/useDashboardFilters";
 import { useZone1Query } from "../../hooks/useZone1Query";
 import { useZone2Query } from "../../hooks/useZone2Query";
 import { useZone3Query } from "../../hooks/useZone3Query";
-import { dashboardKpiMeta, dashboardRanges } from "../../lib/dashboardComponent";
+import {
+  dashboardKpiMeta,
+  dashboardRanges,
+} from "../../lib/dashboardComponent";
 import { AgingTickets } from "./AgingTickets";
 import { KpiCardView } from "./KpiCardView";
 import { MyQueue } from "./MyQueue";
@@ -13,7 +16,10 @@ import { StatusDonut } from "./StatusDonut";
 import { TrendChart } from "./TrendChart";
 
 const dashboardPageClass =
-  "app-page-frame bg-[#FAFAF8] font-['Inter_Variable',Inter,system-ui,sans-serif] text-[#08060d] [&_.font-mono]:font-['Geist_Mono',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace] [&_[class*='font-mono']]:font-['Geist_Mono',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace]";
+  "app-page-frame bg-[--surface-page] font-mono text-[--ink-1]";
+
+const controlButtonClass =
+  "h-8 cursor-crosshair rounded-[--radius-sm] px-3 text-[12px] font-medium leading-none transition-colors";
 
 export function Dashboard() {
   const { filters, setFilters } = useDashboardFilters();
@@ -33,10 +39,10 @@ export function Dashboard() {
 
   if (isLoading) {
     return (
-      <main className={`${dashboardPageClass} flex items-center justify-center`}>
-        <div className="font-mono text-sm text-[#9CA3AF]">
-          Preparing dashboard
-        </div>
+      <main
+        className={`${dashboardPageClass} flex items-center justify-center`}
+      >
+        <div className="text-[13px] text-[--ink-3]">Preparing dashboard</div>
       </main>
     );
   }
@@ -49,8 +55,10 @@ export function Dashboard() {
     !zone3.data
   ) {
     return (
-      <main className={`${dashboardPageClass} flex items-center justify-center`}>
-        <div className="rounded-xl border border-[#E8E6E0] bg-white px-4 py-3 text-sm text-[#08060d]">
+      <main
+        className={`${dashboardPageClass} flex items-center justify-center`}
+      >
+        <div className="rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] px-4 py-3 text-[13px] text-[--ink-1] shadow-[--elev-1]">
           Dashboard data is unavailable.
         </div>
       </main>
@@ -60,24 +68,21 @@ export function Dashboard() {
   return (
     <main className={dashboardPageClass}>
       <div className="app-page-frame-content">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#E8E6E0] bg-[#FAFAF8]/95 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E8E6E0] bg-white font-mono text-xs font-medium text-[#08060d]">
-              FF
-            </div>
-            <h1 className="text-sm font-medium text-[#08060d]">Tickets</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-[#E8E6E0] bg-white p-0.5">
+        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-[--surface-page] py-3">
+          <h1 className="text-[30px] font-bold leading-none text-[--ink-1]">
+            Dashboard
+          </h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] p-0.5 shadow-[--elev-1]">
               {dashboardRanges.map((range) => (
                 <button
                   key={range}
                   type="button"
                   onClick={() => setFilters({ range })}
-                  className={`h-7 cursor-crosshair rounded-md px-3 text-xs font-medium transition ${
+                  className={`${controlButtonClass} ${
                     filters.range === range
-                      ? "bg-[oklch(0.6716_0.1368_48.5130)] text-white"
-                      : "text-[#6B7280] hover:text-[#08060d]"
+                      ? "bg-[--action-bg] text-[--action-fg]"
+                      : "text-[--ink-3] hover:bg-[--surface-sunken] hover:text-[--ink-1]"
                   }`}
                 >
                   {range === "all" ? "All" : range}
@@ -86,9 +91,9 @@ export function Dashboard() {
             </div>
             <button
               type="button"
-              className="flex h-8 cursor-crosshair items-center gap-2 rounded-lg border border-[#E8E6E0] bg-white px-3 text-xs font-medium text-[#08060d]"
+              className="flex h-8 cursor-crosshair items-center gap-2 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-3 text-[12px] font-medium text-[--ink-1] shadow-[--elev-1] transition-colors hover:border-[--border-strong]"
             >
-              Org <IconChevronDown size={14} className="text-[#9CA3AF]" />
+              Org <IconChevronDown size={14} className="text-[--ink-3]" />
             </button>
           </div>
         </header>
