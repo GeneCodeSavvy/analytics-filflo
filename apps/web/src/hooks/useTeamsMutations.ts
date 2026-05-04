@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamsApi } from "../api/teamsApi";
-import { teamKeys } from "../lib/teamParams";
+import { teamKeys } from "../lib/teamsApi";
 import type {
   BulkMemberOp,
   BulkMemberResult,
@@ -9,7 +9,7 @@ import type {
   MemberDetail,
   RemoveMemberParams,
   RoleChangePayload,
-} from "../lib/teamParams";
+} from "../types/teams";
 import { useTeamsStore } from "../stores/useTeamsStore";
 
 function invalidateTeamLists(queryClient: ReturnType<typeof useQueryClient>) {
@@ -83,11 +83,13 @@ export function useRemoveTeamMemberMutation() {
   >({
     mutationFn: ({ userId, params }) => teamsApi.removeMember(userId, params),
     onSuccess: (_data, { userId }) => {
-      useTeamsStore.getState().setSelectedRows(
-        useTeamsStore
-          .getState()
-          .selectedRowIds.filter((rowId) => rowId !== userId),
-      );
+      useTeamsStore
+        .getState()
+        .setSelectedRows(
+          useTeamsStore
+            .getState()
+            .selectedRowIds.filter((rowId) => rowId !== userId),
+        );
       removeTeamMemberDetail(queryClient, userId);
     },
     onSettled: (_data, _error, { userId }) => {

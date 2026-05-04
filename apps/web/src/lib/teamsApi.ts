@@ -1,48 +1,9 @@
-export {
-  TeamRoleSchema,
-  TeamMemberListParamsSchema,
-  TeamAuditParamsSchema,
-  TeamInvitationListParamsSchema,
-  MemberPermissionsSchema,
-  MemberRowSchema,
-  MemberDetailSchema,
-  TeamMemberListResponseSchema,
-  InvitationSchema,
-  AuditEntrySchema,
-  OrgSummarySchema,
-  InvitePayloadSchema,
-  RoleChangePayloadSchema,
-  RemoveMemberParamsSchema,
-  BulkMemberOpSchema,
-  BulkMemberResultSchema,
-} from "@shared/schema/teams";
-
-export type {
-  TeamRole,
-  InvitationStatus,
-  TeamMemberListParams,
-  TeamAuditParams,
-  TeamInvitationListParams,
-  MemberPermissions,
-  MemberRow,
-  MemberDetail,
-  TeamMemberListResponse,
-  Invitation,
-  AuditEntry,
-  OrgSummary,
-  InvitePayload,
-  RoleChangePayload,
-  RemoveMemberParams,
-  BulkMemberOp,
-  BulkMemberResult,
-} from "@shared/schema/teams";
-
 import type {
-  TeamMemberListParams,
-  TeamInvitationListParams,
   TeamAuditParams,
+  TeamInvitationListParams,
+  TeamMemberListParams,
   TeamRole,
-} from "@shared/schema/teams";
+} from "../types/teams";
 
 export function normalizeTeamParams<T extends object>(params: T): T {
   const filtered = Object.fromEntries(

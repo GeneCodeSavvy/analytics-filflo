@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { TeamRole } from "../lib/teamParams";
+import type { TeamRole } from "../types/teams";
 
 interface InviteDraft {
   email: string;

@@ -13,7 +13,42 @@ import {
   Users,
   X,
 } from "lucide-react";
-import type { Invitation, MemberRow, OrgSummary, TeamRole } from "../lib/teamParams";
+import type {
+  Invitation,
+  MemberRow,
+  OrgSummary,
+  TeamRole,
+} from "../types/teams";
+import {
+  avatarTints,
+  canAct,
+  filterTeamRows,
+  formatDate,
+  formatMonth,
+  getHighlightedTextParts,
+  groupRowsByOrg,
+  initials,
+  isInvitationExpired,
+  isStale,
+  nextSortState,
+  orgNameFor,
+  orgStats,
+  relativeTime,
+  roleClass,
+  roleDescriptions,
+  roleLabels,
+  roles,
+  sortRows,
+  validRoleOptions,
+} from "../lib/teamsComponent";
+import type {
+  ModalState,
+  PreviewRole,
+  RoleFilter,
+  SortDirection,
+  SortKey,
+  TeamTab,
+} from "../types/teams";
 import {
   useTeamInvitationsQuery,
   useTeamMemberQuery,
@@ -30,85 +65,12 @@ import {
 } from "../hooks/useTeamsMutations";
 import { useTeamsStore } from "../stores/useTeamsStore";
 
-type PreviewRole = "SUPER_ADMIN" | "ADMIN" | "MODERATOR" | "USER";
-type SortKey = "member" | "role" | "lastActive" | "joined";
-type SortDirection = "asc" | "desc";
-type ModalState =
-  | { type: "role"; member: MemberRow; nextRole: TeamRole }
-  | { type: "remove"; member: MemberRow }
-  | null;
-
-const roles: TeamRole[] = ["SUPER_ADMIN", "ADMIN", "MODERATOR", "USER"];
-const roleLabels: Record<TeamRole, string> = {
-  SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
-  MODERATOR: "Moderator",
-  USER: "User",
-};
-const roleRank: Record<TeamRole, number> = {
-  SUPER_ADMIN: 0,
-  ADMIN: 1,
-  MODERATOR: 2,
-  USER: 3,
-};
-const roleDescriptions: Record<TeamRole, string> = {
-  SUPER_ADMIN: "Can manage all orgs and roles",
-  ADMIN: "Can view org membership and settings",
-  MODERATOR: "Can invite users and manage assignments",
-  USER: "Can view teammates and work tickets",
-};
-const roleClass: Record<TeamRole, string> = {
-  SUPER_ADMIN: "teams-role-super",
-  ADMIN: "teams-role-admin",
-  MODERATOR: "teams-role-moderator",
-  USER: "teams-role-user",
-};
-const avatarTints = ["#F0E6D3", "#D6E8E4", "#E8E1D6", "#EEEDEA", "#F5F0E6"];
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatMonth(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function relativeTime(value?: string | null) {
-  if (!value) return "Never";
-  const diffMs = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(1, Math.floor(diffMs / 60_000));
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days} days ago`;
-  const months = Math.floor(days / 30);
-  return `${months} months ago`;
-}
-
-function isStale(value?: string | null) {
-  if (!value) return true;
-  return Date.now() - new Date(value).getTime() > 30 * 24 * 60 * 60 * 1000;
-}
-
 function RolePill({ role }: { role: TeamRole }) {
-  return <span className={`teams-role-pill ${roleClass[role]}`}>{roleLabels[role]}</span>;
+  return (
+    <span className={`teams-role-pill ${roleClass[role]}`}>
+      {roleLabels[role]}
+    </span>
+  );
 }
 
 function Avatar({ member, size = 32 }: { member: MemberRow; size?: number }) {
@@ -118,63 +80,27 @@ function Avatar({ member, size = 32 }: { member: MemberRow; size?: number }) {
       className="teams-avatar"
       style={{ width: size, height: size, backgroundColor: tint }}
     >
-      {member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : initials(member.name)}
+      {member.avatarUrl ? (
+        <img src={member.avatarUrl} alt="" />
+      ) : (
+        initials(member.name)
+      )}
     </span>
   );
 }
 
-function highlight(text: string, query: string) {
-  if (!query.trim()) return text;
-  const index = text.toLowerCase().indexOf(query.trim().toLowerCase());
-  if (index === -1) return text;
+function HighlightedText({ text, query }: { text: string; query: string }) {
   return (
     <>
-      {text.slice(0, index)}
-      <mark>{text.slice(index, index + query.length)}</mark>
-      {text.slice(index + query.length)}
+      {getHighlightedTextParts(text, query).map((part, index) =>
+        part.highlighted ? (
+          <mark key={`${part.text}-${index}`}>{part.text}</mark>
+        ) : (
+          part.text
+        ),
+      )}
     </>
   );
-}
-
-function orgNameFor(member: MemberRow, orgs: OrgSummary[]) {
-  return orgs.find((org) => org.org.id === member.orgId)?.org.name ?? member.orgId;
-}
-
-function orgStats(rows: MemberRow[]) {
-  const counts = rows.reduce(
-    (acc, row) => {
-      acc[row.role] += 1;
-      return acc;
-    },
-    { SUPER_ADMIN: 0, ADMIN: 0, MODERATOR: 0, USER: 0 } as Record<TeamRole, number>,
-  );
-  return `${rows.length} members · ${counts.SUPER_ADMIN} SA · ${counts.ADMIN} Admins · ${counts.MODERATOR} Mods · ${counts.USER} Users`;
-}
-
-function sortRows(rows: MemberRow[], key: SortKey, direction: SortDirection) {
-  const multiplier = direction === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => {
-    let result = 0;
-    if (key === "member") result = a.name.localeCompare(b.name);
-    if (key === "role") result = roleRank[a.role] - roleRank[b.role] || a.name.localeCompare(b.name);
-    if (key === "lastActive") {
-      result =
-        new Date(a.lastActiveAt ?? 0).getTime() - new Date(b.lastActiveAt ?? 0).getTime();
-    }
-    if (key === "joined") result = new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
-    return result * multiplier;
-  });
-}
-
-function validRoleOptions(actor: PreviewRole, target: MemberRow) {
-  if (actor === "SUPER_ADMIN") return roles.filter((role) => role !== target.role);
-  if (actor === "MODERATOR" && target.role === "USER") return ["MODERATOR"] as TeamRole[];
-  return [];
-}
-
-function canAct(actor: PreviewRole, target: MemberRow) {
-  if (actor === "SUPER_ADMIN") return true;
-  return actor === "MODERATOR" && target.role === "USER";
 }
 
 function ActionMenu({
@@ -197,7 +123,11 @@ function ActionMenu({
 
   return (
     <div className="teams-menu-wrap">
-      <button className="teams-icon-button" onClick={() => setOpen((value) => !value)} type="button">
+      <button
+        className="teams-icon-button"
+        onClick={() => setOpen((value) => !value)}
+        type="button"
+      >
         <MoreHorizontal size={16} />
       </button>
       {open ? (
@@ -212,9 +142,15 @@ function ActionMenu({
               ))}
             </div>
           ) : null}
-          <button onClick={onProfile} type="button">View profile</button>
+          <button onClick={onProfile} type="button">
+            View profile
+          </button>
           <div className="teams-menu-divider" />
-          <button className="teams-danger-text" onClick={onRemove} type="button">
+          <button
+            className="teams-danger-text"
+            onClick={onRemove}
+            type="button"
+          >
             Remove from org
           </button>
         </div>
@@ -237,11 +173,17 @@ function SortHeader({
   onSort: (key: SortKey) => void;
 }) {
   return (
-    <button className="teams-sort-header" onClick={() => onSort(sortKey)} type="button">
+    <button
+      className="teams-sort-header"
+      onClick={() => onSort(sortKey)}
+      type="button"
+    >
       {label}
       <ChevronDown
         size={13}
-        className={active === sortKey && direction === "desc" ? "teams-sort-desc" : ""}
+        className={
+          active === sortKey && direction === "desc" ? "teams-sort-desc" : ""
+        }
       />
     </button>
   );
@@ -270,7 +212,8 @@ function MemberTable({
   onRole: (member: MemberRow, role: TeamRole) => void;
   onRemove: (member: MemberRow) => void;
 }) {
-  const { selectedRowIds, toggleRowSelected, openMemberDetail } = useTeamsStore();
+  const { selectedRowIds, toggleRowSelected, openMemberDetail } =
+    useTeamsStore();
   const selected = new Set(selectedRowIds);
 
   return (
@@ -279,10 +222,42 @@ function MemberTable({
         <thead>
           <tr>
             {showCheckboxes ? <th className="teams-check-cell" /> : null}
-            <th><SortHeader label="Member" sortKey="member" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
-            <th><SortHeader label="Role" sortKey="role" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
-            <th><SortHeader label="Last Active" sortKey="lastActive" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
-            <th><SortHeader label="Joined" sortKey="joined" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+            <th>
+              <SortHeader
+                label="Member"
+                sortKey="member"
+                active={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+              />
+            </th>
+            <th>
+              <SortHeader
+                label="Role"
+                sortKey="role"
+                active={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+              />
+            </th>
+            <th>
+              <SortHeader
+                label="Last Active"
+                sortKey="lastActive"
+                active={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+              />
+            </th>
+            <th>
+              <SortHeader
+                label="Joined"
+                sortKey="joined"
+                active={sortKey}
+                direction={sortDirection}
+                onSort={onSort}
+              />
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -290,7 +265,11 @@ function MemberTable({
           {rows.map((member) => {
             const checked = selected.has(member.id);
             return (
-              <tr key={`${member.orgId}-${member.id}`} className={checked ? "teams-row-checked" : ""} tabIndex={0}>
+              <tr
+                key={`${member.orgId}-${member.id}`}
+                className={checked ? "teams-row-checked" : ""}
+                tabIndex={0}
+              >
                 {showCheckboxes ? (
                   <td className="teams-check-cell">
                     <input
@@ -309,15 +288,25 @@ function MemberTable({
                       onClick={() => openMemberDetail(member.id, member.orgId)}
                       type="button"
                     >
-                      {highlight(member.name, query)}
+                      <HighlightedText text={member.name} query={query} />
                     </button>
-                    <div className="teams-muted">{highlight(member.email, query)}</div>
+                    <div className="teams-muted">
+                      <HighlightedText text={member.email} query={query} />
+                    </div>
                   </div>
                 </td>
-                <td><RolePill role={member.role} /></td>
                 <td>
-                  <span className={isStale(member.lastActiveAt) ? "teams-warning" : ""}>
-                    {isStale(member.lastActiveAt) ? <AlertCircle size={14} /> : null}
+                  <RolePill role={member.role} />
+                </td>
+                <td>
+                  <span
+                    className={
+                      isStale(member.lastActiveAt) ? "teams-warning" : ""
+                    }
+                  >
+                    {isStale(member.lastActiveAt) ? (
+                      <AlertCircle size={14} />
+                    ) : null}
                     {relativeTime(member.lastActiveAt)}
                   </span>
                 </td>
@@ -340,7 +329,11 @@ function MemberTable({
         <div className="teams-empty">
           <Users size={20} />
           <span>No members match this view yet.</span>
-          <small>{orgs.length ? "Try a different filter." : "Backend team data will appear here when available."}</small>
+          <small>
+            {orgs.length
+              ? "Try a different filter."
+              : "Backend team data will appear here when available."}
+          </small>
         </div>
       ) : null}
     </div>
@@ -371,17 +364,31 @@ function BulkBar({
         }
         defaultValue=""
       >
-        <option value="" disabled>Change role</option>
-        {roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
+        <option value="" disabled>
+          Change role
+        </option>
+        {roles.map((role) => (
+          <option key={role} value={role}>
+            {roleLabels[role]}
+          </option>
+        ))}
       </select>
       <button
         className="teams-danger-ghost"
-        onClick={() => bulkMutation.mutate({ ids: selectedIds, orgId, op: "remove" })}
+        onClick={() =>
+          bulkMutation.mutate({ ids: selectedIds, orgId, op: "remove" })
+        }
         type="button"
       >
         Remove
       </button>
-      <button className="teams-text-button" onClick={clearSelection} type="button">Clear selection</button>
+      <button
+        className="teams-text-button"
+        onClick={clearSelection}
+        type="button"
+      >
+        Clear selection
+      </button>
     </div>
   );
 }
@@ -403,20 +410,34 @@ function UserGrid({ rows }: { rows: MemberRow[] }) {
           <span>Last seen {relativeTime(member.lastActiveAt)}</span>
         </button>
       ))}
-      {!rows.length ? <div className="teams-empty teams-grid-empty">No teammates to show yet.</div> : null}
+      {!rows.length ? (
+        <div className="teams-empty teams-grid-empty">
+          No teammates to show yet.
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function InviteModal({ actorRole, orgs }: { actorRole: PreviewRole; orgs: OrgSummary[] }) {
-  const { inviteModalOpen, closeInviteModal, inviteDraft, saveInviteDraft } = useTeamsStore();
+function InviteModal({
+  actorRole,
+  orgs,
+}: {
+  actorRole: PreviewRole;
+  orgs: OrgSummary[];
+}) {
+  const { inviteModalOpen, closeInviteModal, inviteDraft, saveInviteDraft } =
+    useTeamsStore();
   const inviteMutation = useInviteTeamMemberMutation();
   const [email, setEmail] = useState(inviteDraft?.email ?? "");
   const [role, setRole] = useState<TeamRole>(inviteDraft?.role ?? "USER");
-  const [orgId, setOrgId] = useState(inviteDraft?.orgId ?? orgs[0]?.org.id ?? "");
+  const [orgId, setOrgId] = useState(
+    inviteDraft?.orgId ?? orgs[0]?.org.id ?? "",
+  );
 
   useEffect(() => {
-    if (inviteModalOpen) setOrgId((current) => current || orgs[0]?.org.id || "");
+    if (inviteModalOpen)
+      setOrgId((current) => current || orgs[0]?.org.id || "");
   }, [inviteModalOpen, orgs]);
 
   if (!inviteModalOpen) return null;
@@ -428,19 +449,36 @@ function InviteModal({ actorRole, orgs }: { actorRole: PreviewRole; orgs: OrgSum
 
   return (
     <div className="teams-backdrop" onMouseDown={closeInviteModal}>
-      <div className="teams-modal" onMouseDown={(event) => event.stopPropagation()}>
+      <div
+        className="teams-modal"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="teams-modal-head">
           <h2>Invite a new member</h2>
-          <button className="teams-icon-button" onClick={closeInviteModal} type="button"><X size={16} /></button>
+          <button
+            className="teams-icon-button"
+            onClick={closeInviteModal}
+            type="button"
+          >
+            <X size={16} />
+          </button>
         </div>
         <label className="teams-field">
           <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" />
+          <input
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="name@company.com"
+          />
         </label>
         <div className="teams-radio-grid">
           {roles.map((option) => (
             <button
-              className={option === role ? "teams-role-card teams-role-card-active" : "teams-role-card"}
+              className={
+                option === role
+                  ? "teams-role-card teams-role-card-active"
+                  : "teams-role-card"
+              }
               key={option}
               onClick={() => setRole(option)}
               type="button"
@@ -456,21 +494,47 @@ function InviteModal({ actorRole, orgs }: { actorRole: PreviewRole; orgs: OrgSum
         {actorRole === "SUPER_ADMIN" ? (
           <label className="teams-field">
             <span>Organization</span>
-            <select value={orgId} onChange={(event) => setOrgId(event.target.value)}>
-              {orgs.map((org) => <option key={org.org.id} value={org.org.id}>{org.org.name}</option>)}
+            <select
+              value={orgId}
+              onChange={(event) => setOrgId(event.target.value)}
+            >
+              {orgs.map((org) => (
+                <option key={org.org.id} value={org.org.id}>
+                  {org.org.name}
+                </option>
+              ))}
             </select>
           </label>
         ) : null}
         <div className="teams-modal-actions">
-          <button className="teams-button-primary" disabled={!email || !orgId} onClick={submit} type="button">Send Invitation</button>
-          <button className="teams-button-ghost" onClick={closeInviteModal} type="button">Cancel</button>
+          <button
+            className="teams-button-primary"
+            disabled={!email || !orgId}
+            onClick={submit}
+            type="button"
+          >
+            Send Invitation
+          </button>
+          <button
+            className="teams-button-ghost"
+            onClick={closeInviteModal}
+            type="button"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function ConfirmationModal({ modal, onClose }: { modal: ModalState; onClose: () => void }) {
+function ConfirmationModal({
+  modal,
+  onClose,
+}: {
+  modal: ModalState;
+  onClose: () => void;
+}) {
   const changeRole = useChangeTeamMemberRoleMutation();
   const removeMember = useRemoveTeamMemberMutation();
   const [typed, setTyped] = useState("");
@@ -479,41 +543,86 @@ function ConfirmationModal({ modal, onClose }: { modal: ModalState; onClose: () 
   const member = modal.member;
   const confirm = () => {
     if (modal.type === "role") {
-      changeRole.mutate({ userId: member.id, payload: { role: modal.nextRole } });
+      changeRole.mutate({
+        userId: member.id,
+        payload: { role: modal.nextRole },
+      });
     } else {
-      removeMember.mutate({ userId: member.id, params: { orgId: member.orgId } });
+      removeMember.mutate({
+        userId: member.id,
+        params: { orgId: member.orgId },
+      });
     }
     onClose();
   };
 
   return (
     <div className="teams-backdrop" onMouseDown={onClose}>
-      <div className="teams-modal teams-confirm" onMouseDown={(event) => event.stopPropagation()}>
+      <div
+        className="teams-modal teams-confirm"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         {modal.type === "role" ? (
           <>
-            <h2>Promote {member.name} from {roleLabels[member.role]} to {roleLabels[modal.nextRole]}?</h2>
-            <p>They&apos;ll be able to manage Users and handle ticket assignments in this org.</p>
+            <h2>
+              Promote {member.name} from {roleLabels[member.role]} to{" "}
+              {roleLabels[modal.nextRole]}?
+            </h2>
+            <p>
+              They&apos;ll be able to manage Users and handle ticket assignments
+              in this org.
+            </p>
             <div className="teams-role-transition">
               <RolePill role={member.role} />
               <ArrowRight size={16} />
               <RolePill role={modal.nextRole} />
             </div>
             <div className="teams-modal-actions">
-              <button className="teams-button-primary" onClick={confirm} type="button">Confirm</button>
-              <button className="teams-button-ghost" onClick={onClose} type="button">Cancel</button>
+              <button
+                className="teams-button-primary"
+                onClick={confirm}
+                type="button"
+              >
+                Confirm
+              </button>
+              <button
+                className="teams-button-ghost"
+                onClick={onClose}
+                type="button"
+              >
+                Cancel
+              </button>
             </div>
           </>
         ) : (
           <>
-            <h2 className="teams-danger-title">Remove {member.name} from org?</h2>
+            <h2 className="teams-danger-title">
+              Remove {member.name} from org?
+            </h2>
             <p>Their open tickets will be reassigned to you.</p>
             <label className="teams-field">
               <span>Type REMOVE to confirm</span>
-              <input value={typed} onChange={(event) => setTyped(event.target.value)} />
+              <input
+                value={typed}
+                onChange={(event) => setTyped(event.target.value)}
+              />
             </label>
             <div className="teams-modal-actions">
-              <button className="teams-button-danger" disabled={typed !== "REMOVE"} onClick={confirm} type="button">Remove member</button>
-              <button className="teams-button-ghost" onClick={onClose} type="button">Cancel</button>
+              <button
+                className="teams-button-danger"
+                disabled={typed !== "REMOVE"}
+                onClick={confirm}
+                type="button"
+              >
+                Remove member
+              </button>
+              <button
+                className="teams-button-ghost"
+                onClick={onClose}
+                type="button"
+              >
+                Cancel
+              </button>
             </div>
           </>
         )}
@@ -522,16 +631,39 @@ function ConfirmationModal({ modal, onClose }: { modal: ModalState; onClose: () 
   );
 }
 
-function DetailDrawer({ orgs, actorRole }: { orgs: OrgSummary[]; actorRole: PreviewRole }) {
-  const { detailOpen, selectedMemberId, selectedMemberOrgId, closeMemberDetail } = useTeamsStore();
-  const detailQuery = useTeamMemberQuery(selectedMemberId, selectedMemberOrgId ?? undefined);
+function DetailDrawer({
+  orgs,
+  actorRole,
+}: {
+  orgs: OrgSummary[];
+  actorRole: PreviewRole;
+}) {
+  const {
+    detailOpen,
+    selectedMemberId,
+    selectedMemberOrgId,
+    closeMemberDetail,
+  } = useTeamsStore();
+  const detailQuery = useTeamMemberQuery(
+    selectedMemberId,
+    selectedMemberOrgId ?? undefined,
+  );
   const member = detailQuery.data;
   if (!detailOpen) return null;
 
   return (
     <div className="teams-drawer-backdrop" onMouseDown={closeMemberDetail}>
-      <aside className="teams-drawer" onMouseDown={(event) => event.stopPropagation()}>
-        <button className="teams-drawer-close teams-icon-button" onClick={closeMemberDetail} type="button"><X size={16} /></button>
+      <aside
+        className="teams-drawer"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button
+          className="teams-drawer-close teams-icon-button"
+          onClick={closeMemberDetail}
+          type="button"
+        >
+          <X size={16} />
+        </button>
         {member ? (
           <>
             <div className="teams-drawer-head">
@@ -544,10 +676,26 @@ function DetailDrawer({ orgs, actorRole }: { orgs: OrgSummary[]; actorRole: Prev
             <section>
               <h3>Activity</h3>
               <div className="teams-stat-grid">
-                <div><span>Tickets Requested</span><strong>{member.stats.ticketsRequested}</strong></div>
-                <div><span>Tickets Resolved</span><strong>{member.stats.ticketsAssigned}</strong></div>
-                <div><span>Avg Response Time</span><strong>{member.stats.avgResolutionMs ? `${(member.stats.avgResolutionMs / 3_600_000).toFixed(1)}h` : "n/a"}</strong></div>
-                <div><span>Last Active</span><strong>{relativeTime(member.lastActiveAt)}</strong></div>
+                <div>
+                  <span>Tickets Requested</span>
+                  <strong>{member.stats.ticketsRequested}</strong>
+                </div>
+                <div>
+                  <span>Tickets Resolved</span>
+                  <strong>{member.stats.ticketsAssigned}</strong>
+                </div>
+                <div>
+                  <span>Avg Response Time</span>
+                  <strong>
+                    {member.stats.avgResolutionMs
+                      ? `${(member.stats.avgResolutionMs / 3_600_000).toFixed(1)}h`
+                      : "n/a"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Last Active</span>
+                  <strong>{relativeTime(member.lastActiveAt)}</strong>
+                </div>
               </div>
             </section>
             {actorRole === "SUPER_ADMIN" ? (
@@ -563,14 +711,22 @@ function DetailDrawer({ orgs, actorRole }: { orgs: OrgSummary[]; actorRole: Prev
             ) : null}
             <section>
               <h3>Actions</h3>
-              <button className="teams-button-ghost" type="button">Change role</button>
-              <button className="teams-danger-ghost" type="button">Remove from org</button>
+              <button className="teams-button-ghost" type="button">
+                Change role
+              </button>
+              <button className="teams-danger-ghost" type="button">
+                Remove from org
+              </button>
             </section>
           </>
         ) : (
-          <div className="teams-empty">Member details will appear when the backend returns this record.</div>
+          <div className="teams-empty">
+            Member details will appear when the backend returns this record.
+          </div>
         )}
-        <span className="teams-drawer-org-note">{selectedMemberOrgId ? orgNameFor({ orgId: selectedMemberOrgId } as MemberRow, orgs) : ""}</span>
+        <span className="teams-drawer-org-note">
+          {selectedMemberOrgId ? orgNameFor(selectedMemberOrgId, orgs) : ""}
+        </span>
       </aside>
     </div>
   );
@@ -594,25 +750,58 @@ function PendingInvitations({ invitations }: { invitations: Invitation[] }) {
         </thead>
         <tbody>
           {invitations.map((invite) => {
-            const expired = invite.status === "EXPIRED" || new Date(invite.expiresAt).getTime() < Date.now();
+            const expired = isInvitationExpired(invite);
             return (
-              <tr key={invite.id} className={expired ? "teams-invite-expired" : ""}>
+              <tr
+                key={invite.id}
+                className={expired ? "teams-invite-expired" : ""}
+              >
                 <td>{invite.email}</td>
-                <td><RolePill role={invite.role} /></td>
+                <td>
+                  <RolePill role={invite.role} />
+                </td>
                 <td>{invite.invitedBy.name}</td>
                 <td>{formatDate(invite.sentAt)}</td>
-                <td>{expired ? <span className="teams-expired">Expired</span> : formatDate(invite.expiresAt)}</td>
+                <td>
+                  {expired ? (
+                    <span className="teams-expired">Expired</span>
+                  ) : (
+                    formatDate(invite.expiresAt)
+                  )}
+                </td>
                 <td className="teams-pending-actions">
-                  <button className="teams-button-ghost" onClick={() => resend.mutate(invite.id)} type="button"><RefreshCw size={14} /> Resend</button>
-                  <button className="teams-button-ghost" onClick={() => navigator.clipboard?.writeText(invite.inviteUrl)} type="button"><Link size={14} /> Copy link</button>
-                  <button className="teams-danger-ghost" onClick={() => cancel.mutate(invite.id)} type="button">Cancel</button>
+                  <button
+                    className="teams-button-ghost"
+                    onClick={() => resend.mutate(invite.id)}
+                    type="button"
+                  >
+                    <RefreshCw size={14} /> Resend
+                  </button>
+                  <button
+                    className="teams-button-ghost"
+                    onClick={() =>
+                      navigator.clipboard?.writeText(invite.inviteUrl)
+                    }
+                    type="button"
+                  >
+                    <Link size={14} /> Copy link
+                  </button>
+                  <button
+                    className="teams-danger-ghost"
+                    onClick={() => cancel.mutate(invite.id)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      {!invitations.length ? <div className="teams-empty">No pending invitations.</div> : null}
+      {!invitations.length ? (
+        <div className="teams-empty">No pending invitations.</div>
+      ) : null}
     </div>
   );
 }
@@ -621,12 +810,19 @@ export const Teams = () => {
   const [actorRole, setActorRole] = useState<PreviewRole>("SUPER_ADMIN");
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [roleFilter, setRoleFilter] = useState<TeamRole | "ALL">("ALL");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("role");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [activeTab, setActiveTab] = useState<"members" | "pending">("members");
+  const [activeTab, setActiveTab] = useState<TeamTab>("members");
   const [modal, setModal] = useState<ModalState>(null);
-  const { expandedOrgIds, expandAllOrgs, collapseAllOrgs, toggleOrgExpanded, selectedRowIds, openInviteModal } = useTeamsStore();
+  const {
+    expandedOrgIds,
+    expandAllOrgs,
+    collapseAllOrgs,
+    toggleOrgExpanded,
+    selectedRowIds,
+    openInviteModal,
+  } = useTeamsStore();
   const memberQuery = useTeamMembersQuery({
     role: roleFilter === "ALL" ? [] : [roleFilter],
     q: deferredSearch,
@@ -652,34 +848,23 @@ export const Teams = () => {
   }, []);
 
   useEffect(() => {
-    if (!expandedOrgIds.length && orgs.length) expandAllOrgs(orgs.map((org) => org.org.id));
+    if (!expandedOrgIds.length && orgs.length)
+      expandAllOrgs(orgs.map((org) => org.org.id));
   }, [expandedOrgIds.length, expandAllOrgs, orgs]);
 
   const visibleRows = useMemo(() => {
-    const q = deferredSearch.trim().toLowerCase();
-    const filtered = members.filter((member) => {
-      const roleMatch = roleFilter === "ALL" || member.role === roleFilter;
-      const queryMatch =
-        !q ||
-        member.name.toLowerCase().includes(q) ||
-        member.email.toLowerCase().includes(q);
-      return roleMatch && queryMatch;
-    });
+    const filtered = filterTeamRows(members, deferredSearch, roleFilter);
     return sortRows(filtered, sortKey, sortDirection);
   }, [members, deferredSearch, roleFilter, sortDirection, sortKey]);
 
   const rowsByOrg = useMemo(() => {
-    const grouped = new Map<string, MemberRow[]>();
-    visibleRows.forEach((row) => grouped.set(row.orgId, [...(grouped.get(row.orgId) ?? []), row]));
-    return grouped;
+    return groupRowsByOrg(visibleRows);
   }, [visibleRows]);
 
   const handleSort = (key: SortKey) => {
-    if (key === sortKey) setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDirection("asc");
-    }
+    const next = nextSortState(key, sortKey, sortDirection);
+    setSortKey(next.sortKey);
+    setSortDirection(next.sortDirection);
   };
 
   const superAdminView = actorRole === "SUPER_ADMIN";
@@ -711,37 +896,74 @@ export const Teams = () => {
         <div>
           <div className="teams-title-row">
             <h1>Teams</h1>
-            <span className="teams-count">{memberQuery.data?.total ?? members.length} members</span>
+            <span className="teams-count">
+              {memberQuery.data?.total ?? members.length} members
+            </span>
           </div>
-          {moderatorView ? <p>{orgs[0]?.org.name ?? "Your organization"}</p> : null}
+          {moderatorView ? (
+            <p>{orgs[0]?.org.name ?? "Your organization"}</p>
+          ) : null}
         </div>
         <div className="teams-tools">
           <label className="teams-search">
             <Search size={16} />
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search members..." />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search members..."
+            />
           </label>
-          <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as TeamRole | "ALL")}>
+          <select
+            value={roleFilter}
+            onChange={(event) =>
+              setRoleFilter(event.target.value as TeamRole | "ALL")
+            }
+          >
             <option value="ALL">All roles</option>
-            {roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
+            {roles.map((role) => (
+              <option key={role} value={role}>
+                {roleLabels[role]}
+              </option>
+            ))}
           </select>
           {canInvite ? (
-            <button className="teams-button-primary" onClick={() => openInviteModal()} type="button">
+            <button
+              className="teams-button-primary"
+              onClick={() => openInviteModal()}
+              type="button"
+            >
               <UserPlus size={16} /> Invite Member
             </button>
           ) : null}
         </div>
         {superAdminView ? (
-          <button className="teams-expand-toggle" onClick={() => (allExpanded ? collapseAllOrgs() : expandAllOrgs(orgs.map((org) => org.org.id)))} type="button">
+          <button
+            className="teams-expand-toggle"
+            onClick={() =>
+              allExpanded
+                ? collapseAllOrgs()
+                : expandAllOrgs(orgs.map((org) => org.org.id))
+            }
+            type="button"
+          >
             {allExpanded ? "Collapse all" : "Expand all"}
           </button>
         ) : null}
       </header>
 
       <nav className="teams-tabs" aria-label="Team tabs">
-        <button className={activeTab === "members" ? "active" : ""} onClick={() => setActiveTab("members")} type="button">
+        <button
+          className={activeTab === "members" ? "active" : ""}
+          onClick={() => setActiveTab("members")}
+          type="button"
+        >
           Members ({members.length})
         </button>
-        <button className={activeTab === "pending" ? "active" : ""} onClick={() => setActiveTab("pending")} type="button">
+        <button
+          className={activeTab === "pending" ? "active" : ""}
+          onClick={() => setActiveTab("pending")}
+          type="button"
+        >
           Pending ({invitations.length})
         </button>
       </nav>
@@ -749,7 +971,8 @@ export const Teams = () => {
       {adminView && activeTab === "members" ? (
         <div className="teams-info-banner">
           <Info size={16} />
-          You have view-only access to team membership. Contact a Super Admin to request changes.
+          You have view-only access to team membership. Contact a Super Admin to
+          request changes.
         </div>
       ) : null}
 
@@ -767,13 +990,25 @@ export const Teams = () => {
               .map((row) => row.id);
             return (
               <section className="teams-org-section" key={org.org.id}>
-                <button className="teams-org-header" onClick={() => toggleOrgExpanded(org.org.id)} type="button">
-                  {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <button
+                  className="teams-org-header"
+                  onClick={() => toggleOrgExpanded(org.org.id)}
+                  type="button"
+                >
+                  {expanded ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
                   <strong>{org.org.name}</strong>
                   <span>{orgStats(rows)}</span>
                   <a onClick={(event) => event.stopPropagation()}>Manage org</a>
                 </button>
-                <div className={expanded ? "teams-collapse expanded" : "teams-collapse"}>
+                <div
+                  className={
+                    expanded ? "teams-collapse expanded" : "teams-collapse"
+                  }
+                >
                   <MemberTable
                     actorRole={actorRole}
                     orgs={orgs}
@@ -783,7 +1018,9 @@ export const Teams = () => {
                     sortDirection={sortDirection}
                     sortKey={sortKey}
                     onRemove={(member) => setModal({ type: "remove", member })}
-                    onRole={(member, nextRole) => setModal({ type: "role", member, nextRole })}
+                    onRole={(member, nextRole) =>
+                      setModal({ type: "role", member, nextRole })
+                    }
                     onSort={handleSort}
                   />
                   <BulkBar orgId={org.org.id} selectedIds={selectedInOrg} />
@@ -791,7 +1028,13 @@ export const Teams = () => {
               </section>
             );
           })}
-          {!orgs.length ? <div className="teams-card"><div className="teams-empty">Organizations will appear when the backend returns team data.</div></div> : null}
+          {!orgs.length ? (
+            <div className="teams-card">
+              <div className="teams-empty">
+                Organizations will appear when the backend returns team data.
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="teams-card">
@@ -804,13 +1047,19 @@ export const Teams = () => {
             sortDirection={sortDirection}
             sortKey={sortKey}
             onRemove={(member) => setModal({ type: "remove", member })}
-            onRole={(member, nextRole) => setModal({ type: "role", member, nextRole })}
+            onRole={(member, nextRole) =>
+              setModal({ type: "role", member, nextRole })
+            }
             onSort={handleSort}
           />
         </div>
       )}
 
-      {memberQuery.isError ? <div className="teams-error">Unable to load members yet. The UI is ready for the backend response.</div> : null}
+      {memberQuery.isError ? (
+        <div className="teams-error">
+          Unable to load members yet. The UI is ready for the backend response.
+        </div>
+      ) : null}
       <InviteModal actorRole={actorRole} orgs={orgs} />
       <ConfirmationModal modal={modal} onClose={() => setModal(null)} />
       <DetailDrawer actorRole={actorRole} orgs={orgs} />

@@ -6,7 +6,7 @@ import {
   MemberDetailSchema,
   OrgSummarySchema,
   TeamMemberListResponseSchema,
-} from "../lib/teamParams";
+} from "../types/teams";
 import type {
   AuditEntry,
   BulkMemberOp,
@@ -21,7 +21,7 @@ import type {
   TeamInvitationListParams,
   TeamMemberListParams,
   TeamMemberListResponse,
-} from "../lib/teamParams";
+} from "../types/teams";
 
 export const teamsApi = {
   getMembers: async (

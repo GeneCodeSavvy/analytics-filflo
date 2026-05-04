@@ -4,8 +4,8 @@ import {
   TeamAuditParamsSchema,
   TeamInvitationListParamsSchema,
   TeamMemberListParamsSchema,
-  teamKeys,
-} from "../lib/teamParams";
+} from "../types/teams";
+import { teamKeys } from "../lib/teamsApi";
 import type {
   AuditEntry,
   Invitation,
@@ -15,7 +15,7 @@ import type {
   TeamInvitationListParams,
   TeamMemberListParams,
   TeamMemberListResponse,
-} from "../lib/teamParams";
+} from "../types/teams";
 
 export function useTeamMembersQuery(params: TeamMemberListParams) {
   const validated = TeamMemberListParamsSchema.parse(params);
