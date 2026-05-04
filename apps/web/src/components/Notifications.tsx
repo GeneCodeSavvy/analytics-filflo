@@ -18,16 +18,20 @@ import {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import type {
-  DateBand,
-  InvitationResponse,
+  EmptyStateProps,
+  NotificationActionsProps,
   NotificationRow,
-  TabKey,
+  NotificationRowViewProps,
+  SnoozeMenuProps,
+  ThreadEventsProps,
 } from "../types/notifications";
 import { mergeFilters, parseFilters } from "../lib/notificationParams";
 import {
-  dateBand,
+  emptyStateCopy,
   filterChips,
+  groupNotificationRows,
   notificationIcon,
+  notificationShortcuts,
   relativeTime,
   rowSummary,
   selectedTypesFromChip,
@@ -53,32 +57,8 @@ function EmptyState({
   activeTab,
   hasFilters,
   onClear,
-}: {
-  activeTab: TabKey;
-  hasFilters: boolean;
-  onClear: () => void;
-}) {
-  const copy = hasFilters
-    ? {
-        heading: "No matching notifications",
-        text: "No notifications match the active filters.",
-      }
-    : activeTab === "inbox"
-      ? {
-          heading: "All caught up",
-          text: "No notifications need your attention.",
-        }
-      : activeTab === "read"
-        ? {
-            heading: "Nothing here yet",
-            text: "Read notifications appear here.",
-          }
-        : activeTab === "done"
-          ? {
-              heading: "Cleared notifications appear here",
-              text: "Done items stay available for reference.",
-            }
-          : { heading: "Nothing here yet", text: "Notifications appear here." };
+}: EmptyStateProps) {
+  const copy = emptyStateCopy(activeTab, hasFilters);
 
   return (
     <div className="notifications-empty">
@@ -96,9 +76,7 @@ function EmptyState({
 
 function SnoozeMenu({
   onSelect,
-}: {
-  onSelect: (date: Date, label: string) => void;
-}) {
+}: SnoozeMenuProps) {
   return (
     <div className="notifications-popover" role="menu">
       {snoozeOptions.map((option) => (
@@ -119,7 +97,7 @@ function SnoozeMenu({
   );
 }
 
-function ThreadEvents({ row }: { row: NotificationRow }) {
+function ThreadEvents({ row }: ThreadEventsProps) {
   const { data, isLoading } = useNotificationThreadQuery(row.id);
 
   return (
@@ -155,14 +133,7 @@ function NotificationActions({
   onDone,
   onSnooze,
   onInvite,
-}: {
-  row: NotificationRow;
-  visible: boolean;
-  onOpen: () => void;
-  onDone: () => void;
-  onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: InvitationResponse) => void;
-}) {
+}: NotificationActionsProps) {
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const alwaysVisible = row.type === "TICKET_INVITATION";
 
@@ -269,20 +240,7 @@ function NotificationRowView({
   onDone,
   onSnooze,
   onInvite,
-}: {
-  row: NotificationRow;
-  focused: boolean;
-  selected: boolean;
-  expanded: boolean;
-  dismissing: boolean;
-  onFocus: () => void;
-  onToggleSelect: () => void;
-  onToggleExpand: () => void;
-  onOpen: () => void;
-  onDone: () => void;
-  onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: InvitationResponse) => void;
-}) {
+}: NotificationRowViewProps) {
   const Icon = notificationIcon(row.type);
   const isAction = row.tier === "action_required";
   const isStatus = row.tier === "status_update";
@@ -392,7 +350,7 @@ export const Notifications = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = parseFilters(searchParams);
-  const activeTab = filters.tab as TabKey;
+  const activeTab = filters.tab;
   const activeTypes = filters.type ?? [];
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -436,14 +394,7 @@ export const Notifications = () => {
   const selectedCount = selectedIds.size;
 
   const groupedRows = useMemo(() => {
-    const bands: Record<DateBand, NotificationRow[]> = {
-      Today: [],
-      Yesterday: [],
-      "This Week": [],
-      Older: [],
-    };
-    rows.forEach((row) => bands[dateBand(row.latestEvent.at)].push(row));
-    return bands;
+    return groupNotificationRows(rows);
   }, [rows]);
 
   useEffect(() => {
@@ -738,13 +689,13 @@ export const Notifications = () => {
         ) : null}
 
         <section className="notifications-list" aria-label="Notification list">
-          {(Object.keys(groupedRows) as DateBand[]).map((band) =>
-            groupedRows[band].length > 0 ? (
+          {Object.entries(groupedRows).map(([band, bandRows]) =>
+            bandRows.length > 0 ? (
               <div key={band} className="notifications-section">
                 <div className="notifications-section-label">
                   <span>{band}</span>
                 </div>
-                {groupedRows[band].map((row) => (
+                {bandRows.map((row) => (
                   <NotificationRowView
                     key={row.id}
                     row={row}
@@ -824,14 +775,7 @@ export const Notifications = () => {
               </Button>
             </div>
             <div className="notifications-shortcuts">
-              {[
-                ["j / k", "Move focus"],
-                ["e", "Mark focused done"],
-                ["Enter", "Open ticket"],
-                ["x", "Toggle selection"],
-                ["Shift+I", "Mark all read"],
-                ["?", "Show shortcuts"],
-              ].map(([key, label]) => (
+              {notificationShortcuts.map(({ key, label }) => (
                 <div key={key}>
                   <kbd>{key}</kbd>
                   <span>{label}</span>

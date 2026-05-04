@@ -1,10 +1,20 @@
 import { CheckCircle, Eye, Mail, MessageSquare, UserPlus } from "lucide-react";
 import type {
   DateBand,
+  NotificationEmptyStateCopy,
+  NotificationGroupedRows,
   NotificationRow,
+  NotificationShortcut,
   NotificationType,
   TabKey,
 } from "../types/notifications";
+
+export const dateBands: DateBand[] = [
+  "Today",
+  "Yesterday",
+  "This Week",
+  "Older",
+];
 
 export const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "inbox", label: "Inbox" },
@@ -53,6 +63,15 @@ export const snoozeOptions = [
   },
 ];
 
+export const notificationShortcuts: NotificationShortcut[] = [
+  { key: "j / k", label: "Move focus" },
+  { key: "e", label: "Mark focused done" },
+  { key: "Enter", label: "Open ticket" },
+  { key: "x", label: "Toggle selection" },
+  { key: "Shift+I", label: "Mark all read" },
+  { key: "?", label: "Show shortcuts" },
+];
+
 export function notificationIcon(type: NotificationType) {
   if (type === "TICKET_ASSIGNED") return UserPlus;
   if (type === "REVIEW_REQUESTED") return Eye;
@@ -94,6 +113,59 @@ export function rowSummary(row: NotificationRow) {
     return `${row.eventCount} new messages`;
   }
   return typeSummaries[row.type];
+}
+
+export function emptyStateCopy(
+  activeTab: TabKey,
+  hasFilters: boolean,
+): NotificationEmptyStateCopy {
+  if (hasFilters) {
+    return {
+      heading: "No matching notifications",
+      text: "No notifications match the active filters.",
+    };
+  }
+
+  if (activeTab === "inbox") {
+    return {
+      heading: "All caught up",
+      text: "No notifications need your attention.",
+    };
+  }
+
+  if (activeTab === "read") {
+    return {
+      heading: "Nothing here yet",
+      text: "Read notifications appear here.",
+    };
+  }
+
+  if (activeTab === "done") {
+    return {
+      heading: "Cleared notifications appear here",
+      text: "Done items stay available for reference.",
+    };
+  }
+
+  return {
+    heading: "Nothing here yet",
+    text: "Notifications appear here.",
+  };
+}
+
+export function groupNotificationRows(
+  rows: NotificationRow[],
+): NotificationGroupedRows {
+  const bands: NotificationGroupedRows = {
+    Today: [],
+    Yesterday: [],
+    "This Week": [],
+    Older: [],
+  };
+
+  rows.forEach((row) => bands[dateBand(row.latestEvent.at)].push(row));
+
+  return bands;
 }
 
 export function selectedTypesFromChip(
