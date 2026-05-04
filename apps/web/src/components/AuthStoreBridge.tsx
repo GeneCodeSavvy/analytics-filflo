@@ -9,10 +9,15 @@ function metadataString(value: unknown) {
 }
 
 function metadataRole(value: unknown): AppRole {
-  if (value === "SUPER_ADMIN" || value === "ADMIN" || value === "MODERATOR" || value === "USER") {
+  if (
+    value === "SUPER_ADMIN" ||
+    value === "ADMIN" ||
+    value === "MODERATOR" ||
+    value === "USER"
+  ) {
     return value;
   }
-  return "MODERATOR";
+  return "USER";
 }
 
 export function AuthStoreBridge() {

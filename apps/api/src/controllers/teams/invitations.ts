@@ -18,7 +18,7 @@ import { parseTeamAuditParams, parseTeamInvitationListParams } from "./utils";
 import { randomBytes, createHash } from "node:crypto";
 import { sendInviteMail } from "../../lib/mail";
 
-const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
+const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:5173";
 const inviteExpiryDays = 7;
 
 export const getInvitations_: RequestHandler = async (req, res) => {

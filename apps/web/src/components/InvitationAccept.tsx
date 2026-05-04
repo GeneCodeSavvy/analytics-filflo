@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
+import {
+  getInvitationErrorMessage,
+  invitationsApi,
+} from "../api/invitations";
 
 export function InvitationAccept() {
   const { token } = useParams<{ token: string }>();
@@ -9,16 +13,17 @@ export function InvitationAccept() {
   useEffect(() => {
     if (!token) return;
 
-    fetch(`/api/invitations/${token}`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok || !data.success) {
+    invitationsApi
+      .verify(token)
+      .then((data) => {
+        if (!data.success || !data.email) {
           setError(data.error ?? "This invitation is invalid or has expired.");
           return;
         }
+
         navigate(`/sign-up?email=${encodeURIComponent(data.email)}`);
       })
-      .catch(() => setError("Something went wrong. Please try again."));
+      .catch((err: unknown) => setError(getInvitationErrorMessage(err)));
   }, [token, navigate]);
 
   if (error) {
