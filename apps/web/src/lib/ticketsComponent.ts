@@ -2,6 +2,8 @@ import type {
   Density,
   TicketCategory,
   TicketPriority,
+  FlatTicketRow,
+  TicketGroup,
   TicketRow,
   TicketSort,
   TicketStatus,
@@ -29,15 +31,6 @@ export const ROW_HEIGHT: Record<Density, number> = {
   comfortable: 56,
 };
 export const OVERSCAN = 8;
-
-export type TicketGroup = {
-  org: string;
-  rows: TicketRow[];
-};
-
-export type FlatTicketRow =
-  | { kind: "group"; id: string; group: TicketGroup }
-  | { kind: "row"; id: string; row: TicketRow };
 
 export function statusClass(status: string) {
   if (status === "OPEN") return "bg-primary/10 text-primary";
