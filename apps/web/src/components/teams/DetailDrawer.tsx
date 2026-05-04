@@ -1,10 +1,6 @@
 import { X } from "lucide-react";
 import type { OrgSummary } from "../../types/teams";
-import {
-  formatMonth,
-  orgNameFor,
-  relativeTime,
-} from "../../lib/teamsComponent";
+import { formatMonth, orgNameFor } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { useTeamMemberQuery } from "../../hooks/useTeamsQueries";
 import { Avatar } from "./Avatar";
@@ -79,14 +75,6 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
                     {member.stats.avgResolutionMs
                       ? `${(member.stats.avgResolutionMs / 3_600_000).toFixed(1)}h`
                       : "n/a"}
-                  </strong>
-                </div>
-                <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">
-                    Last Active
-                  </span>
-                  <strong className="block mt-[5px] text-[18px]">
-                    {relativeTime(member.lastActiveAt)}
                   </strong>
                 </div>
               </div>

@@ -43,7 +43,7 @@ import type {
   TeamMemberListItem,
 } from "@shared/schema/teams";
 
-export type SortKey = "member" | "role" | "lastActive" | "joined";
+export type SortKey = "member" | "role" | "joined";
 export type SortDirection = "asc" | "desc";
 export type TeamTab = "members" | "pending";
 export type RoleFilter = MemberRow["role"] | "ALL";

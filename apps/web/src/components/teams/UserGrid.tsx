@@ -1,5 +1,4 @@
 import type { TeamMemberListItem } from "../../types/teams";
-import { relativeTime } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { Avatar } from "./Avatar";
 import { RolePill } from "./RolePill";
@@ -18,7 +17,6 @@ export function UserGrid({ rows }: { rows: TeamMemberListItem[] }) {
           <Avatar member={member} size={48} />
           <strong>{member.name}</strong>
           <RolePill role={member.role} />
-          <span className="text-[#A8A49C] text-xs">Last seen {relativeTime(member.lastActiveAt)}</span>
         </button>
       ))}
       {!rows.length ? (

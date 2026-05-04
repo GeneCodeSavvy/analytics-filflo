@@ -34,8 +34,6 @@ export const MemberRowSchema = z.object({
   avatarUrl: z.string().optional(),
   role: UserRoleSchema,
   joinedAt: z.string(),
-  lastActiveAt: z.string().nullable().optional(),
-  isInactive: z.boolean(),
 });
 
 export const MemberDetailSchema = MemberRowSchema.extend({

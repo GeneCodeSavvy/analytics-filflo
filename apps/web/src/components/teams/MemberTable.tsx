@@ -1,4 +1,3 @@
-import { AlertCircle } from "lucide-react";
 import type {
   OrgSummary,
   TeamRole,
@@ -6,7 +5,7 @@ import type {
   SortDirection,
   TeamMemberListItem,
 } from "../../types/teams";
-import { isStale, relativeTime, formatDate } from "../../lib/teamsComponent";
+import { formatDate } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { Avatar } from "./Avatar";
 import { RolePill } from "./RolePill";
@@ -59,15 +58,6 @@ export function MemberTable({
               <SortHeader
                 label="Role"
                 sortKey="role"
-                active={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-              />
-            </th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">
-              <SortHeader
-                label="Last Active"
-                sortKey="lastActive"
                 active={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
@@ -136,20 +126,6 @@ export function MemberTable({
                 </td>
                 <td className="p-3 border-b border-[#F0EEE9] align-middle">
                   <RolePill role={member.role} />
-                </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
-                  <span
-                    className={
-                      isStale(member.lastActiveAt)
-                        ? "inline-flex items-center gap-[5px] text-[#B8860B]"
-                        : ""
-                    }
-                  >
-                    {isStale(member.lastActiveAt) ? (
-                      <AlertCircle size={14} />
-                    ) : null}
-                    {relativeTime(member.lastActiveAt)}
-                  </span>
                 </td>
                 <td className="p-3 border-b border-[#F0EEE9] align-middle">
                   {formatDate(member.joinedAt)}

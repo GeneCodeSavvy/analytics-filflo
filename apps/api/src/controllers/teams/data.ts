@@ -9,7 +9,6 @@ import type {
 } from "@shared/schema/teams";
 import type { DbClient } from "../../lib/db";
 
-const inactiveThresholdMs = 30 * 24 * 60 * 60 * 1000;
 const staleTicketMs = 3 * 24 * 60 * 60 * 1000;
 
 const openStatuses: TicketStatus[] = [
@@ -50,8 +49,6 @@ export const getMembers = async (
     db.user.count({ where }),
   ]);
 
-  const now = Date.now();
-
   return {
     rows: users.map((user) => ({
       id: user.id,
@@ -60,10 +57,6 @@ export const getMembers = async (
       ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
       role: user.role,
       joinedAt: user.createdAt.toISOString(),
-      lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
-      isInactive:
-        !user.lastActiveAt ||
-        now - user.lastActiveAt.getTime() > inactiveThresholdMs,
       org: { id: user.org.id, name: user.org.displayName },
     })),
     total,
@@ -109,8 +102,6 @@ export const getMemberById = async (
         ) / resolved.length
       : null;
 
-  const now = Date.now();
-
   return {
     id: user.id,
     name: user.displayName,
@@ -118,10 +109,6 @@ export const getMemberById = async (
     ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     role: user.role,
     joinedAt: user.createdAt.toISOString(),
-    lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
-    isInactive:
-      !user.lastActiveAt ||
-      now - user.lastActiveAt.getTime() > inactiveThresholdMs,
     org: { id: user.org.id, name: user.org.displayName },
     stats: {
       ticketsRequested,

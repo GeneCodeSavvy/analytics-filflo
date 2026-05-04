@@ -75,30 +75,6 @@ export function formatMonth(value: string) {
   }).format(new Date(value));
 }
 
-export function relativeTime(value?: string | null) {
-  if (!value) return "Never";
-
-  const diffMs = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(1, Math.floor(diffMs / 60_000));
-
-  if (minutes < 60) return `${minutes}m ago`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days} days ago`;
-
-  const months = Math.floor(days / 30);
-  return `${months} months ago`;
-}
-
-export function isStale(value?: string | null) {
-  if (!value) return true;
-
-  return Date.now() - new Date(value).getTime() > 30 * 24 * 60 * 60 * 1000;
-}
-
 export function getHighlightedTextParts(
   text: string,
   query: string,
@@ -158,11 +134,6 @@ export function sortRows(
     if (key === "role") {
       result =
         roleRank[a.role] - roleRank[b.role] || a.name.localeCompare(b.name);
-    }
-    if (key === "lastActive") {
-      result =
-        new Date(a.lastActiveAt ?? 0).getTime() -
-        new Date(b.lastActiveAt ?? 0).getTime();
     }
     if (key === "joined") {
       result = new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
