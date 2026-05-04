@@ -52,7 +52,7 @@ type TicketsTableProps = {
   sortedRows: TicketRow[];
   status: {
     loading: boolean;
-    error: boolean;
+    error: Error | null;
   };
   tableRef: RefObject<HTMLDivElement | null>;
   toggleRowSelected: (id: string) => void;
