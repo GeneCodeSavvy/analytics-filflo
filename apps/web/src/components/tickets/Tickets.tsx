@@ -43,7 +43,21 @@ import { HeaderIconButton } from "./HeaderIconButton";
 import { TicketDrawer } from "./TicketDrawer";
 import { TicketsTable } from "./TicketsTable";
 import { UserTicketList } from "./UserTicketList";
-import { ticketChip, ticketPrimaryButton } from "./styles";
+import {
+  ticketChip,
+  ticketDensityToggle,
+  ticketFilterControls,
+  ticketFiltersRow,
+  ticketPageContent,
+  ticketPageFrame,
+  ticketPrimaryButton,
+  ticketSearchBox,
+  ticketTopBar,
+  ticketViewTab,
+  ticketViewTabIndicator,
+  ticketViewTabsList,
+  ticketViewTabsRow,
+} from "./styles";
 
 export const Tickets = () => {
   const { data, status, url, ui } = useTicketsPageData();
@@ -91,7 +105,7 @@ export const Tickets = () => {
   };
   const secondarySort = url.sort[1];
   const selectedCount = ui.selectedRowIds.length;
-  const visibleColumns = role === "SUPER_ADMIN" ? 9 : 8;
+  const visibleColumns = role === "SUPER_ADMIN" ? 11 : 10;
   const drawerOpen = Boolean(url.drawerTicketId && data.detail);
 
   const activeViews = useMemo(() => {
@@ -343,13 +357,13 @@ export const Tickets = () => {
           : "No tickets in this view.";
 
   return (
-    <div className="app-page-frame relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground max-[760px]:-m-2">
-      <div className="app-page-frame-content relative flex h-full min-h-0 flex-col overflow-hidden">
-        <header className="grid h-12 shrink-0 grid-cols-[minmax(120px,1fr)_minmax(240px,480px)_minmax(140px,1fr)] items-center gap-4 border-b border-border px-4 max-[760px]:grid-cols-[1fr_auto]">
+    <div className={ticketPageFrame}>
+      <div className={ticketPageContent}>
+        <header className={ticketTopBar}>
           <div className="m-0 font-sans text-xl font-medium leading-none text-foreground">
             Tickets
           </div>
-          <label className="flex h-8 items-center gap-2 rounded-sm border border-border bg-background px-2 max-[760px]:order-3 max-[760px]:col-span-full">
+          <label className={ticketSearchBox}>
             <IconSearch className="h-4 w-4 text-muted-foreground" />
             <input
               ref={searchRef}
@@ -379,8 +393,8 @@ export const Tickets = () => {
           <UserTicketList rows={sortedRows} onOpen={actions.openDrawer} />
         ) : (
           <>
-            <div className="flex h-10 shrink-0 items-center gap-3 overflow-x-auto border-b border-border px-2.5">
-              <div className="relative flex h-full items-center gap-0.5">
+            <div className={ticketViewTabsRow}>
+              <div className={ticketViewTabsList}>
                 {activeViews.map((view, index) => {
                   const active =
                     url.viewId === view.id || (!url.viewId && view.id === null);
@@ -393,7 +407,7 @@ export const Tickets = () => {
                         actions.setView(view.id);
                       }}
                       className={cn(
-                        "relative z-[1] h-full min-w-[118px] whitespace-nowrap px-2.5 text-[13px] font-medium",
+                        ticketViewTab,
                         active ? "text-foreground" : "text-muted-foreground",
                       )}
                     >
@@ -402,7 +416,7 @@ export const Tickets = () => {
                   );
                 })}
                 <span
-                  className="absolute bottom-0 left-0 h-0.5 w-[118px] bg-primary transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+                  className={ticketViewTabIndicator}
                   style={{ transform: `translateX(${tabIndex * 100}%)` }}
                 />
                 <HeaderIconButton
@@ -412,7 +426,10 @@ export const Tickets = () => {
                   <IconPlus className="h-4 w-4" />
                 </HeaderIconButton>
               </div>
-              <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            </div>
+
+            <div className={ticketFiltersRow}>
+              <div className={ticketFilterControls}>
                 {FILTERS.map((filter) => (
                   <button key={filter} type="button" className={ticketChip}>
                     {filter}
@@ -431,7 +448,8 @@ export const Tickets = () => {
                     Group by Org
                   </button>
                 )}
-                <div className="inline-flex h-7 items-center rounded-sm border border-border p-px">
+              </div>
+              <div className={ticketDensityToggle}>
                   <HeaderIconButton
                     label="Compact rows"
                     active={density === "compact"}
@@ -446,7 +464,6 @@ export const Tickets = () => {
                   >
                     <IconLayoutRows className="h-4 w-4" />
                   </HeaderIconButton>
-                </div>
               </div>
             </div>
 
