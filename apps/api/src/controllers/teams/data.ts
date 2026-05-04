@@ -3,8 +3,8 @@ import type {
   AuditEntry,
   Invitation,
   MemberDetail,
-  MemberRow,
   OrgSummary,
+  TeamMemberListItem,
   TeamMemberListParams,
 } from "@shared/schema/teams";
 import type { DbClient } from "../../lib/db";
@@ -24,7 +24,7 @@ const appBaseUrl = process.env.APP_BASE_URL ?? "https://app.filflo.example";
 export const getMembers = async (
   db: DbClient,
   params: TeamMemberListParams,
-): Promise<{ rows: MemberRow[]; total: number }> => {
+): Promise<{ rows: TeamMemberListItem[]; total: number }> => {
   const query = params.q?.trim().toLowerCase();
   const where = {
     ...(params.orgId ? { orgId: params.orgId } : {}),
@@ -59,16 +59,12 @@ export const getMembers = async (
       email: user.email,
       ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
       role: user.role,
-      orgId: user.orgId,
       joinedAt: user.createdAt.toISOString(),
       lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
       isInactive:
         !user.lastActiveAt ||
         now - user.lastActiveAt.getTime() > inactiveThresholdMs,
-      permissions: {
-        canChangeRole: true,
-        canRemove: user.role !== UserRole.ADMIN,
-      },
+      org: { id: user.org.id, name: user.org.displayName },
     })),
     total,
   };
@@ -92,7 +88,9 @@ export const getMemberById = async (
       db.ticketParticipant.findMany({
         where: { userId: id, role: "ASSIGNEE" },
         include: {
-          ticket: { select: { createdAt: true, resolvedAt: true, status: true } },
+          ticket: {
+            select: { createdAt: true, resolvedAt: true, status: true },
+          },
         },
       }),
     ]);
@@ -119,16 +117,11 @@ export const getMemberById = async (
     email: user.email,
     ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     role: user.role,
-    orgId: user.orgId,
     joinedAt: user.createdAt.toISOString(),
     lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
     isInactive:
       !user.lastActiveAt ||
       now - user.lastActiveAt.getTime() > inactiveThresholdMs,
-    permissions: {
-      canChangeRole: true,
-      canRemove: user.role !== UserRole.ADMIN,
-    },
     org: { id: user.org.id, name: user.org.displayName },
     stats: {
       ticketsRequested,
@@ -189,7 +182,12 @@ export const getAuditEntries = async (
     actor: { id: entry.actor.id, name: entry.actor.displayName },
     action: entry.action,
     ...(entry.targetUser
-      ? { targetUser: { id: entry.targetUser.id, name: entry.targetUser.displayName } }
+      ? {
+          targetUser: {
+            id: entry.targetUser.id,
+            name: entry.targetUser.displayName,
+          },
+        }
       : entry.targetEmail
         ? { targetUser: { id: entry.id, name: entry.targetEmail } }
         : {}),
@@ -200,9 +198,15 @@ export const getAuditEntries = async (
   }));
 };
 
-export const getOrgSummaries = async (db: DbClient): Promise<OrgSummary[]> => {
+export const getOrgSummaries = async (
+  db: DbClient,
+  orgId?: string,
+): Promise<OrgSummary[]> => {
   const now = Date.now();
   const orgs = await db.org.findMany({
+    where: {
+      ...(orgId ? { id: orgId } : {}),
+    },
     include: {
       users: { select: { role: true } },
       tickets: {

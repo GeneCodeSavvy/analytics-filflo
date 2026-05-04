@@ -3,9 +3,9 @@ export {
   TeamMemberListParamsSchema,
   TeamAuditParamsSchema,
   TeamInvitationListParamsSchema,
-  MemberPermissionsSchema,
   MemberRowSchema,
   MemberDetailSchema,
+  TeamMemberListItemSchema,
   TeamMemberListResponseSchema,
   InvitationSchema,
   AuditEntrySchema,
@@ -23,9 +23,9 @@ export type {
   TeamMemberListParams,
   TeamAuditParams,
   TeamInvitationListParams,
-  MemberPermissions,
   MemberRow,
   MemberDetail,
+  TeamMemberListItem,
   TeamMemberListResponse,
   Invitation,
   AuditEntry,
@@ -37,7 +37,11 @@ export type {
   BulkMemberResult,
 } from "@shared/schema/teams";
 
-import type { Invitation, MemberRow } from "@shared/schema/teams";
+import type {
+  Invitation,
+  MemberRow,
+  TeamMemberListItem,
+} from "@shared/schema/teams";
 
 export type SortKey = "member" | "role" | "lastActive" | "joined";
 export type SortDirection = "asc" | "desc";
@@ -45,8 +49,8 @@ export type TeamTab = "members" | "pending";
 export type RoleFilter = MemberRow["role"] | "ALL";
 
 export type ModalState =
-  | { type: "role"; member: MemberRow; nextRole: MemberRow["role"] }
-  | { type: "remove"; member: MemberRow }
+  | { type: "role"; member: TeamMemberListItem; nextRole: MemberRow["role"] }
+  | { type: "remove"; member: TeamMemberListItem }
   | null;
 
 export type InvitationExpiryInput = Pick<Invitation, "status" | "expiresAt">;

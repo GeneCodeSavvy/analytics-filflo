@@ -17,6 +17,11 @@ import { getAuditEntries, getInvitations, getOrgSummaries } from "./data";
 import { parseTeamAuditParams, parseTeamInvitationListParams } from "./utils";
 import { randomBytes, createHash } from "node:crypto";
 import { sendInviteMail } from "../../lib/mail";
+import {
+  ensureInviteAllowed,
+  ensureOrgReadable,
+  scopedOrgId,
+} from "./permissions";
 
 const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:5173";
 const inviteExpiryDays = 7;
@@ -33,7 +38,16 @@ export const getInvitations_: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const invitations = await getInvitations(db, params.data);
+  const actor = req.dbUser;
+
+  if (!ensureOrgReadable(res, actor, params.data.orgId)) {
+    return;
+  }
+
+  const invitations = await getInvitations(db, {
+    ...params.data,
+    orgId: scopedOrgId(actor, params.data.orgId),
+  });
 
   return sendValidatedData(res, InvitationSchema.array(), invitations);
 };
@@ -49,6 +63,10 @@ export const createInvitation: RequestHandler = async (req, res) => {
 
   const db = req.app.locals.db as DbClient;
   const actor = req.dbUser;
+
+  if (!ensureInviteAllowed(res, actor, body.data.orgId, body.data.role)) {
+    return;
+  }
 
   const org = await db.org.findUnique({ where: { id: body.data.orgId } });
 
@@ -130,12 +148,17 @@ export const cancelInvitation: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const actor = req.dbUser;
   const invitation = await db.invitation.findUnique({
     where: { id: params.data.id },
   });
 
   if (!invitation) {
     return sendNotFound(res, "Invitation");
+  }
+
+  if (!ensureInviteAllowed(res, actor, invitation.orgId, invitation.role)) {
+    return;
   }
 
   await db.invitation.update({
@@ -145,7 +168,7 @@ export const cancelInvitation: RequestHandler = async (req, res) => {
 
   await db.teamAuditLog.create({
     data: {
-      actorId: req.dbUser.id,
+      actorId: actor.id,
       targetEmail: invitation.email,
       orgId: invitation.orgId,
       action: "INVITATION_CANCELLED",
@@ -166,7 +189,16 @@ export const getAuditEntries_: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const entries = await getAuditEntries(db, params.data);
+  const actor = req.dbUser;
+
+  if (!ensureOrgReadable(res, actor, params.data.orgId)) {
+    return;
+  }
+
+  const entries = await getAuditEntries(db, {
+    ...params.data,
+    orgId: scopedOrgId(actor, params.data.orgId),
+  });
 
   return sendValidatedData(res, AuditEntrySchema.array(), entries);
 };
@@ -175,7 +207,7 @@ export { getAuditEntries_ as getAuditEntries };
 
 export const getOrgSummaries_: RequestHandler = async (_req, res) => {
   const db = _req.app.locals.db as DbClient;
-  const summaries = await getOrgSummaries(db);
+  const summaries = await getOrgSummaries(db, scopedOrgId(_req.dbUser));
 
   return sendValidatedData(res, OrgSummarySchema.array(), summaries);
 };

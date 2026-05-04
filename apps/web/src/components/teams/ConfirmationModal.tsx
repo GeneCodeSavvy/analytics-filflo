@@ -30,14 +30,17 @@ export function ConfirmationModal({
     } else {
       removeMember.mutate({
         userId: member.id,
-        params: { orgId: member.orgId },
+        params: { orgId: member.org.id },
       });
     }
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[rgba(26,25,23,0.22)] backdrop-blur-[4px]" onMouseDown={onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-[rgba(26,25,23,0.22)] backdrop-blur-[4px]"
+      onMouseDown={onClose}
+    >
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[#E8E6E1] rounded-[8px] bg-white p-5 shadow-[0_24px_70px_rgba(26,25,23,0.18)]"
         onMouseDown={(event) => event.stopPropagation()}
@@ -79,9 +82,13 @@ export function ConfirmationModal({
             <h2 className="m-0 text-[18px] text-[#B83A2A]">
               Remove {member.name} from org?
             </h2>
-            <p className="text-[#78756E]">Their open tickets will be reassigned to you.</p>
+            <p className="text-[#78756E]">
+              Their open tickets will be reassigned to you.
+            </p>
             <label className="grid gap-[6px] my-3">
-              <span className="text-[#78756E] text-[12px]">Type REMOVE to confirm</span>
+              <span className="text-[#78756E] text-[12px]">
+                Type REMOVE to confirm
+              </span>
               <input
                 className="w-full border border-[#E8E6E1] rounded-[6px] bg-white text-[#1A1917] px-[10px] py-[9px] outline-[#C4642A]"
                 value={typed}

@@ -11,6 +11,7 @@ import type {
   RoleFilter,
   SortDirection,
   SortKey,
+  TeamMemberListItem,
   TeamTab,
 } from "../../types/teams";
 import {
@@ -38,7 +39,8 @@ import { PendingInvitations } from "./PendingInvitations";
 import { useAuthState } from "@/stores/useAuthStore";
 
 export const Teams = () => {
-  const actorRole = useAuthState((state) => state.user.role);
+  const actorRole = useAuthState((state) => state.user?.role);
+  if (!actorRole) throw new Error("Authentication is not complete");
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
@@ -83,7 +85,7 @@ export const Teams = () => {
       expandAllOrgs(orgs.map((org) => org.org.id));
   }, [expandedOrgIds.length, expandAllOrgs, orgs]);
 
-  const visibleRows = useMemo(() => {
+  const visibleRows: TeamMemberListItem[] = useMemo(() => {
     const filtered = filterTeamRows(members, deferredSearch, roleFilter);
     return sortRows(filtered, sortKey, sortDirection);
   }, [members, deferredSearch, roleFilter, sortDirection, sortKey]);
@@ -106,7 +108,7 @@ export const Teams = () => {
   const allExpanded = orgs.length > 0 && expandedOrgIds.length >= orgs.length;
 
   return (
-    <div className="min-h-full -m-[2.5rem] px-6 pb-8 bg-[#FAFAF8] text-[#1A1917] font-[Geist_Mono,ui-monospace,monospace] tracking-[0] text-[13px] [&_button]:cursor-pointer [&_*]:box-border">
+    <div className="min-h-full -m-[2.5rem] px-6 pb-8 bg-[#FAFAF8] text-[#1A1917] font-[Geist_Mono,ui-monospace,monospace] tracking-[0] text-[13px] [&_button]:cursor-pointer   [&_*]:box-border">
       <header className="sticky top-[43px] z-10 grid grid-cols-[1fr_auto] gap-3 items-start pt-6 pb-4 bg-[rgba(250,250,248,0.94)] backdrop-blur-[10px]">
         <div>
           <div className="flex items-center gap-2.5">
@@ -243,7 +245,6 @@ export const Teams = () => {
                 >
                   <div className="overflow-hidden">
                     <MemberTable
-                      actorRole={actorRole}
                       orgs={orgs}
                       query={deferredSearch}
                       rows={rows}
@@ -275,7 +276,6 @@ export const Teams = () => {
       ) : (
         <div className="border border-[#E8E6E1] rounded-lg bg-white shadow-[0_1px_3px_rgba(26,25,23,0.06),0_1px_2px_rgba(26,25,23,0.04)]">
           <MemberTable
-            actorRole={actorRole}
             orgs={orgs}
             query={deferredSearch}
             rows={visibleRows}
@@ -296,9 +296,9 @@ export const Teams = () => {
           Unable to load members yet. The UI is ready for the backend response.
         </div>
       ) : null}
-      <InviteModal actorRole={actorRole} orgs={orgs} />
+      <InviteModal orgs={orgs} />
       <ConfirmationModal modal={modal} onClose={() => setModal(null)} />
-      <DetailDrawer actorRole={actorRole} orgs={orgs} />
+      <DetailDrawer orgs={orgs} />
     </div>
   );
 };

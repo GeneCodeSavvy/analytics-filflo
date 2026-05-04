@@ -1,9 +1,13 @@
 import { TeamRoleSchema } from "../types/teams";
-import type { MemberRow, OrgSummary, TeamRole } from "../types/teams";
+import type {
+  MemberRow,
+  OrgSummary,
+  TeamMemberListItem,
+  TeamRole,
+} from "../types/teams";
 import type {
   HighlightPart,
   InvitationExpiryInput,
-  PreviewRole,
   RoleFilter,
   SortDirection,
   SortKey,
@@ -141,7 +145,7 @@ export function orgStats(rows: MemberRow[]) {
 }
 
 export function sortRows(
-  rows: MemberRow[],
+  rows: TeamMemberListItem[],
   key: SortKey,
   direction: SortDirection,
 ) {
@@ -168,7 +172,7 @@ export function sortRows(
   });
 }
 
-export function validRoleOptions(actor: PreviewRole, target: MemberRow) {
+export function validRoleOptions(actor: TeamRole, target: MemberRow) {
   if (actor === "SUPER_ADMIN") {
     return roles.filter((role) => role !== target.role);
   }
@@ -180,14 +184,14 @@ export function validRoleOptions(actor: PreviewRole, target: MemberRow) {
   return [];
 }
 
-export function canAct(actor: PreviewRole, target: MemberRow) {
+export function canAct(actor: TeamRole, target: MemberRow) {
   if (actor === "SUPER_ADMIN") return true;
 
   return actor === "MODERATOR" && target.role === "USER";
 }
 
 export function filterTeamRows(
-  members: MemberRow[],
+  members: TeamMemberListItem[],
   query: string,
   roleFilter: RoleFilter,
 ) {
@@ -204,11 +208,11 @@ export function filterTeamRows(
   });
 }
 
-export function groupRowsByOrg(rows: MemberRow[]) {
-  const grouped = new Map<string, MemberRow[]>();
+export function groupRowsByOrg(rows: TeamMemberListItem[]) {
+  const grouped = new Map<string, TeamMemberListItem[]>();
 
   rows.forEach((row) => {
-    grouped.set(row.orgId, [...(grouped.get(row.orgId) ?? []), row]);
+    grouped.set(row.org.id, [...(grouped.get(row.org.id) ?? []), row]);
   });
 
   return grouped;

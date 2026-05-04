@@ -1,6 +1,11 @@
 import { AlertCircle } from "lucide-react";
-import type { MemberRow, OrgSummary, TeamRole } from "../../types/teams";
-import type { PreviewRole, SortDirection, SortKey } from "../../types/teams";
+import type {
+  OrgSummary,
+  TeamRole,
+  SortKey,
+  SortDirection,
+  TeamMemberListItem,
+} from "../../types/teams";
 import { isStale, relativeTime, formatDate } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { Avatar } from "./Avatar";
@@ -13,7 +18,6 @@ import { Users } from "lucide-react";
 export function MemberTable({
   rows,
   orgs,
-  actorRole,
   query,
   showCheckboxes,
   sortKey,
@@ -22,16 +26,15 @@ export function MemberTable({
   onRole,
   onRemove,
 }: {
-  rows: MemberRow[];
+  rows: TeamMemberListItem[];
   orgs: OrgSummary[];
-  actorRole: PreviewRole;
   query: string;
   showCheckboxes: boolean;
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
-  onRole: (member: MemberRow, role: TeamRole) => void;
-  onRemove: (member: MemberRow) => void;
+  onRole: (member: TeamMemberListItem, role: TeamRole) => void;
+  onRemove: (member: TeamMemberListItem) => void;
 }) {
   const { selectedRowIds, toggleRowSelected, openMemberDetail } =
     useTeamsStore();
@@ -79,7 +82,9 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Actions</th>
+            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -87,7 +92,7 @@ export function MemberTable({
             const checked = selected.has(member.id);
             return (
               <tr
-                key={`${member.orgId}-${member.id}`}
+                key={`${member?.org?.id}-${member.id}`}
                 className={[
                   "group transition-colors duration-150 hover:bg-[#F5F4F0] [&:last-child>td]:border-b-0",
                   checked
@@ -116,7 +121,9 @@ export function MemberTable({
                     <div>
                       <button
                         className="border-0 bg-transparent p-0 text-[#1A1917] font-medium text-left hover:underline"
-                        onClick={() => openMemberDetail(member.id, member.orgId)}
+                        onClick={() =>
+                          openMemberDetail(member.id, member.org.id)
+                        }
                         type="button"
                       >
                         <HighlightedText text={member.name} query={query} />
@@ -144,12 +151,15 @@ export function MemberTable({
                     {relativeTime(member.lastActiveAt)}
                   </span>
                 </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">{formatDate(member.joinedAt)}</td>
+                <td className="p-3 border-b border-[#F0EEE9] align-middle">
+                  {formatDate(member.joinedAt)}
+                </td>
                 <td className="p-3 border-b border-[#F0EEE9] align-middle">
                   <ActionMenu
-                    actorRole={actorRole}
                     member={member}
-                    onProfile={() => openMemberDetail(member.id, member.orgId)}
+                    onProfile={() =>
+                      openMemberDetail(member.id, member.org?.id)
+                    }
                     onRemove={() => onRemove(member)}
                     onRole={(role) => onRole(member, role)}
                   />

@@ -15,20 +15,38 @@ import {
 } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
 import {
-  getMemberById,
-  getMembers,
-} from "./data";
+  ensureOrgReadable,
+  ensureRoleChangeAllowed,
+  ensureTargetManageable,
+  ensureTargetReadable,
+  scopedOrgId,
+  sendForbidden,
+} from "./permissions";
+import { getMemberById, getMembers } from "./data";
 import { parseTeamMemberListParams } from "./utils";
 
 export const getMembers_: RequestHandler = async (req, res) => {
   const params = parseTeamMemberListParams(req.query);
 
   if (!params.success) {
-    return sendInvalidRequest(res, "team member list params", params.error.issues);
+    return sendInvalidRequest(
+      res,
+      "team member list params",
+      params.error.issues,
+    );
   }
 
   const db = req.app.locals.db as DbClient;
-  const { rows, total } = await getMembers(db, params.data);
+  const actor = req.dbUser;
+
+  if (!ensureOrgReadable(res, actor, params.data.orgId)) {
+    return;
+  }
+
+  const { rows, total } = await getMembers(db, {
+    ...params.data,
+    orgId: scopedOrgId(actor, params.data.orgId),
+  });
 
   return sendValidatedData(res, TeamMemberListResponseSchema, {
     rows,
@@ -49,6 +67,19 @@ export const getMember: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const target = await db.user.findUnique({
+    where: { id: params.data.id },
+    select: { orgId: true },
+  });
+
+  if (!target) {
+    return sendNotFound(res, "Team member");
+  }
+
+  if (!ensureTargetReadable(res, req.dbUser, target)) {
+    return;
+  }
+
   const member = await getMemberById(db, params.data.id);
 
   if (!member) {
@@ -71,10 +102,18 @@ export const changeMemberRole: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const actor = req.dbUser;
   const existing = await db.user.findUnique({ where: { id: params.data.id } });
 
   if (!existing) {
     return sendNotFound(res, "Team member");
+  }
+
+  if (!ensureTargetManageable(res, actor, existing)) {
+    return;
+  }
+  if (!ensureRoleChangeAllowed(res, actor, body.data.role)) {
+    return;
   }
 
   const updated = await db.user.update({
@@ -85,7 +124,7 @@ export const changeMemberRole: RequestHandler = async (req, res) => {
 
   await db.teamAuditLog.create({
     data: {
-      actorId: params.data.id,
+      actorId: actor.id,
       targetUserId: params.data.id,
       orgId: existing.orgId,
       action: "ROLE_CHANGED",
@@ -120,17 +159,22 @@ export const removeMember: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const actor = req.dbUser;
   const existing = await db.user.findUnique({ where: { id: params.data.id } });
 
   if (!existing) {
     return sendNotFound(res, "Team member");
   }
 
+  if (!ensureTargetManageable(res, actor, existing)) {
+    return;
+  }
+
   await db.user.delete({ where: { id: params.data.id } });
 
   await db.teamAuditLog.create({
     data: {
-      actorId: params.data.id,
+      actorId: actor.id,
       targetUserId: params.data.id,
       orgId: existing.orgId,
       action: "REMOVED",
@@ -152,6 +196,29 @@ export const bulkMembers: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const actor = req.dbUser;
+
+  if (!body.data.ids.length) {
+    return sendValidatedData(res, BulkMemberResultSchema, {
+      succeeded: [],
+      failed: [],
+    });
+  }
+
+  if (!body.data.payload && body.data.op === "change_role") {
+    return sendInvalidRequest(res, "bulk member payload", [
+      {
+        code: "custom",
+        path: ["payload"],
+        message: "Role change payload is required",
+      },
+    ]);
+  }
+
+  if (!body.data.ids.every((id) => id !== actor.id)) {
+    return sendForbidden(res);
+  }
+
   const users = await db.user.findMany({
     where: { id: { in: body.data.ids } },
   });
@@ -167,11 +234,15 @@ export const bulkMembers: RequestHandler = async (req, res) => {
 
     const user = users.find((u) => u.id === id)!;
 
+    if (!ensureTargetManageable(res, actor, user)) {
+      return;
+    }
+
     if (body.data.op === "remove") {
       await db.user.delete({ where: { id } });
       await db.teamAuditLog.create({
         data: {
-          actorId: id,
+          actorId: actor.id,
           targetUserId: id,
           orgId: user.orgId,
           action: "REMOVED",
@@ -179,19 +250,25 @@ export const bulkMembers: RequestHandler = async (req, res) => {
         },
       });
     } else if (body.data.op === "change_role" && body.data.payload) {
+      if (!ensureRoleChangeAllowed(res, actor, body.data.payload.role)) {
+        return;
+      }
+
       await db.user.update({
         where: { id },
         data: { role: body.data.payload.role },
       });
       await db.teamAuditLog.create({
         data: {
-          actorId: id,
+          actorId: actor.id,
           targetUserId: id,
           orgId: user.orgId,
           action: "ROLE_CHANGED",
           fromRole: user.role,
           toRole: body.data.payload.role,
-          ...(body.data.payload.reason ? { reason: body.data.payload.reason } : {}),
+          ...(body.data.payload.reason
+            ? { reason: body.data.payload.reason }
+            : {}),
         },
       });
     }

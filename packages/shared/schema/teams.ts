@@ -47,8 +47,12 @@ export const MemberDetailSchema = MemberRowSchema.extend({
   }),
 });
 
+export const TeamMemberListItemSchema = MemberRowSchema.extend({
+  org: OrgRefSchema,
+});
+
 export const TeamMemberListResponseSchema = z.object({
-  rows: MemberRowSchema.array(),
+  rows: TeamMemberListItemSchema.array(),
   total: z.number(),
   page: z.number(),
   pageSize: z.number(),
@@ -133,9 +137,9 @@ export type TeamAuditParams = z.infer<typeof TeamAuditParamsSchema>;
 export type TeamInvitationListParams = z.infer<
   typeof TeamInvitationListParamsSchema
 >;
-export type MemberPermissions = z.infer<typeof MemberPermissionsSchema>;
 export type MemberRow = z.infer<typeof MemberRowSchema>;
 export type MemberDetail = z.infer<typeof MemberDetailSchema>;
+export type TeamMemberListItem = z.infer<typeof TeamMemberListItemSchema>;
 export type TeamMemberListResponse = z.infer<
   typeof TeamMemberListResponseSchema
 >;

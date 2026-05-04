@@ -1,18 +1,18 @@
-import type { MemberRow } from "../../types/teams";
+import type { TeamMemberListItem } from "../../types/teams";
 import { relativeTime } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { Avatar } from "./Avatar";
 import { RolePill } from "./RolePill";
 
-export function UserGrid({ rows }: { rows: MemberRow[] }) {
+export function UserGrid({ rows }: { rows: TeamMemberListItem[] }) {
   const openMemberDetail = useTeamsStore((state) => state.openMemberDetail);
   return (
     <div className="grid grid-cols-3 gap-3">
       {rows.map((member) => (
         <button
           className="flex min-h-[168px] flex-col items-center justify-center gap-[9px] border border-[#E8E6E1] rounded-lg bg-white p-4 text-[#1A1917] transition-[transform,box-shadow] duration-150 ease-[ease] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(26,25,23,0.09)]"
-          key={`${member.orgId}-${member.id}`}
-          onClick={() => openMemberDetail(member.id, member.orgId)}
+          key={`${member.org.id}-${member.id}`}
+          onClick={() => openMemberDetail(member.id, member.org.id)}
           type="button"
         >
           <Avatar member={member} size={48} />

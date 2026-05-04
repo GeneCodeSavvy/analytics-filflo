@@ -1,19 +1,19 @@
 import { X } from "lucide-react";
 import type { OrgSummary } from "../../types/teams";
-import type { PreviewRole } from "../../types/teams";
-import { formatMonth, orgNameFor, relativeTime } from "../../lib/teamsComponent";
+import {
+  formatMonth,
+  orgNameFor,
+  relativeTime,
+} from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { useTeamMemberQuery } from "../../hooks/useTeamsQueries";
 import { Avatar } from "./Avatar";
 import { RolePill } from "./RolePill";
+import { useAuthState } from "@/stores/useAuthStore";
 
-export function DetailDrawer({
-  orgs,
-  actorRole,
-}: {
-  orgs: OrgSummary[];
-  actorRole: PreviewRole;
-}) {
+export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
+  const actorRole = useAuthState((state) => state.user?.role);
+  if (!actorRole) throw new Error("Authentication not complete");
   const {
     detailOpen,
     selectedMemberId,
@@ -56,15 +56,25 @@ export function DetailDrawer({
               <h3 className="m-0 mb-2.5 text-[13px]">Activity</h3>
               <div className="grid grid-cols-2 gap-2">
                 <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">Tickets Requested</span>
-                  <strong className="block mt-[5px] text-[18px]">{member.stats.ticketsRequested}</strong>
+                  <span className="block text-[#A8A49C] text-[11px]">
+                    Tickets Requested
+                  </span>
+                  <strong className="block mt-[5px] text-[18px]">
+                    {member.stats.ticketsRequested}
+                  </strong>
                 </div>
                 <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">Tickets Resolved</span>
-                  <strong className="block mt-[5px] text-[18px]">{member.stats.ticketsAssigned}</strong>
+                  <span className="block text-[#A8A49C] text-[11px]">
+                    Tickets Resolved
+                  </span>
+                  <strong className="block mt-[5px] text-[18px]">
+                    {member.stats.ticketsAssigned}
+                  </strong>
                 </div>
                 <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">Avg Response Time</span>
+                  <span className="block text-[#A8A49C] text-[11px]">
+                    Avg Response Time
+                  </span>
                   <strong className="block mt-[5px] text-[18px]">
                     {member.stats.avgResolutionMs
                       ? `${(member.stats.avgResolutionMs / 3_600_000).toFixed(1)}h`
@@ -72,8 +82,12 @@ export function DetailDrawer({
                   </strong>
                 </div>
                 <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">Last Active</span>
-                  <strong className="block mt-[5px] text-[18px]">{relativeTime(member.lastActiveAt)}</strong>
+                  <span className="block text-[#A8A49C] text-[11px]">
+                    Last Active
+                  </span>
+                  <strong className="block mt-[5px] text-[18px]">
+                    {relativeTime(member.lastActiveAt)}
+                  </strong>
                 </div>
               </div>
             </section>

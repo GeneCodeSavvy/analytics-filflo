@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { OrgSummary, TeamRole } from "../../types/teams";
-import type { PreviewRole } from "../../types/teams";
 import { roles, roleLabels, roleDescriptions } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { useInviteTeamMemberMutation } from "../../hooks/useTeamsMutations";
 import { RolePill } from "./RolePill";
+import { useAuthState } from "@/stores/useAuthStore";
 
-export function InviteModal({
-  actorRole,
-  orgs,
-}: {
-  actorRole: PreviewRole;
-  orgs: OrgSummary[];
-}) {
+export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
+  const actorRole = useAuthState((state) => state.user?.role);
+  if (!actorRole) throw new Error("Authentication not completed");
   const { inviteModalOpen, closeInviteModal, inviteDraft, saveInviteDraft } =
     useTeamsStore();
   const inviteMutation = useInviteTeamMemberMutation();
@@ -77,7 +73,9 @@ export function InviteModal({
             >
               <div>
                 <strong className="block">{roleLabels[option]}</strong>
-                <span className="block mt-[3px] text-[#78756E] text-xs">{roleDescriptions[option]}</span>
+                <span className="block mt-[3px] text-[#78756E] text-xs">
+                  {roleDescriptions[option]}
+                </span>
               </div>
               <RolePill role={option} />
             </button>

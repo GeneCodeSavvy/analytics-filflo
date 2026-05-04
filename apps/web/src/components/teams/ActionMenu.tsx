@@ -1,23 +1,23 @@
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import type { MemberRow, TeamRole } from "../../types/teams";
-import type { PreviewRole } from "../../types/teams";
 import { canAct, validRoleOptions } from "../../lib/teamsComponent";
 import { RolePill } from "./RolePill";
+import { useAuthState } from "@/stores/useAuthStore";
 
 export function ActionMenu({
-  actorRole,
   member,
   onRole,
   onRemove,
   onProfile,
 }: {
-  actorRole: PreviewRole;
   member: MemberRow;
   onRole: (role: TeamRole) => void;
   onRemove: () => void;
   onProfile: () => void;
 }) {
+  const actorRole = useAuthState((state) => state.user?.role);
+  if (!actorRole) throw new Error("Authentication not completed");
   const [open, setOpen] = useState(false);
   const options = validRoleOptions(actorRole, member);
 
@@ -36,7 +36,9 @@ export function ActionMenu({
         <div className="absolute right-0 top-[34px] z-30 min-w-[190px] border border-[#E8E6E1] rounded-[8px] bg-white shadow-[0_12px_30px_rgba(26,25,23,0.12)] p-[6px]">
           {options.length ? (
             <div>
-              <div className="px-2 py-[6px] text-[#A8A49C] text-[11px]">Change role</div>
+              <div className="px-2 py-[6px] text-[#A8A49C] text-[11px]">
+                Change role
+              </div>
               {options.map((role) => (
                 <button
                   key={role}
