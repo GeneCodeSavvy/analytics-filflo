@@ -425,120 +425,122 @@ export const Messages = () => {
   };
 
   return (
-    <main className="flex h-full min-h-[calc(100svh-5rem)] overflow-hidden bg-white text-foreground">
-      <aside className="flex w-96 shrink-0 flex-col border-r border-border bg-white">
-        <header className="border-b border-border px-4 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h1 className="text-lg font-semibold tracking-normal text-foreground">
-              Messages
-            </h1>
-            <span className="font-mono text-xs text-muted-foreground">
-              {rows.length}
-            </span>
-          </div>
-          <label className="flex h-9 items-center gap-2 rounded-sm border border-border bg-white px-3 shadow-sm">
-            <Search className="size-4 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search threads"
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </label>
-          <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
-            {filters.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                onClick={() => setActiveFilter(filter.value)}
-                className={cn(
-                  "h-8 shrink-0 rounded-sm border px-3 text-xs font-medium transition-colors duration-200",
-                  activeFilter === filter.value
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-border bg-white text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {threadListQuery.isLoading ? (
-            <div className="flex h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
-              <LoaderCircle className="size-4 animate-spin" />
-              Loading threads
+    <main className="app-page-frame messages-page">
+      <div className="app-page-frame-content flex h-full min-h-[calc(100svh-5rem)] overflow-hidden bg-white text-foreground">
+        <aside className="flex w-96 shrink-0 flex-col border-r border-border bg-white">
+          <header className="border-b border-border px-4 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h1 className="text-lg font-semibold tracking-normal text-foreground">
+                Messages
+              </h1>
+              <span className="font-mono text-xs text-muted-foreground">
+                {rows.length}
+              </span>
             </div>
-          ) : rows.length === 0 ? (
-            <div className="flex h-56 flex-col items-center justify-center gap-2 px-8 text-center text-sm text-muted-foreground">
-              <Inbox className="size-8" />
-              No matching ticket conversations.
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {rows.map((row) => (
-                <ThreadRow
-                  key={row.id}
-                  row={row}
-                  active={row.id === activeThreadId}
-                  onSelect={() => {
-                    setActiveThreadId(row.id);
-                    setOrgId(row.ticket.orgId);
-                  }}
-                />
+            <label className="flex h-9 items-center gap-2 rounded-sm border border-border bg-white px-3 shadow-sm">
+              <Search className="size-4 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search threads"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </label>
+            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+              {filters.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.value)}
+                  className={cn(
+                    "h-8 shrink-0 rounded-sm border px-3 text-xs font-medium transition-colors duration-200",
+                    activeFilter === filter.value
+                      ? "border-zinc-900 bg-zinc-900 text-white"
+                      : "border-border bg-white text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  {filter.label}
+                </button>
               ))}
             </div>
-          )}
-        </div>
-      </aside>
+          </header>
 
-      <section className="flex min-w-0 flex-1 flex-col bg-muted/20">
-        {activeThread ? (
-          <>
-            <ThreadHeader thread={activeThread} />
-            <div
-              ref={scrollRef}
-              className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
-            >
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
-                {messagesQuery.isLoading ? (
-                  <div className="flex h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <LoaderCircle className="size-4 animate-spin" />
-                    Loading conversation
-                  </div>
-                ) : (
-                  messages.map((message) =>
-                    rendersAsSystemMessage(message) ? (
-                      <SystemMessage key={message.id} message={message} />
-                    ) : (
-                      <UserMessage
-                        key={message.id}
-                        message={message}
-                        justSent={message.id === lastSentId}
-                      />
-                    ),
-                  )
-                )}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {threadListQuery.isLoading ? (
+              <div className="flex h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
+                <LoaderCircle className="size-4 animate-spin" />
+                Loading threads
               </div>
-            </div>
-            <Composer
-              value={draft}
-              disabled={!canSend}
-              sending={sendMutation.isPending}
-              onChange={(value) =>
-                activeThreadId && saveDraft(activeThreadId, value)
-              }
-              onSend={handleSend}
-            />
-          </>
-        ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Inbox className="size-9" />
-            Select a ticket conversation.
+            ) : rows.length === 0 ? (
+              <div className="flex h-56 flex-col items-center justify-center gap-2 px-8 text-center text-sm text-muted-foreground">
+                <Inbox className="size-8" />
+                No matching ticket conversations.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {rows.map((row) => (
+                  <ThreadRow
+                    key={row.id}
+                    row={row}
+                    active={row.id === activeThreadId}
+                    onSelect={() => {
+                      setActiveThreadId(row.id);
+                      setOrgId(row.ticket.orgId);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </aside>
+
+        <section className="flex min-w-0 flex-1 flex-col bg-muted/20">
+          {activeThread ? (
+            <>
+              <ThreadHeader thread={activeThread} />
+              <div
+                ref={scrollRef}
+                className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
+              >
+                <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+                  {messagesQuery.isLoading ? (
+                    <div className="flex h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <LoaderCircle className="size-4 animate-spin" />
+                      Loading conversation
+                    </div>
+                  ) : (
+                    messages.map((message) =>
+                      rendersAsSystemMessage(message) ? (
+                        <SystemMessage key={message.id} message={message} />
+                      ) : (
+                        <UserMessage
+                          key={message.id}
+                          message={message}
+                          justSent={message.id === lastSentId}
+                        />
+                      ),
+                    )
+                  )}
+                </div>
+              </div>
+              <Composer
+                value={draft}
+                disabled={!canSend}
+                sending={sendMutation.isPending}
+                onChange={(value) =>
+                  activeThreadId && saveDraft(activeThreadId, value)
+                }
+                onSend={handleSend}
+              />
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Inbox className="size-9" />
+              Select a ticket conversation.
+            </div>
+          )}
+        </section>
+      </div>
     </main>
   );
 };

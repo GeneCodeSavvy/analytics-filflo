@@ -508,656 +508,668 @@ export const Tickets = () => {
           : "No tickets in this view.";
 
   return (
-    <div className="tickets-page">
-      <header className="tickets-header">
-        <div className="tickets-title">Tickets</div>
-        <label className="tickets-search">
-          <IconSearch className="h-4 w-4 text-muted-foreground" />
-          <input
-            ref={searchRef}
-            value={searchValue}
-            onChange={(event) => {
-              setSearchValue(event.target.value);
-              setFilters({ q: event.target.value || undefined });
-            }}
-            placeholder="Search tickets"
-          />
-          <kbd>/</kbd>
-        </label>
-        <button
-          type="button"
-          onClick={actions.openModal}
-          className="tickets-primary"
-        >
-          <IconPlus className="h-4 w-4" />
-          New ticket
-        </button>
-      </header>
+    <div className="app-page-frame tickets-page">
+      <div className="app-page-frame-content tickets-page-content">
+        <header className="tickets-header">
+          <div className="tickets-title">Tickets</div>
+          <label className="tickets-search">
+            <IconSearch className="h-4 w-4 text-muted-foreground" />
+            <input
+              ref={searchRef}
+              value={searchValue}
+              onChange={(event) => {
+                setSearchValue(event.target.value);
+                setFilters({ q: event.target.value || undefined });
+              }}
+              placeholder="Search tickets"
+            />
+            <kbd>/</kbd>
+          </label>
+          <button
+            type="button"
+            onClick={actions.openModal}
+            className="tickets-primary"
+          >
+            <IconPlus className="h-4 w-4" />
+            New ticket
+          </button>
+        </header>
 
-      {role === "USER" ? (
-        <UserTicketList rows={sortedRows} onOpen={actions.openDrawer} />
-      ) : (
-        <>
-          <div className="tickets-tabs">
-            <div className="tickets-view-tabs">
-              {activeViews.map((view, index) => {
-                const active =
-                  url.viewId === view.id || (!url.viewId && view.id === null);
-                return (
-                  <button
-                    key={view.id ?? "all"}
-                    type="button"
-                    onClick={() => {
-                      setTabIndex(index);
-                      actions.setView(view.id);
-                    }}
-                    className={`tickets-view-tab ${active ? "text-foreground" : "text-muted-foreground"}`}
-                  >
-                    {view.name}
-                  </button>
-                );
-              })}
-              <span
-                className="tickets-tab-underline"
-                style={{ transform: `translateX(${tabIndex * 100}%)` }}
-              />
-              <HeaderIconButton label="Save current filters">
-                <IconPlus className="h-4 w-4" />
-              </HeaderIconButton>
-            </div>
-            <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              {FILTERS.map((filter) => (
-                <button key={filter} type="button" className="tickets-chip">
-                  {filter}
-                  <IconChevronDown className="h-3 w-3" />
-                </button>
-              ))}
-              {role === "SUPER_ADMIN" && (
-                <button
-                  type="button"
-                  onClick={() => setGroupByOrg((value) => !value)}
-                  className={`tickets-chip ${groupByOrg ? "border-primary text-primary" : ""}`}
-                >
-                  Group by Org
-                </button>
-              )}
-              <div className="tickets-density">
-                <HeaderIconButton
-                  label="Compact rows"
-                  active={density === "compact"}
-                  onClick={() => actions.setDensity("compact")}
-                >
-                  <IconList className="h-4 w-4" />
-                </HeaderIconButton>
-                <HeaderIconButton
-                  label="Comfortable rows"
-                  active={density === "comfortable"}
-                  onClick={() => actions.setDensity("comfortable")}
-                >
-                  <IconLayoutRows className="h-4 w-4" />
+        {role === "USER" ? (
+          <UserTicketList rows={sortedRows} onOpen={actions.openDrawer} />
+        ) : (
+          <>
+            <div className="tickets-tabs">
+              <div className="tickets-view-tabs">
+                {activeViews.map((view, index) => {
+                  const active =
+                    url.viewId === view.id || (!url.viewId && view.id === null);
+                  return (
+                    <button
+                      key={view.id ?? "all"}
+                      type="button"
+                      onClick={() => {
+                        setTabIndex(index);
+                        actions.setView(view.id);
+                      }}
+                      className={`tickets-view-tab ${active ? "text-foreground" : "text-muted-foreground"}`}
+                    >
+                      {view.name}
+                    </button>
+                  );
+                })}
+                <span
+                  className="tickets-tab-underline"
+                  style={{ transform: `translateX(${tabIndex * 100}%)` }}
+                />
+                <HeaderIconButton label="Save current filters">
+                  <IconPlus className="h-4 w-4" />
                 </HeaderIconButton>
               </div>
+              <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                {FILTERS.map((filter) => (
+                  <button key={filter} type="button" className="tickets-chip">
+                    {filter}
+                    <IconChevronDown className="h-3 w-3" />
+                  </button>
+                ))}
+                {role === "SUPER_ADMIN" && (
+                  <button
+                    type="button"
+                    onClick={() => setGroupByOrg((value) => !value)}
+                    className={`tickets-chip ${groupByOrg ? "border-primary text-primary" : ""}`}
+                  >
+                    Group by Org
+                  </button>
+                )}
+                <div className="tickets-density">
+                  <HeaderIconButton
+                    label="Compact rows"
+                    active={density === "compact"}
+                    onClick={() => actions.setDensity("compact")}
+                  >
+                    <IconList className="h-4 w-4" />
+                  </HeaderIconButton>
+                  <HeaderIconButton
+                    label="Comfortable rows"
+                    active={density === "comfortable"}
+                    onClick={() => actions.setDensity("comfortable")}
+                  >
+                    <IconLayoutRows className="h-4 w-4" />
+                  </HeaderIconButton>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <main
-            className={`tickets-table-region ${drawerOpen ? "tickets-table-compressed" : ""}`}
-          >
-            {ui.newTicketsBannerCount > 0 && (
-              <button
-                type="button"
-                onClick={refreshNewTickets}
-                className="tickets-refresh-ribbon"
-              >
-                {ui.newTicketsBannerCount} new tickets · refresh
-              </button>
-            )}
-
-            <div
-              className="tickets-table-shell"
-              ref={tableRef}
-              onScroll={(event) =>
-                setVirtualScrollTop(event.currentTarget.scrollTop)
-              }
+            <main
+              className={`tickets-table-region ${drawerOpen ? "tickets-table-compressed" : ""}`}
             >
-              <table className="tickets-table">
-                <thead>
-                  <tr>
-                    <th className="w-[30px]" />
-                    <th className="w-[34px]">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedCount > 0 &&
-                          selectedCount === sortedRows.length
-                        }
-                        onChange={() =>
-                          selectedCount === sortedRows.length
-                            ? actions.clearSelection()
-                            : actions.setSelectedRows(
-                                sortedRows.map((row) => row.id),
-                              )
-                        }
-                      />
-                    </th>
-                    {[
-                      ["id", "ID"],
-                      ["subject", "Subject"],
-                      ["status", "Status"],
-                      ["category", "Category"],
-                      ...(role === "SUPER_ADMIN" ? [["org", "Org"]] : []),
-                      [
-                        role === "ADMIN" ? "requester" : "assignees",
-                        role === "ADMIN" ? "Requester" : "Assignees",
-                      ],
-                      ["updatedAt", "Updated"],
-                      ["createdAt", "Created"],
-                    ].map(([field, label]) => (
-                      <th
-                        key={field}
-                        className={
-                          field === "subject" ? "tickets-subject-col" : ""
-                        }
-                        onClick={(event) =>
-                          [
-                            "subject",
-                            "status",
-                            "updatedAt",
-                            "createdAt",
-                          ].includes(field) &&
-                          setSort(field as SortField, event.shiftKey)
-                        }
-                      >
-                        {label}
-                        {activeSort.field === field && (
-                          <span className="tickets-sort">
-                            {activeSort.dir === "asc" ? "▲" : "▼"}
-                          </span>
-                        )}
-                        {secondarySort?.field === field && (
-                          <sup className="text-primary">2</sup>
-                        )}
+              {ui.newTicketsBannerCount > 0 && (
+                <button
+                  type="button"
+                  onClick={refreshNewTickets}
+                  className="tickets-refresh-ribbon"
+                >
+                  {ui.newTicketsBannerCount} new tickets · refresh
+                </button>
+              )}
+
+              <div
+                className="tickets-table-shell"
+                ref={tableRef}
+                onScroll={(event) =>
+                  setVirtualScrollTop(event.currentTarget.scrollTop)
+                }
+              >
+                <table className="tickets-table">
+                  <thead>
+                    <tr>
+                      <th className="w-[30px]" />
+                      <th className="w-[34px]">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedCount > 0 &&
+                            selectedCount === sortedRows.length
+                          }
+                          onChange={() =>
+                            selectedCount === sortedRows.length
+                              ? actions.clearSelection()
+                              : actions.setSelectedRows(
+                                  sortedRows.map((row) => row.id),
+                                )
+                          }
+                        />
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody style={{ height: totalHeight }}>
-                  {status.loading && (
-                    <tr>
-                      <td
-                        colSpan={visibleColumns}
-                        className="h-32 text-center text-sm text-muted-foreground"
-                      >
-                        Loading tickets...
-                      </td>
-                    </tr>
-                  )}
-                  {status.error && (
-                    <tr>
-                      <td colSpan={visibleColumns}>
-                        <div className="tickets-error-state">
-                          <IconAlertCircle className="h-6 w-6 text-destructive" />
-                          <div className="text-[16px] font-medium text-foreground">
-                            Couldn't load tickets
-                          </div>
-                          <div className="text-[13px] text-muted-foreground">
-                            Something went wrong fetching tickets. Try again in
-                            a moment.
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              queryClient.invalidateQueries({
-                                queryKey: ["tickets", "list"],
-                                refetchType: "active",
-                              })
-                            }
-                            className="tickets-secondary mt-1"
-                          >
-                            Retry
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {!status.loading &&
-                    !status.error &&
-                    sortedRows.length === 0 && (
-                      <tr>
-                        <td colSpan={visibleColumns}>
-                          {data.total === 0 && !hasActiveFilters ? (
-                            <div className="tickets-empty-center">
-                              <IconInbox className="h-8 w-8 text-muted-foreground" />
-                              <div className="text-[16px] font-medium text-foreground">
-                                No tickets yet
-                              </div>
-                              <div className="text-[14px] text-muted-foreground">
-                                Tickets are how requests move through your team
-                              </div>
-                              <button
-                                type="button"
-                                onClick={actions.openModal}
-                                className="tickets-primary mt-2"
-                              >
-                                Create your first ticket
-                              </button>
-                            </div>
-                          ) : hasActiveFilters ? (
-                            <div className="tickets-empty-filter">
-                              No tickets match these filters{" "}
-                              <button type="button" onClick={clearFilters}>
-                                Clear filters
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="tickets-empty-filter">
-                              <IconCheck className="h-4 w-4" /> {emptyMessage}
-                            </div>
+                      {[
+                        ["id", "ID"],
+                        ["subject", "Subject"],
+                        ["status", "Status"],
+                        ["category", "Category"],
+                        ...(role === "SUPER_ADMIN" ? [["org", "Org"]] : []),
+                        [
+                          role === "ADMIN" ? "requester" : "assignees",
+                          role === "ADMIN" ? "Requester" : "Assignees",
+                        ],
+                        ["updatedAt", "Updated"],
+                        ["createdAt", "Created"],
+                      ].map(([field, label]) => (
+                        <th
+                          key={field}
+                          className={
+                            field === "subject" ? "tickets-subject-col" : ""
+                          }
+                          onClick={(event) =>
+                            [
+                              "subject",
+                              "status",
+                              "updatedAt",
+                              "createdAt",
+                            ].includes(field) &&
+                            setSort(field as SortField, event.shiftKey)
+                          }
+                        >
+                          {label}
+                          {activeSort.field === field && (
+                            <span className="tickets-sort">
+                              {activeSort.dir === "asc" ? "▲" : "▼"}
+                            </span>
                           )}
+                          {secondarySort?.field === field && (
+                            <sup className="text-primary">2</sup>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody style={{ height: totalHeight }}>
+                    {status.loading && (
+                      <tr>
+                        <td
+                          colSpan={visibleColumns}
+                          className="h-32 text-center text-sm text-muted-foreground"
+                        >
+                          Loading tickets...
                         </td>
                       </tr>
                     )}
-                  {!status.loading &&
-                    !status.error &&
-                    virtualRows.map((item, virtualIndex) => {
-                      const top = (startIndex + virtualIndex) * rowHeight;
-                      if (item.kind === "group") {
+                    {status.error && (
+                      <tr>
+                        <td colSpan={visibleColumns}>
+                          <div className="tickets-error-state">
+                            <IconAlertCircle className="h-6 w-6 text-destructive" />
+                            <div className="text-[16px] font-medium text-foreground">
+                              Couldn't load tickets
+                            </div>
+                            <div className="text-[13px] text-muted-foreground">
+                              Something went wrong fetching tickets. Try again
+                              in a moment.
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                queryClient.invalidateQueries({
+                                  queryKey: ["tickets", "list"],
+                                  refetchType: "active",
+                                })
+                              }
+                              className="tickets-secondary mt-1"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {!status.loading &&
+                      !status.error &&
+                      sortedRows.length === 0 && (
+                        <tr>
+                          <td colSpan={visibleColumns}>
+                            {data.total === 0 && !hasActiveFilters ? (
+                              <div className="tickets-empty-center">
+                                <IconInbox className="h-8 w-8 text-muted-foreground" />
+                                <div className="text-[16px] font-medium text-foreground">
+                                  No tickets yet
+                                </div>
+                                <div className="text-[14px] text-muted-foreground">
+                                  Tickets are how requests move through your
+                                  team
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={actions.openModal}
+                                  className="tickets-primary mt-2"
+                                >
+                                  Create your first ticket
+                                </button>
+                              </div>
+                            ) : hasActiveFilters ? (
+                              <div className="tickets-empty-filter">
+                                No tickets match these filters{" "}
+                                <button type="button" onClick={clearFilters}>
+                                  Clear filters
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="tickets-empty-filter">
+                                <IconCheck className="h-4 w-4" /> {emptyMessage}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    {!status.loading &&
+                      !status.error &&
+                      virtualRows.map((item, virtualIndex) => {
+                        const top = (startIndex + virtualIndex) * rowHeight;
+                        if (item.kind === "group") {
+                          return (
+                            <tr
+                              key={item.id}
+                              className="tickets-virtual-row tickets-org-row"
+                              style={{
+                                transform: `translateY(${top}px)`,
+                                height: 28,
+                              }}
+                            >
+                              <td colSpan={visibleColumns}>
+                                {item.group.org} · {item.group.rows.length}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        const row = item.row;
+                        const selected = ui.selectedRowIds.includes(row.id);
                         return (
                           <tr
-                            key={item.id}
-                            className="tickets-virtual-row tickets-org-row"
+                            key={row.id}
+                            onClick={() => actions.openDrawer(row.id)}
+                            className={`tickets-virtual-row tickets-row ${selected ? "tickets-row-selected" : ""}`}
                             style={{
                               transform: `translateY(${top}px)`,
-                              height: 28,
+                              height: rowHeight,
                             }}
                           >
-                            <td colSpan={visibleColumns}>
-                              {item.group.org} · {item.group.rows.length}
+                            <td className="w-[30px] p-0">
+                              <span
+                                className={`tickets-priority ${priorityBar(row.priority)}`}
+                              />
+                            </td>
+                            <td onClick={(event) => event.stopPropagation()}>
+                              <input
+                                className="tickets-row-check"
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() =>
+                                  actions.toggleRowSelected(row.id)
+                                }
+                              />
+                            </td>
+                            <td className="w-[110px]">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  copyId(row.id);
+                                }}
+                                className={`tickets-id ${copiedId === row.id ? "text-primary" : ""}`}
+                              >
+                                {displayId(row.id)}
+                                <IconCopy className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100" />
+                              </button>
+                            </td>
+                            <td className="tickets-subject-col">
+                              <div className="truncate text-[14px] font-medium text-foreground">
+                                {row.subject}
+                              </div>
+                              <div className="tickets-preview">
+                                {row.descriptionPreview.slice(0, 80)}
+                              </div>
+                            </td>
+                            <td
+                              onMouseEnter={() => setHoveredStatusId(row.id)}
+                              onMouseLeave={() => setHoveredStatusId(null)}
+                            >
+                              <StatusPill
+                                status={row.status}
+                                pulse={hoveredStatusId === row.id}
+                              />
+                            </td>
+                            <td className="w-[120px] truncate text-muted-foreground">
+                              {row.category ?? "Uncategorized"}
+                            </td>
+                            {role === "SUPER_ADMIN" && (
+                              <td className="w-[120px] truncate text-muted-foreground">
+                                {row.org.name}
+                              </td>
+                            )}
+                            <td className="w-[84px]">
+                              {role === "ADMIN" ? (
+                                <div className="flex items-center gap-2">
+                                  <Avatar user={row.requester} />
+                                  <span className="truncate text-[12px]">
+                                    {row.requester.name}
+                                  </span>
+                                </div>
+                              ) : (
+                                <Assignees row={row} />
+                              )}
+                            </td>
+                            <td
+                              className="w-[90px]"
+                              onMouseEnter={() =>
+                                setHoveredTime(`${row.id}-updated`)
+                              }
+                              onMouseLeave={() => setHoveredTime(null)}
+                            >
+                              <span className="font-mono text-[12px]">
+                                {hoveredTime === `${row.id}-updated`
+                                  ? absoluteTime(row.updatedAt)
+                                  : relativeTime(row.updatedAt)}
+                              </span>
+                            </td>
+                            <td className="w-[90px]">
+                              <TimeCell value={row.createdAt} muted />
+                            </td>
+                            <td className="tickets-row-chevron">
+                              <IconChevronRight className="h-4 w-4" />
                             </td>
                           </tr>
                         );
-                      }
-                      const row = item.row;
-                      const selected = ui.selectedRowIds.includes(row.id);
-                      return (
-                        <tr
-                          key={row.id}
-                          onClick={() => actions.openDrawer(row.id)}
-                          className={`tickets-virtual-row tickets-row ${selected ? "tickets-row-selected" : ""}`}
-                          style={{
-                            transform: `translateY(${top}px)`,
-                            height: rowHeight,
-                          }}
-                        >
-                          <td className="w-[30px] p-0">
-                            <span
-                              className={`tickets-priority ${priorityBar(row.priority)}`}
-                            />
-                          </td>
-                          <td onClick={(event) => event.stopPropagation()}>
-                            <input
-                              className="tickets-row-check"
-                              type="checkbox"
-                              checked={selected}
-                              onChange={() => actions.toggleRowSelected(row.id)}
-                            />
-                          </td>
-                          <td className="w-[110px]">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                copyId(row.id);
-                              }}
-                              className={`tickets-id ${copiedId === row.id ? "text-primary" : ""}`}
-                            >
-                              {displayId(row.id)}
-                              <IconCopy className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100" />
-                            </button>
-                          </td>
-                          <td className="tickets-subject-col">
-                            <div className="truncate text-[14px] font-medium text-foreground">
-                              {row.subject}
-                            </div>
-                            <div className="tickets-preview">
-                              {row.descriptionPreview.slice(0, 80)}
-                            </div>
-                          </td>
-                          <td
-                            onMouseEnter={() => setHoveredStatusId(row.id)}
-                            onMouseLeave={() => setHoveredStatusId(null)}
-                          >
-                            <StatusPill
-                              status={row.status}
-                              pulse={hoveredStatusId === row.id}
-                            />
-                          </td>
-                          <td className="w-[120px] truncate text-muted-foreground">
-                            {row.category ?? "Uncategorized"}
-                          </td>
-                          {role === "SUPER_ADMIN" && (
-                            <td className="w-[120px] truncate text-muted-foreground">
-                              {row.org.name}
-                            </td>
-                          )}
-                          <td className="w-[84px]">
-                            {role === "ADMIN" ? (
-                              <div className="flex items-center gap-2">
-                                <Avatar user={row.requester} />
-                                <span className="truncate text-[12px]">
-                                  {row.requester.name}
-                                </span>
-                              </div>
-                            ) : (
-                              <Assignees row={row} />
-                            )}
-                          </td>
-                          <td
-                            className="w-[90px]"
-                            onMouseEnter={() =>
-                              setHoveredTime(`${row.id}-updated`)
-                            }
-                            onMouseLeave={() => setHoveredTime(null)}
-                          >
-                            <span className="font-mono text-[12px]">
-                              {hoveredTime === `${row.id}-updated`
-                                ? absoluteTime(row.updatedAt)
-                                : relativeTime(row.updatedAt)}
-                            </span>
-                          </td>
-                          <td className="w-[90px]">
-                            <TimeCell value={row.createdAt} muted />
-                          </td>
-                          <td className="tickets-row-chevron">
-                            <IconChevronRight className="h-4 w-4" />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </main>
-        </>
-      )}
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </main>
+          </>
+        )}
 
-      {drawerOpen && data.detail && (
-        <aside className="tickets-drawer">
-          <div className="tickets-drawer-top">
-            <button type="button" title="Close" onClick={actions.closeDrawer}>
-              <IconX className="h-4 w-4" />
-            </button>
-            <span className="font-mono text-muted-foreground">
-              {displayId(data.detail.id)}
-            </span>
-            <IconChevronRight className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{data.detail.subject}</span>
-            <div className="ml-auto flex items-center gap-1">
-              <button type="button" title="Open full page">
-                <IconMaximize className="h-4 w-4" />
+        {drawerOpen && data.detail && (
+          <aside className="tickets-drawer">
+            <div className="tickets-drawer-top">
+              <button type="button" title="Close" onClick={actions.closeDrawer}>
+                <IconX className="h-4 w-4" />
               </button>
-              <button type="button" title="More">
-                <IconDots className="h-4 w-4" />
-              </button>
+              <span className="font-mono text-muted-foreground">
+                {displayId(data.detail.id)}
+              </span>
+              <IconChevronRight className="h-4 w-4 text-muted-foreground" />
+              <span className="truncate">{data.detail.subject}</span>
+              <div className="ml-auto flex items-center gap-1">
+                <button type="button" title="Open full page">
+                  <IconMaximize className="h-4 w-4" />
+                </button>
+                <button type="button" title="More">
+                  <IconDots className="h-4 w-4" />
+                </button>
+              </div>
             </div>
+            <div className="flex-1 overflow-auto p-5">
+              {editSubject ? (
+                <input
+                  ref={subjectRef}
+                  defaultValue={data.detail.subject}
+                  onBlur={(event) => saveSubject(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter")
+                      saveSubject(event.currentTarget.value);
+                    if (event.key === "Escape") setEditSubject(false);
+                  }}
+                  className="tickets-title-input"
+                />
+              ) : (
+                <h2
+                  onClick={() => setEditSubject(true)}
+                  className="tickets-drawer-title"
+                >
+                  {data.detail.subject}
+                </h2>
+              )}
+              <div className="tickets-meta">
+                <button
+                  type="button"
+                  onClick={() =>
+                    data.detail &&
+                    statusMutation.mutate({
+                      id: data.detail.id,
+                      status: "REVIEW",
+                    })
+                  }
+                >
+                  <StatusPill status={data.detail.status} />
+                </button>
+                <button type="button" className="tickets-priority-chip">
+                  {data.detail.priority}
+                </button>
+                <Assignees row={data.detail} />
+                <span className="font-mono text-[12px] text-muted-foreground">
+                  Created {relativeTime(data.detail.createdAt)}
+                </span>
+                <span className="font-mono text-[12px] text-muted-foreground">
+                  Updated {relativeTime(data.detail.updatedAt)}
+                </span>
+              </div>
+              <div className="tickets-drawer-tabs">
+                {(["Details", "Activity", "Messages"] as DrawerTab[]).map(
+                  (tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setDrawerTab(tab)}
+                      className={
+                        drawerTab === tab
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {tab}
+                    </button>
+                  ),
+                )}
+                <span
+                  style={{
+                    transform: `translateX(${(["Details", "Activity", "Messages"] as DrawerTab[]).indexOf(drawerTab) * 100}%)`,
+                  }}
+                />
+              </div>
+              {drawerTab === "Details" && (
+                <div className="space-y-4 pt-4">
+                  {editDescription ? (
+                    <textarea
+                      ref={descriptionRef}
+                      defaultValue={data.detail.description}
+                      onBlur={(event) => saveDescription(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (
+                          (event.metaKey || event.ctrlKey) &&
+                          event.key === "Enter"
+                        )
+                          saveDescription(event.currentTarget.value);
+                        if (event.key === "Escape") setEditDescription(false);
+                      }}
+                      className="tickets-description-input"
+                    />
+                  ) : (
+                    <div
+                      onClick={() => setEditDescription(true)}
+                      className="tickets-editable"
+                    >
+                      {data.detail.description ||
+                        data.detail.descriptionPreview}
+                    </div>
+                  )}
+                  <div className="tickets-editable text-sm text-muted-foreground">
+                    Category: {data.detail.category ?? "Uncategorized"}
+                  </div>
+                </div>
+              )}
+              {drawerTab === "Activity" && (
+                <ActivityList activity={data.detail.activity} />
+              )}
+              {drawerTab === "Messages" && (
+                <div className="pt-4 text-sm text-muted-foreground">
+                  No messages attached to this ticket.
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+
+        {url.modalOpen && (
+          <div
+            className="tickets-modal-backdrop"
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter")
+                submitDraft();
+            }}
+          >
+            <form
+              className="tickets-modal"
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitDraft();
+              }}
+            >
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <h2 className="m-0 text-[16px] font-medium text-foreground">
+                  New ticket
+                </h2>
+                <button type="button" title="Close" onClick={closeModal}>
+                  <IconX className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-3 p-4">
+                <input
+                  ref={modalSubjectRef}
+                  value={draft.subject}
+                  onChange={(event) =>
+                    setDraft((value) => ({
+                      ...value,
+                      subject: event.target.value,
+                    }))
+                  }
+                  placeholder="Subject"
+                  className="tickets-form-input text-[18px]"
+                />
+                <textarea
+                  value={draft.description}
+                  onChange={(event) =>
+                    setDraft((value) => ({
+                      ...value,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder="Description"
+                  className="tickets-form-input min-h-32 resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={draft.category}
+                    onChange={(event) =>
+                      setDraft((value) => ({
+                        ...value,
+                        category: event.target.value as TicketCategory | "",
+                      }))
+                    }
+                    className="tickets-form-input"
+                  >
+                    <option value="">Category</option>
+                    {CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category.replace("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={draft.priority}
+                    onChange={(event) =>
+                      setDraft((value) => ({
+                        ...value,
+                        priority: event.target.value as TicketPriority,
+                      }))
+                    }
+                    className="tickets-form-input"
+                  >
+                    {PRIORITIES.map((priority) => (
+                      <option key={priority}>{priority}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-border px-4 py-3">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="tickets-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createTicket.isPending}
+                  className="tickets-primary"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
           </div>
-          <div className="flex-1 overflow-auto p-5">
-            {editSubject ? (
-              <input
-                ref={subjectRef}
-                defaultValue={data.detail.subject}
-                onBlur={(event) => saveSubject(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter")
-                    saveSubject(event.currentTarget.value);
-                  if (event.key === "Escape") setEditSubject(false);
-                }}
-                className="tickets-title-input"
-              />
-            ) : (
-              <h2
-                onClick={() => setEditSubject(true)}
-                className="tickets-drawer-title"
-              >
-                {data.detail.subject}
-              </h2>
-            )}
-            <div className="tickets-meta">
+        )}
+
+        {selectedCount > 0 && (
+          <div className="tickets-bulk-bar">
+            <span className="font-mono text-[13px]">
+              {selectedCount} selected
+            </span>
+            <div className="ml-auto flex items-center gap-1">
+              {role !== "USER" && <button type="button">Assign</button>}
               <button
                 type="button"
                 onClick={() =>
-                  data.detail &&
-                  statusMutation.mutate({
-                    id: data.detail.id,
+                  bulkUpdate.mutate({
+                    ids: ui.selectedRowIds,
                     status: "REVIEW",
                   })
                 }
               >
-                <StatusPill status={data.detail.status} />
+                Status
               </button>
-              <button type="button" className="tickets-priority-chip">
-                {data.detail.priority}
-              </button>
-              <Assignees row={data.detail} />
-              <span className="font-mono text-[12px] text-muted-foreground">
-                Created {relativeTime(data.detail.createdAt)}
-              </span>
-              <span className="font-mono text-[12px] text-muted-foreground">
-                Updated {relativeTime(data.detail.updatedAt)}
-              </span>
-            </div>
-            <div className="tickets-drawer-tabs">
-              {(["Details", "Activity", "Messages"] as DrawerTab[]).map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setDrawerTab(tab)}
-                    className={
-                      drawerTab === tab
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {tab}
-                  </button>
-                ),
-              )}
-              <span
-                style={{
-                  transform: `translateX(${(["Details", "Activity", "Messages"] as DrawerTab[]).indexOf(drawerTab) * 100}%)`,
-                }}
-              />
-            </div>
-            {drawerTab === "Details" && (
-              <div className="space-y-4 pt-4">
-                {editDescription ? (
-                  <textarea
-                    ref={descriptionRef}
-                    defaultValue={data.detail.description}
-                    onBlur={(event) => saveDescription(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (
-                        (event.metaKey || event.ctrlKey) &&
-                        event.key === "Enter"
-                      )
-                        saveDescription(event.currentTarget.value);
-                      if (event.key === "Escape") setEditDescription(false);
-                    }}
-                    className="tickets-description-input"
-                  />
-                ) : (
-                  <div
-                    onClick={() => setEditDescription(true)}
-                    className="tickets-editable"
-                  >
-                    {data.detail.description || data.detail.descriptionPreview}
-                  </div>
-                )}
-                <div className="tickets-editable text-sm text-muted-foreground">
-                  Category: {data.detail.category ?? "Uncategorized"}
-                </div>
-              </div>
-            )}
-            {drawerTab === "Activity" && (
-              <ActivityList activity={data.detail.activity} />
-            )}
-            {drawerTab === "Messages" && (
-              <div className="pt-4 text-sm text-muted-foreground">
-                No messages attached to this ticket.
-              </div>
-            )}
-          </div>
-        </aside>
-      )}
-
-      {url.modalOpen && (
-        <div
-          className="tickets-modal-backdrop"
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter")
-              submitDraft();
-          }}
-        >
-          <form
-            className="tickets-modal"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submitDraft();
-            }}
-          >
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 className="m-0 text-[16px] font-medium text-foreground">
-                New ticket
-              </h2>
-              <button type="button" title="Close" onClick={closeModal}>
-                <IconX className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="space-y-3 p-4">
-              <input
-                ref={modalSubjectRef}
-                value={draft.subject}
-                onChange={(event) =>
-                  setDraft((value) => ({
-                    ...value,
-                    subject: event.target.value,
-                  }))
-                }
-                placeholder="Subject"
-                className="tickets-form-input text-[18px]"
-              />
-              <textarea
-                value={draft.description}
-                onChange={(event) =>
-                  setDraft((value) => ({
-                    ...value,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="Description"
-                className="tickets-form-input min-h-32 resize-none"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={draft.category}
-                  onChange={(event) =>
-                    setDraft((value) => ({
-                      ...value,
-                      category: event.target.value as TicketCategory | "",
-                    }))
-                  }
-                  className="tickets-form-input"
-                >
-                  <option value="">Category</option>
-                  {CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category.replace("_", " ")}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={draft.priority}
-                  onChange={(event) =>
-                    setDraft((value) => ({
-                      ...value,
-                      priority: event.target.value as TicketPriority,
-                    }))
-                  }
-                  className="tickets-form-input"
-                >
-                  {PRIORITIES.map((priority) => (
-                    <option key={priority}>{priority}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 border-t border-border px-4 py-3">
               <button
                 type="button"
-                onClick={closeModal}
-                className="tickets-secondary"
+                onClick={() =>
+                  bulkUpdate.mutate({
+                    ids: ui.selectedRowIds,
+                    priority: "HIGH",
+                  })
+                }
               >
-                Cancel
+                Priority
               </button>
               <button
-                type="submit"
-                disabled={createTicket.isPending}
-                className="tickets-primary"
+                type="button"
+                onClick={() =>
+                  bulkUpdate.mutate({
+                    ids: ui.selectedRowIds,
+                    status: "CLOSED" as TicketStatus,
+                  })
+                }
               >
-                Create
+                Close ticket
+              </button>
+              <span className="h-5 w-px bg-border" />
+              <button type="button" onClick={actions.clearSelection}>
+                Clear selection
               </button>
             </div>
-          </form>
-        </div>
-      )}
-
-      {selectedCount > 0 && (
-        <div className="tickets-bulk-bar">
-          <span className="font-mono text-[13px]">
-            {selectedCount} selected
-          </span>
-          <div className="ml-auto flex items-center gap-1">
-            {role !== "USER" && <button type="button">Assign</button>}
-            <button
-              type="button"
-              onClick={() =>
-                bulkUpdate.mutate({ ids: ui.selectedRowIds, status: "REVIEW" })
-              }
-            >
-              Status
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                bulkUpdate.mutate({ ids: ui.selectedRowIds, priority: "HIGH" })
-              }
-            >
-              Priority
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                bulkUpdate.mutate({
-                  ids: ui.selectedRowIds,
-                  status: "CLOSED" as TicketStatus,
-                })
-              }
-            >
-              Close ticket
-            </button>
-            <span className="h-5 w-px bg-border" />
-            <button type="button" onClick={actions.clearSelection}>
-              Clear selection
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {toast && <div className="tickets-toast">{toast}</div>}
-      {anyMutationPending && (
-        <span className="sr-only">Saving ticket changes</span>
-      )}
+        {toast && <div className="tickets-toast">{toast}</div>}
+        {anyMutationPending && (
+          <span className="sr-only">Saving ticket changes</span>
+        )}
+      </div>
     </div>
   );
 };

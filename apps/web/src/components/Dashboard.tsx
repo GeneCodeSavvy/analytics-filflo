@@ -520,7 +520,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <main className="dashboard-page flex items-center justify-center">
+      <main className="app-page-frame dashboard-page flex items-center justify-center">
         <div className="font-mono text-sm text-[#9CA3AF]">
           Preparing dashboard
         </div>
@@ -536,7 +536,7 @@ export default function Dashboard() {
     !zone3.data
   ) {
     return (
-      <main className="dashboard-page flex items-center justify-center">
+      <main className="app-page-frame dashboard-page flex items-center justify-center">
         <div className="rounded-xl border border-[#E8E6E0] bg-white px-4 py-3 text-sm text-[#08060d]">
           Dashboard data is unavailable.
         </div>
@@ -545,9 +545,9 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="dashboard-page">
+    <main className="app-page-frame dashboard-page">
       <div
-        className={`mx-auto max-w-[1320px] ${isRefreshing ? "dashboard-refreshing" : ""}`}
+        className={`app-page-frame-content ${isRefreshing ? "dashboard-refreshing" : ""}`}
       >
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#E8E6E0] bg-[#FAFAF8]/95 backdrop-blur">
           <div className="flex items-center gap-3">

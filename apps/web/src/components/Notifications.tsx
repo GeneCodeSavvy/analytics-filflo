@@ -562,8 +562,11 @@ export const Notifications = () => {
   };
 
   return (
-    <main className="notifications-page" onKeyDown={handleKeyboard}>
-      <div className="notifications-shell">
+    <main
+      className="app-page-frame notifications-page"
+      onKeyDown={handleKeyboard}
+    >
+      <div className="app-page-frame-content notifications-shell">
         <header className="notifications-header">
           <div>
             <h1>
