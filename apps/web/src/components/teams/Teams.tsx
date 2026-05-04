@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
+  Building2,
   Info,
   Search,
   UserPlus,
@@ -37,6 +38,7 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { DetailDrawer } from "./DetailDrawer";
 import { PendingInvitations } from "./PendingInvitations";
 import { useAuthState } from "@/stores/useAuthStore";
+import { CreateOrgModal } from "./CreateOrgModal";
 
 export const Teams = () => {
   const actorRole = useAuthState((state) => state.user?.role);
@@ -48,6 +50,7 @@ export const Teams = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [activeTab, setActiveTab] = useState<TeamTab>("members");
   const [modal, setModal] = useState<ModalState>(null);
+  const [createOrgOpen, setCreateOrgOpen] = useState(false);
   const {
     expandedOrgIds,
     expandAllOrgs,
@@ -74,6 +77,7 @@ export const Teams = () => {
         setModal(null);
         useTeamsStore.getState().closeInviteModal();
         useTeamsStore.getState().closeMemberDetail();
+        setCreateOrgOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -158,6 +162,15 @@ export const Teams = () => {
               type="button"
             >
               <UserPlus size={16} /> Invite Member
+            </button>
+          ) : null}
+          {superAdminView ? (
+            <button
+              className="inline-flex items-center justify-center gap-[7px] rounded-md border border-[#E8E6E1] bg-white px-3 py-[9px] text-[#1A1917] transition-[background,box-shadow,transform] duration-150 hover:bg-[#F5F3EE]"
+              onClick={() => setCreateOrgOpen(true)}
+              type="button"
+            >
+              <Building2 size={16} /> Create org
             </button>
           ) : null}
         </div>
@@ -297,6 +310,10 @@ export const Teams = () => {
         </div>
       ) : null}
       <InviteModal orgs={orgs} />
+      <CreateOrgModal
+        onClose={() => setCreateOrgOpen(false)}
+        open={createOrgOpen}
+      />
       <ConfirmationModal modal={modal} onClose={() => setModal(null)} />
       <DetailDrawer orgs={orgs} />
     </div>

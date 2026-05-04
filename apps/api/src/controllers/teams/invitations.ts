@@ -1,6 +1,7 @@
 import {
   AuditEntrySchema,
   BulkMemberResultSchema,
+  CreateOrgPayloadSchema,
   InvitationSchema,
   OrgSummarySchema,
   TeamInvitationParamsSchema,
@@ -13,13 +14,19 @@ import {
   sendValidatedData,
 } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
-import { getAuditEntries, getInvitations, getOrgSummaries } from "./data";
+import {
+  getAuditEntries,
+  getInvitations,
+  getOrgSummaries,
+  getOrgSummaryById,
+} from "./data";
 import { parseTeamAuditParams, parseTeamInvitationListParams } from "./utils";
 import { randomBytes, createHash } from "node:crypto";
 import { sendInviteMail } from "../../lib/mail";
 import {
   ensureInviteAllowed,
   ensureOrgReadable,
+  ensureSuperAdmin,
   scopedOrgId,
 } from "./permissions";
 
@@ -213,3 +220,33 @@ export const getOrgSummaries_: RequestHandler = async (_req, res) => {
 };
 
 export { getOrgSummaries_ as getOrgSummaries };
+
+export const createOrg: RequestHandler = async (req, res) => {
+  const body = CreateOrgPayloadSchema.safeParse(req.body);
+
+  if (!body.success) {
+    return sendInvalidRequest(res, "org payload", body.error.issues);
+  }
+
+  const db = req.app.locals.db as DbClient;
+  const actor = req.dbUser;
+
+  if (!ensureSuperAdmin(res, actor)) {
+    return;
+  }
+
+  const org = await db.org.create({
+    data: {
+      displayName: body.data.displayName,
+      ...(body.data.logoUrl ? { logoUrl: body.data.logoUrl } : {}),
+    },
+  });
+
+  const summary = await getOrgSummaryById(db, org.id);
+
+  if (!summary) {
+    return sendNotFound(res, "Org");
+  }
+
+  return sendValidatedData(res.status(201), OrgSummarySchema, summary);
+};

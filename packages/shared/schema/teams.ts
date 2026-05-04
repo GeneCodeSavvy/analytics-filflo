@@ -92,6 +92,11 @@ export const OrgSummarySchema = z.object({
   lastActivityAt: z.string().optional(),
 });
 
+export const CreateOrgPayloadSchema = z.object({
+  displayName: z.string().trim().min(1).max(120),
+  logoUrl: z.string().url().optional().or(z.literal("")),
+});
+
 export const InvitePayloadSchema = z.object({
   email: z.string(),
   role: UserRoleSchema,
@@ -144,6 +149,7 @@ export type TeamMemberListResponse = z.infer<
 export type Invitation = z.infer<typeof InvitationSchema>;
 export type AuditEntry = z.infer<typeof AuditEntrySchema>;
 export type OrgSummary = z.infer<typeof OrgSummarySchema>;
+export type CreateOrgPayload = z.infer<typeof CreateOrgPayloadSchema>;
 export type InvitePayload = z.infer<typeof InvitePayloadSchema>;
 export type RoleChangePayload = z.infer<typeof RoleChangePayloadSchema>;
 export type RemoveMemberParams = z.infer<typeof RemoveMemberParamsSchema>;

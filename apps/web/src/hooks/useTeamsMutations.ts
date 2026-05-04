@@ -4,9 +4,11 @@ import { teamKeys } from "../lib/teamsApi";
 import type {
   BulkMemberOp,
   BulkMemberResult,
+  CreateOrgPayload,
   Invitation,
   InvitePayload,
   MemberDetail,
+  OrgSummary,
   RemoveMemberParams,
   RoleChangePayload,
 } from "../types/teams";
@@ -135,6 +137,17 @@ export function useInviteTeamMemberMutation() {
     },
     onSettled: () => {
       invalidateTeamInvitations(queryClient);
+      queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
+    },
+  });
+}
+
+export function useCreateOrgMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<OrgSummary, Error, CreateOrgPayload>({
+    mutationFn: (payload) => teamsApi.createOrg(payload),
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: teamKeys.orgs() });
     },
   });

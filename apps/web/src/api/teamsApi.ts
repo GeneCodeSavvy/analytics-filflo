@@ -2,6 +2,7 @@ import { api } from ".";
 import {
   AuditEntrySchema,
   BulkMemberResultSchema,
+  CreateOrgPayloadSchema,
   InvitationSchema,
   MemberDetailSchema,
   OrgSummarySchema,
@@ -11,6 +12,7 @@ import type {
   AuditEntry,
   BulkMemberOp,
   BulkMemberResult,
+  CreateOrgPayload,
   Invitation,
   InvitePayload,
   MemberDetail,
@@ -151,4 +153,9 @@ export const teamsApi = {
     const data = await api.get<OrgSummary[]>("/teams/orgs", { signal });
     return OrgSummarySchema.array().parse(data);
   },
+
+  createOrg: (payload: CreateOrgPayload): Promise<OrgSummary> =>
+    api
+      .post<OrgSummary>("/teams/orgs", CreateOrgPayloadSchema.parse(payload))
+      .then((data) => OrgSummarySchema.parse(data)),
 };

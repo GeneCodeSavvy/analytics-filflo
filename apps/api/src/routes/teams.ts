@@ -10,6 +10,7 @@ import {
 import {
   cancelInvitation,
   createInvitation,
+  createOrg,
   getAuditEntries,
   getInvitations,
   getOrgSummaries,
@@ -28,5 +29,6 @@ teamsRouter.post("/invitations", createInvitation);
 teamsRouter.delete("/invitations/:id", cancelInvitation);
 teamsRouter.get("/audit", getAuditEntries);
 teamsRouter.get("/orgs", getOrgSummaries);
+teamsRouter.post("/orgs", createOrg);
 
 export default teamsRouter;

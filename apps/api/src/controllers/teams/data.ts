@@ -229,3 +229,11 @@ export const getOrgSummaries = async (
     }),
   );
 };
+
+export const getOrgSummaryById = async (
+  db: DbClient,
+  orgId: string,
+): Promise<OrgSummary | null> => {
+  const [summary] = await getOrgSummaries(db, orgId);
+  return summary ?? null;
+};

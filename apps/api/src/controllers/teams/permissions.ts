@@ -16,6 +16,13 @@ export const canReadAcrossOrgs = (actor: TeamActor) =>
 export const canManageTeams = (actor: TeamActor) =>
   actor.role === UserRole.SUPER_ADMIN || actor.role === UserRole.MODERATOR;
 
+export const ensureSuperAdmin = (res: Response, actor: TeamActor) => {
+  if (actor.role === UserRole.SUPER_ADMIN) return true;
+
+  sendForbidden(res);
+  return false;
+};
+
 export const sendForbidden = (res: Response, error = "Forbidden") =>
   sendError(res, 403, error);
 
