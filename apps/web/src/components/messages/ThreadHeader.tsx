@@ -2,22 +2,23 @@ import { ArrowUpRight } from "lucide-react";
 import type { MessageThreadHeaderProps } from "../../types/messages";
 import { Badge } from "./Badge";
 import { ParticipantAvatar } from "./ParticipantAvatar";
+import { messageSecondaryButton } from "./styles";
 
 export function ThreadHeader({ thread }: MessageThreadHeaderProps) {
   return (
-    <header className="flex min-h-20 items-center justify-between gap-4 border-b border-border bg-white px-5 py-3">
+    <header className="flex min-h-20 items-center justify-between gap-4 border-b border-[--border-default] bg-[--surface-card] px-4 py-3 max-[720px]:flex-col max-[720px]:items-start">
       <div className="min-w-0">
         <div className="mb-1 flex items-center gap-2">
-          <span className="font-mono text-xs font-medium text-muted-foreground">
+          <span className="rounded-[--radius-sm] border border-[--border-default] bg-[--surface-sunken] px-1.5 py-0.5 font-mono text-[11px] font-medium text-[--ink-3]">
             #{thread.ticket.id}
           </span>
           <Badge value={thread.ticket.status} tone="status" />
           <Badge value={thread.ticket.priority} tone="priority" />
         </div>
-        <h2 className="truncate text-base font-semibold leading-6 text-foreground">
+        <h2 className="m-0 truncate text-[16px] font-semibold leading-6 text-[--ink-1]">
           {thread.ticket.subject}
         </h2>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+        <p className="mt-0.5 truncate text-[12px] text-[--ink-3]">
           {thread.ticket.orgName}
         </p>
       </div>
@@ -33,7 +34,7 @@ export function ThreadHeader({ thread }: MessageThreadHeaderProps) {
         </div>
         <button
           type="button"
-          className="inline-flex h-8 items-center gap-2 rounded-sm border border-border bg-white px-3 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted/60"
+          className={messageSecondaryButton}
         >
           <ArrowUpRight className="size-3.5" />
           View Ticket

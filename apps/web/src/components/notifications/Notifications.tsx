@@ -37,6 +37,16 @@ import { cn } from "../../lib/utils";
 import { EmptyState } from "./EmptyState";
 import { SnoozeMenu } from "./SnoozeMenu";
 import { NotificationRowView } from "./NotificationRowView";
+import {
+  notificationChip,
+  notificationChipActive,
+  notificationHeader,
+  notificationMeta,
+  notificationPage,
+  notificationPanel,
+  notificationTitle,
+  notificationToast,
+} from "./styles";
 
 export const Notifications = () => {
   const navigate = useNavigate();
@@ -206,18 +216,18 @@ export const Notifications = () => {
 
   return (
     <main
-      className="app-page-frame bg-white font-mono text-[oklch(0.18_0_0)]"
+      className={notificationPage}
       onKeyDown={handleKeyboard}
     >
       <div className="app-page-frame-content">
-        <header className="flex items-center justify-between gap-4 pt-1.5 pb-4 max-[720px]:items-start">
+        <header className={notificationHeader}>
           <div>
-            <h1 className="m-0 text-xl/[1.2] font-semibold text-[oklch(0.18_0_0)]">
-              Notifications{" "}
-              <span className="text-xs font-medium text-[oklch(0.55_0.023_264)]">
-                ({unreadCount} unread)
-              </span>
+            <h1 className={notificationTitle}>
+              Notifications
             </h1>
+            <p className={`${notificationMeta} mt-1`}>
+              {unreadCount} unread operator updates
+            </p>
           </div>
           <div className="flex items-center gap-1.5">
             {rows.length > 0 ? (
@@ -239,9 +249,9 @@ export const Notifications = () => {
           </div>
         </header>
 
-        <div className="sticky top-[-28px] z-20 -mx-0.5 bg-white px-0.5">
+        <div className="sticky top-16 z-20 -mx-0.5 bg-[--surface-page] px-0.5">
           <nav
-            className="flex gap-[18px] border-b border-[oklch(0.93_0.006_264)]"
+            className="flex gap-[18px] border-b border-[--border-default]"
             aria-label="Notification tabs"
           >
             {tabs.map((tab) => (
@@ -249,15 +259,15 @@ export const Notifications = () => {
                 key={tab.key}
                 type="button"
                 className={cn(
-                  "inline-flex cursor-pointer items-center gap-1.5 border-0 border-b border-transparent bg-transparent py-2.5 pt-2.5 pb-[9px] text-xs text-[oklch(0.55_0.023_264)]",
+                  "inline-flex cursor-pointer items-center gap-1.5 border-0 border-b border-transparent bg-transparent py-2.5 pt-2.5 pb-[9px] text-xs text-[--ink-3]",
                   activeTab === tab.key &&
-                    "border-b-[oklch(0.67_0.14_48.5)] text-[oklch(0.18_0_0)]",
+                    "border-b-[--action-bg] text-[--ink-1]",
                 )}
                 onClick={() => updateFilters({ tab: tab.key })}
               >
                 {tab.label}
                 {tab.key === "inbox" ? (
-                  <span className="rounded-xl border border-[oklch(0.93_0.006_264)] px-1.5 text-[0.625rem]/[1.4]">
+                  <span className="rounded-[--radius-md] border border-[--border-default] px-1.5 text-[0.625rem]/[1.4]">
                     {unreadCount}
                   </span>
                 ) : null}
@@ -269,10 +279,10 @@ export const Notifications = () => {
             className={cn(
               "grid max-h-0 grid-cols-[1fr_auto] items-center gap-3 overflow-visible opacity-0 -translate-y-1.5 transition-[max-height,opacity,transform,padding] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-[720px]:grid-cols-1 max-[720px]:items-start",
               selectedCount > 0 &&
-                "mt-2 max-h-12 translate-y-0 rounded-xl border border-[oklch(0.93_0.006_264)] bg-[oklch(0.967_0.003_264)] px-2 py-[7px] opacity-100 shadow-[0px_1px_4px_0px_hsl(0_0%_0%_/_0.05)]",
+                "mt-2 max-h-12 translate-y-0 rounded-[--radius-md] border border-[--border-default] bg-[--surface-sunken] px-2 py-[7px] opacity-100 shadow-[--elev-1]",
             )}
           >
-            <span className="text-xs text-[oklch(0.18_0_0)]">
+            <span className="text-xs text-[--ink-1]">
               {selectedCount} selected
             </span>
             <div className="flex items-center gap-1.5">
@@ -335,9 +345,8 @@ export const Notifications = () => {
                   key={chip.label}
                   type="button"
                   className={cn(
-                    "shrink-0 cursor-pointer rounded-xl border border-[oklch(0.93_0.006_264)] bg-white px-2 py-1 text-[0.6875rem]/[1.4] text-[oklch(0.38_0.01_264)]",
-                    active &&
-                      "bg-[oklch(0.967_0.003_264)] text-[oklch(0.18_0_0)]",
+                    notificationChip,
+                    active && notificationChipActive,
                   )}
                   onClick={() => {
                     const next = active
@@ -353,7 +362,7 @@ export const Notifications = () => {
             {hasFilters ? (
               <button
                 type="button"
-                className="shrink-0 cursor-pointer rounded-xl border border-transparent bg-white px-2 py-1 text-[0.6875rem]/[1.4] text-[oklch(0.67_0.14_48.5)]"
+                className="shrink-0 cursor-pointer rounded-[--radius-md] border border-transparent bg-[--surface-page] px-2 py-1 text-[0.6875rem]/[1.4] text-[--action-tint-fg]"
                 onClick={() => updateFilters({ type: [] })}
               >
                 Clear filters
@@ -366,7 +375,7 @@ export const Notifications = () => {
         {newRowsPending > 0 ? (
           <button
             type="button"
-            className="mx-auto mt-0.5 mb-3 block cursor-pointer rounded-xl border border-[oklch(0.85_0.055_70)] bg-[oklch(0.97_0.025_74)] px-2.5 py-[5px] text-[0.6875rem] text-[oklch(0.42_0.08_52)]"
+            className="mx-auto mt-0.5 mb-3 block cursor-pointer rounded-[--radius-md] border border-[--status-warn-border] bg-[--status-warn-bg] px-2.5 py-[5px] text-[0.6875rem] text-[--status-warn-fg]"
             onClick={() => {
               setNewRowsPending(0);
               listTopRef.current?.scrollIntoView({
@@ -380,13 +389,13 @@ export const Notifications = () => {
         ) : null}
 
         {isLoading ? (
-          <div className="grid min-h-[280px] place-items-center text-center text-[oklch(0.55_0.023_264)]">
+          <div className="grid min-h-[280px] place-items-center text-center text-[--ink-3]">
             <LoaderCircle className="size-4 animate-spin" /> Loading
             notifications
           </div>
         ) : null}
         {isError ? (
-          <div className="grid min-h-[280px] place-items-center text-center text-[oklch(0.55_0.023_264)]">
+          <div className="grid min-h-[280px] place-items-center text-center text-[--ink-3]">
             Could not load notifications from the API.
           </div>
         ) : null}
@@ -403,7 +412,7 @@ export const Notifications = () => {
           {Object.entries(groupedRows).map(([band, bandRows]) =>
             bandRows.length > 0 ? (
               <div key={band} className="mt-3">
-                <div className="mt-3.5 mb-1.5 flex items-center gap-2.5 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-[oklch(0.55_0.023_264)] after:h-px after:flex-1 after:bg-[oklch(0.93_0.006_264)]">
+                <div className="mt-3.5 mb-1.5 flex items-center gap-2.5 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-[--ink-3] after:h-px after:flex-1 after:bg-[--border-default]">
                   <span>{band}</span>
                 </div>
                 {bandRows.map((row) => (
@@ -458,7 +467,7 @@ export const Notifications = () => {
           <button
             type="button"
             aria-label="Keyboard shortcuts"
-            className="grid size-7 place-items-center rounded-xl border border-[oklch(0.93_0.006_264)] bg-white text-[oklch(0.55_0.023_264)]"
+            className="grid size-7 place-items-center rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] text-[--ink-3]"
             onClick={() => setShortcutsOpen(true)}
           >
             <CircleHelp className="size-4" />
@@ -468,11 +477,11 @@ export const Notifications = () => {
 
       {shortcutsOpen ? (
         <div
-          className="fixed inset-0 z-[80] grid place-items-center bg-[hsl(0_0%_0%_/_0.18)]"
+          className="fixed inset-0 z-[80] grid place-items-center bg-[--surface-overlay]"
           role="presentation"
         >
           <div
-            className="w-[min(92vw,420px)] rounded-xl border border-[oklch(0.93_0.006_264)] bg-white p-3.5 shadow-[0px_1px_4px_0px_hsl(0_0%_0%_/_0.05)]"
+            className={`${notificationPanel} w-[min(92vw,420px)] p-3.5`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="shortcuts-title"
@@ -480,7 +489,7 @@ export const Notifications = () => {
             <div className="flex items-center justify-between gap-3">
               <h2
                 id="shortcuts-title"
-                className="m-0 text-base text-[oklch(0.18_0_0)]"
+                className="m-0 text-base text-[--ink-1]"
               >
                 Keyboard Shortcuts
               </h2>
@@ -498,9 +507,9 @@ export const Notifications = () => {
               {notificationShortcuts.map(({ key, label }) => (
                 <div
                   key={key}
-                  className="grid grid-cols-[92px_1fr] items-center border-t border-[oklch(0.93_0.006_264)] py-2 text-xs text-[oklch(0.55_0.023_264)]"
+                  className="grid grid-cols-[92px_1fr] items-center border-t border-[--border-default] py-2 text-xs text-[--ink-3]"
                 >
-                  <kbd className="w-fit rounded-md border border-[oklch(0.93_0.006_264)] bg-[oklch(0.967_0.003_264)] px-1.5 py-0.5 font-mono text-[oklch(0.18_0_0)]">
+                  <kbd className="w-fit rounded-[--radius-sm] border border-[--border-default] bg-[--surface-sunken] px-1.5 py-0.5 font-mono text-[--ink-1]">
                     {key}
                   </kbd>
                   <span>{label}</span>
@@ -513,7 +522,7 @@ export const Notifications = () => {
 
       {toast ? (
         <div
-          className="fixed left-1/2 bottom-6 z-[90] -translate-x-1/2 rounded-xl border border-[oklch(0.93_0.006_264)] bg-[oklch(0.18_0_0)] px-3 py-[9px] font-mono text-xs text-white shadow-[0px_1px_4px_0px_hsl(0_0%_0%_/_0.05)]"
+          className={notificationToast}
           role="status"
         >
           {toast}

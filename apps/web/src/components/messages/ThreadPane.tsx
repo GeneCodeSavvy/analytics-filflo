@@ -6,6 +6,7 @@ import { ThreadHeader } from "./ThreadHeader";
 import { SystemMessage } from "./SystemMessage";
 import { UserMessage } from "./UserMessage";
 import { Composer } from "./Composer";
+import { messagePanel, messageSubtlePanel } from "./styles";
 
 type ThreadPaneProps = {
   thread: Thread | undefined;
@@ -34,20 +35,31 @@ export function ThreadPane({
 }: ThreadPaneProps) {
   if (!thread) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Inbox className="size-9" />
-        Select a ticket conversation.
-      </div>
+      <section
+        className={`${messagePanel} grid min-h-0 place-items-center overflow-hidden`}
+      >
+        <div className={`${messageSubtlePanel} px-6 py-8 text-center`}>
+          <Inbox className="mx-auto size-9 text-[--ink-3]" />
+          <p className="mt-3 mb-0 text-[13px] text-[--ink-2]">
+            Select a ticket conversation.
+          </p>
+        </div>
+      </section>
     );
   }
 
   return (
-    <>
+    <section
+      className={`${messagePanel} flex min-h-0 min-w-0 flex-col overflow-hidden`}
+    >
       <ThreadHeader thread={thread} />
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto bg-[--surface-sunken] px-4 py-4"
+      >
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
           {messagesLoading ? (
-            <div className="flex h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="flex h-40 items-center justify-center gap-2 text-[13px] text-[--ink-3]">
               <LoaderCircle className="size-4 animate-spin" />
               Loading conversation
             </div>
@@ -73,6 +85,6 @@ export function ThreadPane({
         onChange={onDraftChange}
         onSend={onSend}
       />
-    </>
+    </section>
   );
 }

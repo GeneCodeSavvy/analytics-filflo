@@ -1,6 +1,12 @@
 import { LoaderCircle, Paperclip, Send } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef } from "react";
 import type { MessageComposerProps } from "../../types/messages";
+import {
+  messageIconButton,
+  messageInput,
+  messageKbd,
+  messagePrimaryButton,
+} from "./styles";
 
 export function Composer({
   value,
@@ -26,8 +32,8 @@ export function Composer({
   };
 
   return (
-    <footer className="border-t border-border bg-white px-5 py-4">
-      <div className="rounded-sm border border-border bg-white shadow-sm focus-within:ring-1 focus-within:ring-zinc-900">
+    <footer className="border-t border-[--border-default] bg-[--surface-card] px-4 py-3">
+      <div className="rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] shadow-[--elev-1] focus-within:border-[--border-focus]">
         <textarea
           ref={textareaRef}
           value={value}
@@ -36,25 +42,26 @@ export function Composer({
           onKeyDown={handleKeyDown}
           placeholder="Reply with ticket context..."
           rows={2}
-          className="max-h-36 min-h-20 w-full resize-none bg-transparent px-3 py-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+          className={`${messageInput} max-h-36 min-h-20 resize-none px-3 py-3 leading-6`}
         />
-        <div className="flex items-center justify-between border-t border-border px-2 py-2">
+        <div className="flex items-center justify-between border-t border-[--border-default] px-2 py-2">
           <button
             type="button"
-            className="inline-flex size-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className={messageIconButton}
             aria-label="Attach file"
           >
             <Paperclip className="size-4" />
           </button>
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              Press ⌘↵ to send
+            <span className="hidden items-center gap-1 text-[12px] text-[--ink-3] sm:inline-flex">
+              <span>Send</span>
+              <kbd className={messageKbd}>⌘↵</kbd>
             </span>
             <button
               type="button"
               onClick={onSend}
               disabled={disabled || sending || value.trim().length === 0}
-              className="inline-flex h-8 items-center gap-2 rounded-sm bg-zinc-900 px-3 text-xs font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
+              className={messagePrimaryButton}
             >
               {sending ? (
                 <LoaderCircle className="size-3.5 animate-spin" />
@@ -66,7 +73,7 @@ export function Composer({
           </div>
         </div>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
+      <p className="mt-2 text-[12px] text-[--ink-3]">
         Use @ to mention, # to reference tickets.
       </p>
     </footer>

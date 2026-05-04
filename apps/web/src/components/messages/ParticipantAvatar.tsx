@@ -9,7 +9,7 @@ export function ParticipantAvatar({
   return (
     <span
       className={cn(
-        "flex size-7 items-center justify-center rounded-full border border-border bg-white text-zinc-600 shadow-sm",
+        "flex size-7 items-center justify-center rounded-full border border-[--border-default] bg-[--surface-card] text-[--ink-2] shadow-[--elev-1]",
         index > 0 && "-ml-2",
       )}
       title={user.name}

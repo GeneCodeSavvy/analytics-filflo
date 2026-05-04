@@ -10,9 +10,9 @@ export function ThreadEvents({ row }: ThreadEventsProps) {
   const { data, isLoading } = useNotificationThreadQuery(row.id);
 
   return (
-    <div className="mb-2.5 ml-[52px] mr-2 overflow-hidden border-l border-[oklch(0.93_0.006_264)]">
+    <div className="mb-2.5 ml-[52px] mr-2 overflow-hidden border-l border-[--border-default]">
       {isLoading ? (
-        <div className="grid grid-cols-[auto_1fr] gap-2 py-[7px] pl-2.5 text-[0.6875rem] text-[oklch(0.55_0.023_264)]">
+        <div className="grid grid-cols-[auto_1fr] gap-2 py-[7px] pl-2.5 text-[0.6875rem] text-[--ink-3]">
           <LoaderCircle className="size-3.5 animate-spin" />
           Loading updates
         </div>
@@ -22,12 +22,12 @@ export function ThreadEvents({ row }: ThreadEventsProps) {
         return (
           <div
             key={event.id}
-            className="grid grid-cols-[auto_1fr] gap-2 py-[7px] pl-2.5 text-[0.6875rem] text-[oklch(0.38_0.01_264)]"
+            className="grid grid-cols-[auto_1fr] gap-2 py-[7px] pl-2.5 text-[0.6875rem] text-[--ink-2]"
           >
             <Icon className="size-3.5" />
             <div>
               <p className="m-0">{event.description}</p>
-              <span className="text-[oklch(0.55_0.023_264)]">
+              <span className="text-[--ink-3]">
                 {event.actor.name} · {relativeTime(event.at)}
               </span>
             </div>

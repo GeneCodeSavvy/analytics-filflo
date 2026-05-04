@@ -14,6 +14,7 @@ import { useMessageWebSocket } from "../../hooks/useMessageWebsocket";
 import { useMessageStore } from "../../stores/useMessageStore";
 import { ThreadList } from "./ThreadList";
 import { ThreadPane } from "./ThreadPane";
+import { messagePage } from "./styles";
 
 export function Messages() {
   const [activeFilter, setActiveFilter] =
@@ -84,6 +85,7 @@ export function Messages() {
 
   const activeThread = activeThreadQuery.data;
   const canSend = Boolean(activeThread?.permissions.canSend);
+  const unreadCount = rows.reduce((total, row) => total + row.unreadCount, 0);
 
   const handleSend = () => {
     if (!activeThreadId || draft.trim().length === 0 || !canSend) return;
@@ -103,22 +105,36 @@ export function Messages() {
   };
 
   return (
-    <main className="app-page-frame messages-page">
-      <div className="app-page-frame-content flex h-full min-h-[calc(100svh-5rem)] overflow-hidden bg-white text-foreground">
-        <ThreadList
-          rows={rows}
-          isLoading={threadListQuery.isLoading}
-          activeFilter={activeFilter}
-          search={search}
-          activeThreadId={activeThreadId}
-          onFilterChange={setActiveFilter}
-          onSearchChange={setSearch}
-          onSelectThread={(id, newOrgId) => {
-            setActiveThreadId(id);
-            setOrgId(newOrgId);
-          }}
-        />
-        <section className="flex min-w-0 flex-1 flex-col bg-muted/20">
+    <main className={messagePage}>
+      <div className="app-page-frame-content flex h-full min-h-[calc(100svh-5rem)] flex-col overflow-hidden">
+        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-[--surface-page] py-3">
+          <div>
+            <h1 className="text-[30px] font-bold leading-none text-[--ink-1]">
+              Messages
+            </h1>
+            <p className="mt-1 text-[13px] text-[--ink-3]">
+              Ticket conversations with {unreadCount} unread updates
+            </p>
+          </div>
+          <div className="rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] px-3 py-2 text-[12px] text-[--ink-2] shadow-[--elev-1]">
+            {rows.length} active threads
+          </div>
+        </header>
+
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(320px,380px)_minmax(0,1fr)] gap-4 py-4 max-[900px]:grid-cols-1">
+          <ThreadList
+            rows={rows}
+            isLoading={threadListQuery.isLoading}
+            activeFilter={activeFilter}
+            search={search}
+            activeThreadId={activeThreadId}
+            onFilterChange={setActiveFilter}
+            onSearchChange={setSearch}
+            onSelectThread={(id, newOrgId) => {
+              setActiveThreadId(id);
+              setOrgId(newOrgId);
+            }}
+          />
           <ThreadPane
             thread={activeThread}
             messages={messages}
@@ -133,7 +149,7 @@ export function Messages() {
             }
             onSend={handleSend}
           />
-        </section>
+        </div>
       </div>
     </main>
   );
