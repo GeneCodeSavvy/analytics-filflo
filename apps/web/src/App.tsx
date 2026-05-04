@@ -6,7 +6,7 @@ import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Tickets } from "./components/Tickets";
 import { Messages } from "./components/Messages";
 import { Notifications } from "./components/Notifications";
-import { Teams } from "./components/Team";
+import { Teams } from "./components/teams";
 import { InvitationAccept } from "./components/InvitationAccept";
 import { SignUpPage } from "./components/SignUpPage";
 import { SignInPage } from "./components/SignInPage";
