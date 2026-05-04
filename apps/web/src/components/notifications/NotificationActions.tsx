@@ -18,7 +18,7 @@ export function NotificationActions({
 
   if (row.type === "TICKET_INVITATION") {
     return (
-      <div className="notifications-actions notifications-actions-visible">
+      <div className="flex translate-y-0 items-center gap-1.5 pr-2 opacity-100 transition-[opacity,transform] duration-150 max-[720px]:col-start-2 max-[720px]:flex-wrap max-[720px]:justify-start max-[720px]:pt-0.5 max-[720px]:pr-0">
         <Button
           type="button"
           variant="ghost"
@@ -48,8 +48,8 @@ export function NotificationActions({
   return (
     <div
       className={cn(
-        "notifications-actions",
-        (visible || alwaysVisible) && "notifications-actions-visible",
+        "flex translate-y-0.5 items-center gap-1.5 pr-2 opacity-0 transition-[opacity,transform] duration-150 group-hover:translate-y-0 group-hover:opacity-100 max-[720px]:col-start-2 max-[720px]:translate-y-0 max-[720px]:flex-wrap max-[720px]:justify-start max-[720px]:pt-0.5 max-[720px]:pr-0 max-[720px]:opacity-100",
+        (visible || alwaysVisible) && "translate-y-0 opacity-100",
       )}
     >
       <Button
@@ -69,7 +69,7 @@ export function NotificationActions({
             : "Open"}
       </Button>
       {row.type === "REVIEW_REQUESTED" ? (
-        <div className="notifications-snooze-wrap">
+        <div className="relative">
           <Button
             type="button"
             variant="ghost"

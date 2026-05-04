@@ -206,17 +206,20 @@ export const Notifications = () => {
 
   return (
     <main
-      className="app-page-frame notifications-page"
+      className="app-page-frame bg-white font-mono text-[oklch(0.18_0_0)]"
       onKeyDown={handleKeyboard}
     >
-      <div className="app-page-frame-content notifications-shell">
-        <header className="notifications-header">
+      <div className="app-page-frame-content">
+        <header className="flex items-center justify-between gap-4 pt-1.5 pb-4 max-[720px]:items-start">
           <div>
-            <h1>
-              Notifications <span>({unreadCount} unread)</span>
+            <h1 className="m-0 text-xl/[1.2] font-semibold text-[oklch(0.18_0_0)]">
+              Notifications{" "}
+              <span className="text-xs font-medium text-[oklch(0.55_0.023_264)]">
+                ({unreadCount} unread)
+              </span>
             </h1>
           </div>
-          <div className="notifications-header-actions">
+          <div className="flex items-center gap-1.5">
             {rows.length > 0 ? (
               <Button
                 type="button"
@@ -236,31 +239,43 @@ export const Notifications = () => {
           </div>
         </header>
 
-        <div className="notifications-sticky">
-          <nav className="notifications-tabs" aria-label="Notification tabs">
+        <div className="sticky top-[-28px] z-20 -mx-0.5 bg-white px-0.5">
+          <nav
+            className="flex gap-[18px] border-b border-[oklch(0.93_0.006_264)]"
+            aria-label="Notification tabs"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 className={cn(
-                  activeTab === tab.key && "notifications-tab-active",
+                  "inline-flex cursor-pointer items-center gap-1.5 border-0 border-b border-transparent bg-transparent py-2.5 pt-2.5 pb-[9px] text-xs text-[oklch(0.55_0.023_264)]",
+                  activeTab === tab.key &&
+                    "border-b-[oklch(0.67_0.14_48.5)] text-[oklch(0.18_0_0)]",
                 )}
                 onClick={() => updateFilters({ tab: tab.key })}
               >
                 {tab.label}
-                {tab.key === "inbox" ? <span>{unreadCount}</span> : null}
+                {tab.key === "inbox" ? (
+                  <span className="rounded-xl border border-[oklch(0.93_0.006_264)] px-1.5 text-[0.625rem]/[1.4]">
+                    {unreadCount}
+                  </span>
+                ) : null}
               </button>
             ))}
           </nav>
 
           <div
             className={cn(
-              "notifications-bulk",
-              selectedCount > 0 && "notifications-bulk-open",
+              "grid max-h-0 grid-cols-[1fr_auto] items-center gap-3 overflow-visible opacity-0 -translate-y-1.5 transition-[max-height,opacity,transform,padding] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-[720px]:grid-cols-1 max-[720px]:items-start",
+              selectedCount > 0 &&
+                "mt-2 max-h-12 translate-y-0 rounded-xl border border-[oklch(0.93_0.006_264)] bg-[oklch(0.967_0.003_264)] px-2 py-[7px] opacity-100 shadow-[0px_1px_4px_0px_hsl(0_0%_0%_/_0.05)]",
             )}
           >
-            <span>{selectedCount} selected</span>
-            <div>
+            <span className="text-xs text-[oklch(0.18_0_0)]">
+              {selectedCount} selected
+            </span>
+            <div className="flex items-center gap-1.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -290,7 +305,7 @@ export const Notifications = () => {
               >
                 Mark done
               </Button>
-              <div className="notifications-snooze-wrap">
+              <div className="relative">
                 <Button
                   type="button"
                   variant="ghost"
@@ -312,14 +327,18 @@ export const Notifications = () => {
             </div>
           </div>
 
-          <div className="notifications-filters">
+          <div className="flex items-center gap-1.5 overflow-x-auto py-2.5 pb-3 [scrollbar-width:thin]">
             {filterChips.map((chip) => {
               const active = selectedTypesFromChip(chip.types, activeTypes);
               return (
                 <button
                   key={chip.label}
                   type="button"
-                  className={cn(active && "notifications-filter-active")}
+                  className={cn(
+                    "shrink-0 cursor-pointer rounded-xl border border-[oklch(0.93_0.006_264)] bg-white px-2 py-1 text-[0.6875rem]/[1.4] text-[oklch(0.38_0.01_264)]",
+                    active &&
+                      "bg-[oklch(0.967_0.003_264)] text-[oklch(0.18_0_0)]",
+                  )}
                   onClick={() => {
                     const next = active
                       ? activeTypes.filter((type) => !chip.types.includes(type))
@@ -334,7 +353,7 @@ export const Notifications = () => {
             {hasFilters ? (
               <button
                 type="button"
-                className="notifications-clear"
+                className="shrink-0 cursor-pointer rounded-xl border border-transparent bg-white px-2 py-1 text-[0.6875rem]/[1.4] text-[oklch(0.67_0.14_48.5)]"
                 onClick={() => updateFilters({ type: [] })}
               >
                 Clear filters
@@ -343,11 +362,11 @@ export const Notifications = () => {
           </div>
         </div>
 
-        <div ref={listTopRef} className="notifications-list-top" />
+        <div ref={listTopRef} />
         {newRowsPending > 0 ? (
           <button
             type="button"
-            className="notifications-new-pill"
+            className="mx-auto mt-0.5 mb-3 block cursor-pointer rounded-xl border border-[oklch(0.85_0.055_70)] bg-[oklch(0.97_0.025_74)] px-2.5 py-[5px] text-[0.6875rem] text-[oklch(0.42_0.08_52)]"
             onClick={() => {
               setNewRowsPending(0);
               listTopRef.current?.scrollIntoView({
@@ -361,13 +380,13 @@ export const Notifications = () => {
         ) : null}
 
         {isLoading ? (
-          <div className="notifications-loading">
+          <div className="grid min-h-[280px] place-items-center text-center text-[oklch(0.55_0.023_264)]">
             <LoaderCircle className="size-4 animate-spin" /> Loading
             notifications
           </div>
         ) : null}
         {isError ? (
-          <div className="notifications-error">
+          <div className="grid min-h-[280px] place-items-center text-center text-[oklch(0.55_0.023_264)]">
             Could not load notifications from the API.
           </div>
         ) : null}
@@ -380,11 +399,11 @@ export const Notifications = () => {
           />
         ) : null}
 
-        <section className="notifications-list" aria-label="Notification list">
+        <section aria-label="Notification list">
           {Object.entries(groupedRows).map(([band, bandRows]) =>
             bandRows.length > 0 ? (
-              <div key={band} className="notifications-section">
-                <div className="notifications-section-label">
+              <div key={band} className="mt-3">
+                <div className="mt-3.5 mb-1.5 flex items-center gap-2.5 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-[oklch(0.55_0.023_264)] after:h-px after:flex-1 after:bg-[oklch(0.93_0.006_264)]">
                   <span>{band}</span>
                 </div>
                 {bandRows.map((row) => (
@@ -435,10 +454,11 @@ export const Notifications = () => {
           )}
         </section>
 
-        <footer className="notifications-footer">
+        <footer className="flex justify-end pt-[18px]">
           <button
             type="button"
             aria-label="Keyboard shortcuts"
+            className="grid size-7 place-items-center rounded-xl border border-[oklch(0.93_0.006_264)] bg-white text-[oklch(0.55_0.023_264)]"
             onClick={() => setShortcutsOpen(true)}
           >
             <CircleHelp className="size-4" />
@@ -447,15 +467,23 @@ export const Notifications = () => {
       </div>
 
       {shortcutsOpen ? (
-        <div className="notifications-dialog-backdrop" role="presentation">
+        <div
+          className="fixed inset-0 z-[80] grid place-items-center bg-[hsl(0_0%_0%_/_0.18)]"
+          role="presentation"
+        >
           <div
-            className="notifications-dialog"
+            className="w-[min(92vw,420px)] rounded-xl border border-[oklch(0.93_0.006_264)] bg-white p-3.5 shadow-[0px_1px_4px_0px_hsl(0_0%_0%_/_0.05)]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="shortcuts-title"
           >
-            <div className="notifications-dialog-header">
-              <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2
+                id="shortcuts-title"
+                className="m-0 text-base text-[oklch(0.18_0_0)]"
+              >
+                Keyboard Shortcuts
+              </h2>
               <Button
                 type="button"
                 variant="ghost"
@@ -466,10 +494,15 @@ export const Notifications = () => {
                 <X />
               </Button>
             </div>
-            <div className="notifications-shortcuts">
+            <div className="mt-3.5 grid gap-0.5">
               {notificationShortcuts.map(({ key, label }) => (
-                <div key={key}>
-                  <kbd>{key}</kbd>
+                <div
+                  key={key}
+                  className="grid grid-cols-[92px_1fr] items-center border-t border-[oklch(0.93_0.006_264)] py-2 text-xs text-[oklch(0.55_0.023_264)]"
+                >
+                  <kbd className="w-fit rounded-md border border-[oklch(0.93_0.006_264)] bg-[oklch(0.967_0.003_264)] px-1.5 py-0.5 font-mono text-[oklch(0.18_0_0)]">
+                    {key}
+                  </kbd>
                   <span>{label}</span>
                 </div>
               ))}
@@ -479,7 +512,10 @@ export const Notifications = () => {
       ) : null}
 
       {toast ? (
-        <div className="notifications-toast" role="status">
+        <div
+          className="fixed left-1/2 bottom-6 z-[90] -translate-x-1/2 rounded-xl border border-[oklch(0.93_0.006_264)] bg-[oklch(0.18_0_0)] px-3 py-[9px] font-mono text-xs text-white shadow-[0px_1px_4px_0px_hsl(0_0%_0%_/_0.05)]"
+          role="status"
+        >
           {toast}
         </div>
       ) : null}
