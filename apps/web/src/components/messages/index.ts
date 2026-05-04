@@ -1,1 +1,11 @@
-export { Messages } from "../Messages";
+export { Messages } from "./Messages";
+export { Badge } from "./Badge";
+export { ParticipantAvatar } from "./ParticipantAvatar";
+export { ThreadRow } from "./ThreadRow";
+export { SystemMessage } from "./SystemMessage";
+export { FileAttachment } from "./FileAttachment";
+export { UserMessage } from "./UserMessage";
+export { ThreadHeader } from "./ThreadHeader";
+export { Composer } from "./Composer";
+export { ThreadList } from "./ThreadList";
+export { ThreadPane } from "./ThreadPane";
