@@ -1,7 +1,18 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Info, Search, UserPlus } from "lucide-react";
-import type { ModalState, RoleFilter, SortDirection, SortKey, TeamTab } from "../../types/teams";
-import type { PreviewRole } from "../../types/teams";
+import {
+  ChevronDown,
+  ChevronRight,
+  Info,
+  Search,
+  UserPlus,
+} from "lucide-react";
+import type {
+  ModalState,
+  RoleFilter,
+  SortDirection,
+  SortKey,
+  TeamTab,
+} from "../../types/teams";
 import {
   filterTeamRows,
   groupRowsByOrg,
@@ -24,9 +35,10 @@ import { InviteModal } from "./InviteModal";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { DetailDrawer } from "./DetailDrawer";
 import { PendingInvitations } from "./PendingInvitations";
+import { useAuthState } from "@/stores/useAuthStore";
 
 export const Teams = () => {
-  const [actorRole, setActorRole] = useState<PreviewRole>("SUPER_ADMIN");
+  const actorRole = useAuthState((state) => state.user.role);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
@@ -95,36 +107,22 @@ export const Teams = () => {
 
   return (
     <div className="min-h-full -m-[2.5rem] px-6 pb-8 bg-[#FAFAF8] text-[#1A1917] font-[Geist_Mono,ui-monospace,monospace] tracking-[0] text-[13px] [&_button]:cursor-pointer [&_*]:box-border">
-      <div className="sticky top-0 z-20 flex items-center justify-end gap-3 py-2.5 border-b border-[#E8E6E1] bg-[rgba(250,250,248,0.94)] backdrop-blur-[10px] text-[#78756E] text-xs">
-        <span>Preview role</span>
-        <div className="flex gap-0.5 p-[3px] border border-[#E8E6E1] rounded-[7px] bg-white">
-          {roles.map((role) => (
-            <button
-              className={
-                actorRole === role
-                  ? "border-0 rounded-[5px] px-[9px] py-[5px] bg-[#F5F0E6] text-[#1A1917]"
-                  : "border-0 bg-transparent text-[#78756E] rounded-[5px] px-[9px] py-[5px]"
-              }
-              key={role}
-              onClick={() => setActorRole(role)}
-              type="button"
-            >
-              {roleLabels[role]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <header className="sticky top-[43px] z-10 grid grid-cols-[1fr_auto] gap-3 items-start pt-6 pb-4 bg-[rgba(250,250,248,0.94)] backdrop-blur-[10px]">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="m-0 text-[30px] leading-none font-bold">Teams</h1>
-            <span className="border border-[#E8E6E1] rounded-full bg-white px-2 py-1 text-[#78756E] text-xs">
-              {memberQuery.data?.total ?? members.length} members
-            </span>
+            <h1 className="m-0 text-[30px] leading-none font-bold text-black!">
+              Teams
+            </h1>
+            {!superAdminView && (
+              <span className="border border-[#E8E6E1] rounded-full bg-white px-2 py-1 text-[#78756E] text-xs">
+                {memberQuery.data?.total ?? members.length} members
+              </span>
+            )}
           </div>
           {moderatorView ? (
-            <p className="mt-2 mb-0 text-[#78756E]">{orgs[0]?.org.name ?? "Your organization"}</p>
+            <p className="mt-2 mb-0 text-[#78756E]">
+              {orgs[0]?.org.name ?? "Your organization"}
+            </p>
           ) : null}
         </div>
         <div className="flex gap-2 items-center">
@@ -176,7 +174,10 @@ export const Teams = () => {
         ) : null}
       </header>
 
-      <nav className="flex gap-1 border-b border-[#E8E6E1] mb-4" aria-label="Team tabs">
+      <nav
+        className="flex gap-1 border-b border-[#E8E6E1] mb-4"
+        aria-label="Team tabs"
+      >
         <button
           className={`border-0 bg-transparent px-2.5 py-3 border-b-2 -mb-px ${activeTab === "members" ? "text-[#1A1917] border-b-[#C4642A]" : "text-[#78756E] border-b-transparent"}`}
           onClick={() => setActiveTab("members")}
@@ -249,7 +250,9 @@ export const Teams = () => {
                       showCheckboxes
                       sortDirection={sortDirection}
                       sortKey={sortKey}
-                      onRemove={(member) => setModal({ type: "remove", member })}
+                      onRemove={(member) =>
+                        setModal({ type: "remove", member })
+                      }
                       onRole={(member, nextRole) =>
                         setModal({ type: "role", member, nextRole })
                       }

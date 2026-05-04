@@ -27,22 +27,15 @@ export const TeamInvitationListParamsSchema = z.object({
   status: InvitationStatusSchema.optional(),
 });
 
-export const MemberPermissionsSchema = z.object({
-  canChangeRole: z.boolean(),
-  canRemove: z.boolean(),
-});
-
 export const MemberRowSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
   avatarUrl: z.string().optional(),
   role: UserRoleSchema,
-  orgId: z.string(),
   joinedAt: z.string(),
   lastActiveAt: z.string().nullable().optional(),
   isInactive: z.boolean(),
-  permissions: MemberPermissionsSchema,
 });
 
 export const MemberDetailSchema = MemberRowSchema.extend({

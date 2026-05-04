@@ -24,6 +24,12 @@ import type {
 } from "../types/teams";
 
 export const teamsApi = {
+  /**  Allowed for all, returns the members of an organization
+   *  SuperAdmin - allowed request for members of any organization
+   *  Admin - allowed request for members of any organization
+   *  Moderators - allowed request for members of only their organization
+   *  Users - allowed request for members of only their organization
+   */
   getMembers: async (
     params: TeamMemberListParams,
     signal?: AbortSignal,
@@ -35,6 +41,12 @@ export const teamsApi = {
     return TeamMemberListResponseSchema.parse(data);
   },
 
+  /**  Allowed for all, returns the members of an organization
+   *  SuperAdmin - allowed request for members of any organization
+   *  Admin - allowed request for members of any organization
+   *  Moderators - allowed request for members of only their organization
+   *  Users - allowed request for members of only their organization
+   */
   getMember: async (
     userId: string,
     params?: RemoveMemberParams,
@@ -47,6 +59,10 @@ export const teamsApi = {
     return MemberDetailSchema.parse(data);
   },
 
+  /** Only Allowed for Moderators, and SuperAdmins
+   *  SuperAdmins - promote and demote anyone in any organization
+   *  Moderators - promote and demote others in their organization
+   */
   changeRole: (
     userId: string,
     payload: RoleChangePayload,
@@ -55,14 +71,28 @@ export const teamsApi = {
       .patch<MemberDetail>(`/teams/members/${userId}/role`, payload)
       .then((data) => MemberDetailSchema.parse(data)),
 
+  /** Only Allowed for Moderators, and SuperAdmins
+   *  SuperAdmins - remove anyone in any organization
+   *  Moderators - remove others in their organization
+   */
   removeMember: (userId: string, params?: RemoveMemberParams): Promise<void> =>
     api.delete(`/teams/members/${userId}`, { params }),
 
+  /** Only Allowed for Moderators, and SuperAdmins
+   *  SuperAdmins - promote, demote, or remove anyone in any organization
+   *  Moderators - promote, demote, or remove others in their organization
+   */
   bulkMembers: (payload: BulkMemberOp): Promise<BulkMemberResult> =>
     api
       .post<BulkMemberResult>("/teams/members/bulk", payload)
       .then((data) => BulkMemberResultSchema.parse(data)),
 
+  /**  Allowed for all, returns the members of an organization
+   *  SuperAdmin - allowed request for members of any organization
+   *  Admin - allowed request for members of any organization
+   *  Moderators - allowed request for members of only their organization
+   *  Users - allowed request for members of only their organization
+   */
   getMemberHistory: async (
     userId: string,
     params: TeamAuditParams,
@@ -75,6 +105,12 @@ export const teamsApi = {
     return AuditEntrySchema.array().parse(data);
   },
 
+  /**  Allowed for all, returns the members of an organization
+   *  SuperAdmin - allowed request for members of any organization
+   *  Admin - allowed request for members of any organization
+   *  Moderators - allowed request for members of only their organization
+   *  Users - allowed request for members of only their organization
+   */
   getInvitations: async (
     params: TeamInvitationListParams,
     signal?: AbortSignal,
@@ -86,17 +122,31 @@ export const teamsApi = {
     return InvitationSchema.array().parse(data);
   },
 
+  /** Only Allowed for Moderators, and SuperAdmins
+   *  SuperAdmins - invite anyone in any organization
+   *  Moderators - invite others in their organization
+   */
   invite: (payload: InvitePayload): Promise<Invitation> =>
     api
       .post<Invitation>("/teams/invitations", payload)
       .then((data) => InvitationSchema.parse(data)),
 
+  /** Only Allowed for Moderators, and SuperAdmins
+   *  SuperAdmins - invite anyone in any organization
+   *  Moderators - invite others in their organization
+   */
   resendInvitation: (id: string): Promise<void> =>
     api.post(`/teams/invitations/${id}/resend`),
 
+  /** Only Allowed for Moderators, and SuperAdmins
+   *  SuperAdmins - cancel invite anyone in any organization
+   *  Moderators - cancel invite others in their organization
+   */
   cancelInvitation: (id: string): Promise<void> =>
     api.delete(`/teams/invitations/${id}`),
 
+  /** Only Allowed for Admins and SuperAdming
+   */
   getOrgs: async (signal?: AbortSignal): Promise<OrgSummary[]> => {
     const data = await api.get<OrgSummary[]>("/teams/orgs", { signal });
     return OrgSummarySchema.array().parse(data);

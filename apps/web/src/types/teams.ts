@@ -39,7 +39,6 @@ export type {
 
 import type { Invitation, MemberRow } from "@shared/schema/teams";
 
-export type PreviewRole = MemberRow["role"];
 export type SortKey = "member" | "role" | "lastActive" | "joined";
 export type SortDirection = "asc" | "desc";
 export type TeamTab = "members" | "pending";
