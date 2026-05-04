@@ -38,3 +38,4 @@ yarn-error.log*
 *.pem
 filflo-api.postman_collection.json
 /.pnpm-store/v11
+/.claude

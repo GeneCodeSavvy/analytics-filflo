@@ -40,6 +40,18 @@ import { PendingInvitations } from "./PendingInvitations";
 import { useAuthState } from "@/stores/useAuthStore";
 import { CreateOrgModal } from "./CreateOrgModal";
 
+const pageShell =
+  "app-page-frame bg-[--surface-page] font-mono text-[13px] text-[--ink-1] tracking-0 [&_*]:box-border [&_button]:cursor-pointer";
+const contentShell = "app-page-frame-content min-h-full";
+const controlClass =
+  "h-9 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-3 text-[13px] text-[--ink-1] outline-none transition-colors focus:border-[--border-focus]";
+const secondaryButton =
+  "inline-flex h-9 items-center justify-center gap-2 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-3 text-[13px] font-medium text-[--ink-1] transition-colors hover:bg-[--surface-sunken]";
+const primaryButton =
+  "inline-flex h-9 items-center justify-center gap-2 rounded-[--radius-sm] border border-transparent bg-[--action-bg] px-3 text-[13px] font-medium text-[--action-fg] transition-colors hover:bg-[--action-bg-hover]";
+const cardClass =
+  "rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] shadow-[--elev-1]";
+
 export const Teams = () => {
   const actorRole = useAuthState((state) => state.user?.role);
   if (!actorRole) throw new Error("Authentication is not complete");
@@ -112,38 +124,38 @@ export const Teams = () => {
   const allExpanded = orgs.length > 0 && expandedOrgIds.length >= orgs.length;
 
   return (
-    <div className="app-page-frame teams-page">
-      <div className="app-page-frame-content min-h-full bg-[#FAFAF8] text-[#1A1917] font-[Geist_Mono,ui-monospace,monospace] tracking-[0] text-[13px] [&_button]:cursor-pointer [&_*]:box-border">
-        <header className="sticky top-[43px] z-10 grid grid-cols-[1fr_auto] gap-3 items-start pt-6 pb-4 bg-[rgba(250,250,248,0.94)] backdrop-blur-[10px]">
+    <div className={pageShell}>
+      <div className={contentShell}>
+        <header className="sticky top-0 z-[--z-overlay] grid min-h-16 grid-cols-[1fr_auto] items-center gap-4 border-b border-[--border-default] bg-[--surface-page]/95 py-3 backdrop-blur">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="m-0 text-[30px] leading-none font-bold text-black!">
+              <h1 className="m-0 text-[30px] leading-none font-bold text-[--ink-1]">
                 Teams
               </h1>
               {!superAdminView && (
-                <span className="border border-[#E8E6E1] rounded-full bg-white px-2 py-1 text-[#78756E] text-xs">
+                <span className="rounded-[--radius-pill] border border-[--border-default] bg-[--surface-card] px-2 py-1 text-xs text-[--ink-3]">
                   {memberQuery.data?.total ?? members.length} members
                 </span>
               )}
             </div>
             {moderatorView ? (
-              <p className="mt-2 mb-0 text-[#78756E]">
+              <p className="mt-2 mb-0 text-[--ink-3]">
                 {orgs[0]?.org.name ?? "Your organization"}
               </p>
             ) : null}
           </div>
           <div className="flex gap-2 items-center">
-            <label className="w-60 flex items-center gap-2 border border-[#E8E6E1] rounded-md bg-white px-2.5 text-[#A8A49C]">
+            <label className="flex h-9 w-72 items-center gap-2 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-2.5 text-[--ink-4]">
               <Search size={16} />
               <input
-                className="w-full border-0 outline-none bg-transparent py-[9px] text-[#1A1917]"
+                className="w-full border-0 bg-transparent py-2 text-[--ink-1] outline-none placeholder:text-[--ink-4]"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search members..."
               />
             </label>
             <select
-              className="border border-[#E8E6E1] rounded-md bg-white text-[#1A1917] px-2.5 py-[9px] outline-[#C4642A]"
+              className={controlClass}
               value={roleFilter}
               onChange={(event) =>
                 setRoleFilter(event.target.value as RoleFilter)
@@ -158,7 +170,7 @@ export const Teams = () => {
             </select>
             {canInvite ? (
               <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-md border border-transparent px-3 py-[9px] transition-[background,box-shadow,transform] duration-150 bg-[#C4642A] text-white hover:bg-[#A8521E]"
+                className={primaryButton}
                 onClick={() => openInviteModal()}
                 type="button"
               >
@@ -167,7 +179,7 @@ export const Teams = () => {
             ) : null}
             {superAdminView ? (
               <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-md border border-[#E8E6E1] bg-white px-3 py-[9px] text-[#1A1917] transition-[background,box-shadow,transform] duration-150 hover:bg-[#F5F3EE]"
+                className={secondaryButton}
                 onClick={() => setCreateOrgOpen(true)}
                 type="button"
               >
@@ -177,7 +189,7 @@ export const Teams = () => {
           </div>
           {superAdminView ? (
             <button
-              className="col-start-2 border-0 bg-transparent text-[#C4642A] p-0 text-right"
+              className="col-start-2 border-0 bg-transparent p-0 text-right text-[--action-tint-fg]"
               onClick={() =>
                 allExpanded
                   ? collapseAllOrgs()
@@ -191,18 +203,18 @@ export const Teams = () => {
         </header>
 
         <nav
-          className="flex gap-1 border-b border-[#E8E6E1] mb-4"
+          className="mb-4 flex gap-1 border-b border-[--border-default]"
           aria-label="Team tabs"
         >
           <button
-            className={`border-0 bg-transparent px-2.5 py-3 border-b-2 -mb-px ${activeTab === "members" ? "text-[#1A1917] border-b-[#C4642A]" : "text-[#78756E] border-b-transparent"}`}
+            className={`-mb-px border-0 border-b-2 bg-transparent px-2.5 py-3 ${activeTab === "members" ? "border-b-[--action-bg] text-[--ink-1]" : "border-b-transparent text-[--ink-3]"}`}
             onClick={() => setActiveTab("members")}
             type="button"
           >
             Members ({members.length})
           </button>
           <button
-            className={`border-0 bg-transparent px-2.5 py-3 border-b-2 -mb-px ${activeTab === "pending" ? "text-[#1A1917] border-b-[#C4642A]" : "text-[#78756E] border-b-transparent"}`}
+            className={`-mb-px border-0 border-b-2 bg-transparent px-2.5 py-3 ${activeTab === "pending" ? "border-b-[--action-bg] text-[--ink-1]" : "border-b-transparent text-[--ink-3]"}`}
             onClick={() => setActiveTab("pending")}
             type="button"
           >
@@ -211,7 +223,7 @@ export const Teams = () => {
         </nav>
 
         {adminView && activeTab === "members" ? (
-          <div className="flex gap-2.5 items-center border border-[#E8E6E1] rounded-lg bg-[#F5F0E6] text-[#6B5B3E] px-4 py-3.5 mb-4">
+          <div className="mb-4 flex items-center gap-2.5 rounded-[--radius-md] border border-[--status-warn-border] bg-[--status-warn-bg] px-4 py-3 text-[--status-warn-fg]">
             <Info size={16} />
             You have view-only access to team membership. Contact a Super Admin
             to request changes.
@@ -232,11 +244,11 @@ export const Teams = () => {
                 .map((row) => row.id);
               return (
                 <section
-                  className="border border-[#E8E6E1] rounded-lg bg-white shadow-[0_1px_3px_rgba(26,25,23,0.06),0_1px_2px_rgba(26,25,23,0.04)]"
+                  className={cardClass}
                   key={org.org.id}
                 >
                   <button
-                    className="w-full grid grid-cols-[auto_auto_1fr_auto] items-center gap-2.5 border-0 border-b border-[#E8E6E1] bg-white px-4 py-3.5 text-left"
+                    className="grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-2.5 border-0 border-b border-[--border-default] bg-[--surface-card] px-4 py-3 text-left"
                     onClick={() => toggleOrgExpanded(org.org.id)}
                     type="button"
                   >
@@ -246,9 +258,9 @@ export const Teams = () => {
                       <ChevronRight size={16} />
                     )}
                     <strong>{org.org.name}</strong>
-                    <span className="text-[#A8A49C]">{orgStats(rows)}</span>
+                    <span className="text-[--ink-4]">{orgStats(rows)}</span>
                     <a
-                      className="text-[#78756E] no-underline"
+                      className="text-[--ink-3] no-underline"
                       onClick={(event) => event.stopPropagation()}
                     >
                       Manage org
@@ -280,15 +292,15 @@ export const Teams = () => {
               );
             })}
             {!orgs.length ? (
-              <div className="border border-[#E8E6E1] rounded-lg bg-white shadow-[0_1px_3px_rgba(26,25,23,0.06),0_1px_2px_rgba(26,25,23,0.04)]">
-                <div className="flex min-h-[120px] flex-col items-center justify-center gap-1.5 text-[#78756E] text-center">
+              <div className={cardClass}>
+                <div className="flex min-h-[120px] flex-col items-center justify-center gap-1.5 text-center text-[--ink-3]">
                   Organizations will appear when the backend returns team data.
                 </div>
               </div>
             ) : null}
           </div>
         ) : (
-          <div className="border border-[#E8E6E1] rounded-lg bg-white shadow-[0_1px_3px_rgba(26,25,23,0.06),0_1px_2px_rgba(26,25,23,0.04)]">
+          <div className={cardClass}>
             <MemberTable
               orgs={orgs}
               query={deferredSearch}
@@ -306,7 +318,7 @@ export const Teams = () => {
         )}
 
         {memberQuery.isError ? (
-          <div className="mt-3.5 border border-[#E8E6E1] rounded-lg bg-white p-3 text-[#B83A2A]">
+          <div className="mt-3.5 rounded-[--radius-md] border border-[--status-danger-border] bg-[--status-danger-bg] p-3 text-[--status-danger-fg]">
             Unable to load members yet. The UI is ready for the backend
             response.
           </div>

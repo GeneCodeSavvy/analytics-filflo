@@ -18,6 +18,25 @@ Principles:
 - **Borders do the heavy lifting.** Shadows stay near-invisible. A 1px `#E8E6E1` line separates almost everything.
 - **Density is monospace-grid.** 13px / 1.45 line-height baseline. Everything aligns to a 4px sub-grid.
 
+### 1.1 Page Shell And Heading Contract
+
+Every authenticated page uses the same shell rhythm:
+
+- Outer page: `app-page-frame bg-[--surface-page] text-[--ink-1] font-mono`.
+- Inner page: `app-page-frame-content max-w-[1440px]`.
+- Header: first visible row inside the content, `min-h-16`, `border-b border-[--border-default]`, and enough horizontal breathing room for tools.
+- H1: `text-[30px] leading-none font-bold text-[--ink-1]`. Do not use oversized pale headings or page-specific color opacity.
+- Header actions sit on the right in the same row. If a page has both view tabs and filters, tabs and filters are two separate rows below the heading.
+- Empty states sit inside the page content grid, not floating in large unbounded whitespace. Use `text-[--ink-3]` for body copy and `text-[--ink-1]` for the empty-state title.
+
+The current target pages apply these specific corrections:
+
+- **Dashboard:** card/chart surfaces must read at normal contrast. Metrics may use `font-[--font-sans]`; everything else stays mono. Trend and donut charts use the shared chart/status tokens instead of pale ad-hoc lines.
+- **Tickets:** view tabs and filters are two rows. Table header and cells share the same column template. Priority/status strips are at least 4px wide and use status tokens.
+- **Messages:** treat as a ticket-context work queue, not a consumer chat app. It uses the same page header and table/inbox density as tickets.
+- **Notifications:** no raw `oklch()` utilities. Use tokenized warm stone and ember states.
+- **Teams:** one page background only. Org/member cards are card surfaces on that page background, with reduced top whitespace.
+
 ---
 
 ## 2. Tokens
@@ -336,7 +355,7 @@ How current files translate. Each page must be reduced to **zero hardcoded color
 - Move all `notifications-*`, `dashboard-*`, `tickets-*` page-scoped CSS into per-component Tailwind utilities consuming the new tokens. (Already done for teams.)
 - Preserve `@theme inline { … }` but rewrite to map each Tailwind utility to a semantic token (e.g. `--color-background: var(--surface-page)`, `--color-foreground: var(--ink-1)`, `--color-primary: var(--action-bg)`, `--color-border: var(--border-default)`).
 
-### 4.2 Teams (already Tailwind-converted)
+### 4.2 Teams
 
 Replace the hardcoded hex pass it's running on now:
 
@@ -355,14 +374,18 @@ Replace the hardcoded hex pass it's running on now:
 | `RolePill` color records in `lib/teamsComponent.ts` | swap to `--role-{role}-{bg/fg/border}` tokens |
 | `shadow-[0_1px_3px_rgba(26,25,23,0.06),...]`   | `shadow-[--elev-1]`           |
 
-### 4.3 Tickets (`.tickets-*`)
+### 4.3 Tickets
 
-Already partially correct (uses `var(--primary)`, `var(--border)`, etc.). After §4.1 rewrites those root vars, tickets becomes coherent automatically. Two tasks remain:
+Tickets is a dense operator table, so layout accuracy matters more than decorative cards.
 
-1. Drop the hardcoded `font: 13px/1 var(--font-sans)` overrides where `--font-sans` is currently set to Geist Mono — once `--font-mono` is the default, those become redundant.
-2. Replace `--radius-sm: calc(var(--radius) * 0.6)` shadcn chain with explicit `--radius-sm: 6px` etc. (matches §2.5).
+1. Header row: title, search, primary action.
+2. View row: saved/default views only.
+3. Filter row: status/priority/category/assignee/date/grouping/density controls.
+4. Table row template must be shared by header and body. Do not hand-tune header/cell widths separately.
+5. Priority strip is a visible left rail (`w-1` minimum), not a hairline.
+6. Repeated Tailwind strings live in `apps/web/src/components/tickets/styles.ts`.
 
-### 4.4 Notifications (`.notifications-*`)
+### 4.4 Notifications
 
 Heaviest lift. Currently 600+ lines of hand-rolled CSS with inline `oklch()` and pixel rems mixed.
 
@@ -371,14 +394,23 @@ Heaviest lift. Currently 600+ lines of hand-rolled CSS with inline `oklch()` and
 - The cool blue-gray cast (`oklch(... 264)`) must shift to warm stone — that is a deliberate aesthetic correction.
 - Replace `font-family: "Geist Mono", ...` declarations with the global mono default.
 
-### 4.5 Dashboard (`.dashboard-*`)
+### 4.5 Dashboard
 
 - Page bg `#FAFAF8` → `--surface-page`. Card border `#E8E6E0` → `--border-default`.
 - Keep Inter Variable as the *opt-in* font for dashboard hero metrics only — wrap the metric numbers in `font-[--font-sans]`. Default the rest of the page to mono so it stops looking like a different app.
 - Donut/sparkline accents → `--action-bg` for primary, `--slate-500` for secondary, status tokens for state-coded slices.
 - Scrollbar custom colors → `--border-default` track / `--border-strong` thumb.
 
-### 4.6 `App.css`
+### 4.6 Messages
+
+Messages is an operational inbox:
+
+- Left pane uses the same header contract, filter-chip style, and row density as tickets.
+- Right pane is a ticket conversation workspace. Empty state should be quiet but bounded by the same page surface, not a blank consumer-chat canvas.
+- Conversation bubbles may exist, but they should be restrained, rectangular, and metadata-forward.
+- Keep composer controls compact and ticket-context oriented.
+
+### 4.7 `App.css`
 
 This is Vite scaffolding (`.hero`, `#center`, `#docs`, `#next-steps`). It is unused by the actual app shell. **Delete in the migration pass** unless something still imports it (verify with grep). If it stays, replace `var(--accent)` etc. with `--action-bg` / `--action-tint-bg`.
 

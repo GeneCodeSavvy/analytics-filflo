@@ -37,10 +37,12 @@ export const roleDescriptions: Record<TeamRole, string> = {
 };
 
 export const roleClass: Record<TeamRole, string> = {
-  SUPER_ADMIN: "bg-[#F0E6D3] text-[#8B6914] border-[#E0D0AE]",
-  ADMIN: "bg-[#D6E8E4] text-[#2D6355] border-[#B8D5CE]",
-  MODERATOR: "bg-[#E8E1D6] text-[#6B5B3E] border-[#D5CBBA]",
-  USER: "bg-[#EEEDEA] text-[#78756E] border-[#DDDBD6]",
+  SUPER_ADMIN:
+    "bg-[--role-super-admin-bg] text-[--role-super-admin-fg] border-[--role-super-admin-border]",
+  ADMIN: "bg-[--role-admin-bg] text-[--role-admin-fg] border-[--role-admin-border]",
+  MODERATOR:
+    "bg-[--role-moderator-bg] text-[--role-moderator-fg] border-[--role-moderator-border]",
+  USER: "bg-[--role-user-bg] text-[--role-user-fg] border-[--role-user-border]",
 };
 
 export const avatarTints = [
