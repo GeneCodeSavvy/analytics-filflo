@@ -1,28 +1,4 @@
-export { MessageKindSchema } from "@shared/schema/domain";
-export {
-  MessageSchema,
-  ThreadListRowSchema,
-  ThreadSchema,
-  MessageFiltersSchema,
-  MessagePageParamsSchema,
-  SendMessagePayloadSchema,
-  FileUploadResponseSchema,
-  MessagesPageSchema,
-} from "@shared/schema/messages";
-
-export type {
-  MessageKind,
-  Message,
-  ThreadListRow,
-  Thread,
-  MessageFilters,
-  MessagePageParams,
-  SendMessagePayload,
-  FileUploadResponse,
-  MessagesPage,
-} from "@shared/schema/messages";
-
-import type { MessageFilters } from "@shared/schema/messages";
+import type { MessageFilters } from "../types/messages";
 
 // Stable sorted key object — same pattern as buildListKey in ticketParams.ts
 export function buildThreadListKey(

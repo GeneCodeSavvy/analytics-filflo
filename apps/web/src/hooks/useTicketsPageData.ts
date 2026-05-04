@@ -1,21 +1,26 @@
-import { useMemo, useEffect, useRef } from 'react';
-import { useParams, useSearchParams } from 'react-router';
-import { useTicketsPageActions } from './useTicketsPageActions';
+import { useMemo, useEffect, useRef } from "react";
+import { useParams, useSearchParams } from "react-router";
+import { useTicketsPageActions } from "./useTicketsPageActions";
 import {
   useTicketListQuery,
   useViewsQuery,
   useTicketDetailQuery,
   useNewTicketsPoll,
-} from './useTicketQueries';
-import { useTicketStore } from '../stores/useTicketStore';
+} from "./useTicketQueries";
+import { useTicketStore } from "../stores/useTicketStore";
 import type {
   TicketFilters,
   TicketSort,
   ListResponse,
   View,
   TicketDetail,
-} from '../lib/ticketParams';
-import { parseFilters, parseSort, serializeSort, buildListKey } from '../lib/ticketParams';
+} from "../types/tickets";
+import {
+  parseFilters,
+  parseSort,
+  serializeSort,
+  buildListKey,
+} from "../lib/ticketParams";
 
 export function useTicketsPageData() {
   const { ticketId } = useParams();
@@ -26,17 +31,23 @@ export function useTicketsPageData() {
 
   const filters = useMemo(() => parseFilters(searchParams), [rawParams]);
   const sort = useMemo(() => parseSort(searchParams), [rawParams]);
-  const page = useMemo(() => Number(searchParams.get('page') ?? 1), [rawParams]);
-  const viewId = useMemo(() => searchParams.get('view') ?? null, [rawParams]);
-  const modalOpen = useMemo(() => searchParams.get('modal') === 'create', [rawParams]);
+  const page = useMemo(
+    () => Number(searchParams.get("page") ?? 1),
+    [rawParams],
+  );
+  const viewId = useMemo(() => searchParams.get("view") ?? null, [rawParams]);
+  const modalOpen = useMemo(
+    () => searchParams.get("modal") === "create",
+    [rawParams],
+  );
 
   const listParams = useMemo(
     () => ({ ...filters, sort: serializeSort(sort), page, pageSize: 25 }),
-    [filters, sort, page]
+    [filters, sort, page],
   );
   const filterParams = useMemo(
     () => ({ ...filters, sort: serializeSort(sort) }),
-    [filters, sort]
+    [filters, sort],
   );
 
   const selectedRowIds = useTicketStore((s) => s.selectedRowIds);
@@ -55,7 +66,11 @@ export function useTicketsPageData() {
 
   const handled404Ref = useRef<string | null>(null);
   useEffect(() => {
-    if (detail.isError && (detail.error as any)?.response?.status === 404 && ticketId !== handled404Ref.current) {
+    if (
+      detail.isError &&
+      (detail.error as any)?.response?.status === 404 &&
+      ticketId !== handled404Ref.current
+    ) {
       handled404Ref.current = ticketId ?? null;
       closeDrawer();
     }
@@ -81,7 +96,8 @@ export function useTicketsPageData() {
     ui: {
       selectedRowIds,
       density,
-      newTicketsBannerCount: (banner.data as { count: number } | undefined)?.count ?? 0,
+      newTicketsBannerCount:
+        (banner.data as { count: number } | undefined)?.count ?? 0,
     },
   };
 }

@@ -8,11 +8,11 @@ import type {
   BulkNotificationPayload,
   SnoozePayload,
   InvitationResponsePayload,
-} from "../lib/notificationParams";
+} from "../types/notifications";
 
 function restoreSnapshots(
   queryClient: QueryClient,
-  snapshots: Array<readonly [QueryKey, NotificationListResponse | undefined]>
+  snapshots: Array<readonly [QueryKey, NotificationListResponse | undefined]>,
 ) {
   snapshots.forEach(([key, data]) => queryClient.setQueryData(key, data));
 }
@@ -20,7 +20,7 @@ function restoreSnapshots(
 function patchNotificationState(
   queryClient: QueryClient,
   id: string,
-  patch: Partial<NotificationRow>
+  patch: Partial<NotificationRow>,
 ) {
   queryClient.setQueriesData(
     { queryKey: ["notifications", "list"] },
@@ -29,16 +29,16 @@ function patchNotificationState(
       return {
         ...old,
         rows: old.rows.map((row) =>
-          row.id === id ? { ...row, ...patch } : row
+          row.id === id ? { ...row, ...patch } : row,
         ),
       };
-    }
+    },
   );
 }
 
 function patchNotificationRows(
   queryClient: QueryClient,
-  updater: (row: NotificationRow) => NotificationRow
+  updater: (row: NotificationRow) => NotificationRow,
 ) {
   queryClient.setQueriesData(
     { queryKey: ["notifications", "list"] },
@@ -48,12 +48,12 @@ function patchNotificationRows(
         ...old,
         rows: old.rows.map(updater),
       };
-    }
+    },
   );
 }
 
 function stateForBulkOp(
-  op: BulkNotificationPayload["op"]
+  op: BulkNotificationPayload["op"],
 ): NotificationState | null {
   if (op === "read") return "read";
   if (op === "done") return "done";
@@ -163,7 +163,7 @@ export function useBulkMutation() {
       if (targetState && payload.scope === "ids" && payload.ids) {
         const idSet = new Set(payload.ids);
         patchNotificationRows(queryClient, (row) =>
-          idSet.has(row.id) ? { ...row, state: targetState } : row
+          idSet.has(row.id) ? { ...row, state: targetState } : row,
         );
       } else if (
         targetState &&
@@ -173,7 +173,7 @@ export function useBulkMutation() {
         patchNotificationRows(queryClient, (row) =>
           row.ticket?.id === payload.ticketId
             ? { ...row, state: targetState }
-            : row
+            : row,
         );
       }
 
@@ -234,7 +234,7 @@ export function useMuteTicketMutation() {
         queryKey: ["notifications", "list"],
       });
       patchNotificationRows(queryClient, (row) =>
-        row.ticket?.id === ticketId ? { ...row, state: "done" } : row
+        row.ticket?.id === ticketId ? { ...row, state: "done" } : row,
       );
       return { snapshots };
     },

@@ -1,12 +1,15 @@
-import { useCallback } from 'react';
-import type { NewTicketDraft } from '../lib/ticketParams';
+import { useCallback } from "react";
+import type { NewTicketDraft } from "../types/tickets";
 
 const DRAFT_VERSION = 1;
-const STORAGE_KEY = 'ticket-draft';
+const STORAGE_KEY = "ticket-draft";
 
 export function useTicketDraft() {
   const save = useCallback((draft: NewTicketDraft) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: DRAFT_VERSION, ...draft }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ v: DRAFT_VERSION, ...draft }),
+    );
   }, []);
 
   const load = useCallback((): NewTicketDraft | null => {

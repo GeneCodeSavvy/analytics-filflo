@@ -21,7 +21,19 @@ import type {
   MessageFilters,
   Thread,
   ThreadListRow,
-} from "../lib/messageParams";
+} from "../types/messages";
+import {
+  CURRENT_USER_ID,
+  filters,
+  firstName,
+  formatFileSize,
+  formatRelative,
+  formatTime,
+  priorityClasses,
+  rendersAsSystemMessage,
+  sortThreadRows,
+  statusClasses,
+} from "../lib/messagesComponent";
 import {
   useThreadListQuery,
   useThreadMessagesQuery,
@@ -33,62 +45,6 @@ import {
 } from "../hooks/useMessageMutations";
 import { useMessageWebSocket } from "../hooks/useMessageWebsocket";
 import { useMessageStore } from "../stores/useMessageStore";
-
-const CURRENT_USER_ID = "usr-201";
-
-const filters: { label: string; value: MessageFilters["tab"] }[] = [
-  { label: "All", value: "all" },
-  { label: "Unread", value: "unread" },
-  { label: "Assigned", value: "mine" },
-  { label: "Org", value: "org" },
-];
-
-const statusClasses: Record<string, string> = {
-  OPEN: "border-zinc-300 bg-white text-zinc-700",
-  IN_PROGRESS: "border-amber-300 bg-amber-50 text-amber-800",
-  REVIEW: "border-zinc-300 bg-zinc-50 text-zinc-700",
-  RESOLVED: "border-emerald-300 bg-emerald-50 text-emerald-800",
-};
-
-const priorityClasses: Record<string, string> = {
-  HIGH: "border-rose-300 bg-rose-50 text-rose-700",
-  MEDIUM: "border-amber-300 bg-amber-50 text-amber-800",
-  LOW: "border-zinc-300 bg-zinc-50 text-zinc-600",
-};
-
-function formatRelative(value: string) {
-  const then = new Date(value).getTime();
-  const now = Date.now();
-  const diff = Math.max(0, now - then);
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes}b`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}kb`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}mb`;
-}
-
-function firstName(name: string) {
-  return name.trim().split(/\s+/)[0] ?? name;
-}
 
 function Badge({
   value,
@@ -402,13 +358,7 @@ export const Messages = () => {
 
   const threadListQuery = useThreadListQuery(queryFilters);
   const rows = useMemo(() => {
-    return [...(threadListQuery.data ?? [])].sort((a, b) => {
-      if (a.unreadCount !== b.unreadCount) return b.unreadCount - a.unreadCount;
-      return (
-        new Date(b.lastMessage.at).getTime() -
-        new Date(a.lastMessage.at).getTime()
-      );
-    });
+    return sortThreadRows(threadListQuery.data ?? []);
   }, [threadListQuery.data]);
 
   useEffect(() => {
@@ -559,7 +509,7 @@ export const Messages = () => {
                   </div>
                 ) : (
                   messages.map((message) =>
-                    message.kind === "FILE_ATTACHMENT" && !message.content ? (
+                    rendersAsSystemMessage(message) ? (
                       <SystemMessage key={message.id} message={message} />
                     ) : (
                       <UserMessage

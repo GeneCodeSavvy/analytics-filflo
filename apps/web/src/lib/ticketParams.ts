@@ -1,49 +1,10 @@
-export {
-  TicketFiltersSchema,
-  TicketSortSchema,
-  TicketListParamsSchema,
-  TicketFilterParamsSchema,
-  ViewSchema,
-  TicketRowSchema,
-  ListResponseSchema,
-  ActivityEntrySchema,
-  TicketDetailSchema,
-  NewTicketDraftSchema,
-  AssignPayloadSchema,
-  BulkResultSchema,
-} from "@shared/schema/tickets";
-export {
-  TicketStatusSchema,
-  TicketPrioritySchema,
-  UserRefSchema,
-} from "@shared/schema/domain";
-
-export type {
-  TicketStatus,
-  TicketPriority,
-  TicketCategory,
-  TicketFilters,
-  TicketSort,
-  TicketListParams,
-  TicketFilterParams,
-  View,
-  TicketRow,
-  ListResponse,
-  ActivityEntry,
-  TicketDetail,
-  NewTicketDraft,
-  AssignPayload,
-  BulkResult,
-} from "@shared/schema/tickets";
-export type { UserRef } from "@shared/schema/domain";
-
 import type {
   TicketFilters,
   TicketSort,
   TicketStatus,
   TicketPriority,
   TicketCategory,
-} from "@shared/schema/tickets";
+} from "../types/tickets";
 
 export function mergeFilters(
   params: URLSearchParams,

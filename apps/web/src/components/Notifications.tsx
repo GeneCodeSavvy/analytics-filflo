@@ -6,18 +6,35 @@ import {
   Eye,
   Inbox,
   LoaderCircle,
-  Mail,
   MessageSquare,
-  UserPlus,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import type { NotificationRow, NotificationType } from "../lib/notificationParams";
 import {
-  mergeFilters,
-  parseFilters,
-} from "../lib/notificationParams";
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import type {
+  DateBand,
+  InvitationResponse,
+  NotificationRow,
+  TabKey,
+} from "../types/notifications";
+import { mergeFilters, parseFilters } from "../lib/notificationParams";
+import {
+  dateBand,
+  filterChips,
+  notificationIcon,
+  relativeTime,
+  rowSummary,
+  selectedTypesFromChip,
+  snoozeOptions,
+  tabs,
+  ticketHref,
+} from "../lib/notificationsComponent";
 import {
   useNotificationCountQuery,
   useNotificationsQuery,
@@ -31,97 +48,6 @@ import {
 } from "../hooks/useNotificationMutations";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-
-type TabKey = "inbox" | "read" | "done" | "all";
-type DateBand = "Today" | "Yesterday" | "This Week" | "Older";
-
-const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: "inbox", label: "Inbox" },
-  { key: "read", label: "Read" },
-  { key: "done", label: "Done" },
-  { key: "all", label: "All" },
-];
-
-const filterChips: Array<{ label: string; types: NotificationType[] }> = [
-  { label: "Assignments", types: ["TICKET_ASSIGNED"] },
-  { label: "Reviews", types: ["REVIEW_REQUESTED"] },
-  { label: "Invitations", types: ["TICKET_INVITATION"] },
-  { label: "Resolutions", types: ["TICKET_RESOLVED", "TICKET_CLOSED"] },
-  { label: "Messages", types: ["MESSAGE_ACTIVITY"] },
-];
-
-const typeSummaries: Record<NotificationType, string> = {
-  TICKET_ASSIGNED: "You've been assigned",
-  REVIEW_REQUESTED: "Review requested",
-  TICKET_INVITATION: "You've been invited",
-  TICKET_RESOLVED: "Ticket resolved",
-  TICKET_CLOSED: "Ticket closed",
-  NEW_TICKET_IN_ORG: "New ticket in org",
-  MESSAGE_ACTIVITY: "New messages",
-};
-
-const snoozeOptions = [
-  { label: "1 hour", getDate: () => new Date(Date.now() + 60 * 60 * 1000) },
-  {
-    label: "Tomorrow morning",
-    getDate: () => {
-      const value = new Date();
-      value.setDate(value.getDate() + 1);
-      value.setHours(9, 0, 0, 0);
-      return value;
-    },
-  },
-  {
-    label: "Next week",
-    getDate: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  },
-  { label: "Custom...", getDate: () => new Date(Date.now() + 24 * 60 * 60 * 1000) },
-];
-
-function notificationIcon(type: NotificationType) {
-  if (type === "TICKET_ASSIGNED") return UserPlus;
-  if (type === "REVIEW_REQUESTED") return Eye;
-  if (type === "TICKET_INVITATION") return Mail;
-  if (type === "MESSAGE_ACTIVITY") return MessageSquare;
-  return CheckCircle;
-}
-
-function relativeTime(value: string) {
-  const diffMs = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(1, Math.floor(diffMs / 60_000));
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "yesterday";
-  if (days < 7) return `${days}d ago`;
-  const weeks = Math.floor(days / 7);
-  return `${weeks}w ago`;
-}
-
-function dateBand(value: string): DateBand {
-  const diffDays = Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000);
-  if (diffDays <= 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return "This Week";
-  return "Older";
-}
-
-function ticketHref(row: NotificationRow) {
-  if (!row.ticket) return "/tickets";
-  return `/tickets/${encodeURIComponent(row.ticket.id)}`;
-}
-
-function rowSummary(row: NotificationRow) {
-  if (row.type === "MESSAGE_ACTIVITY" && row.eventCount > 1) {
-    return `${row.eventCount} new messages`;
-  }
-  return typeSummaries[row.type];
-}
-
-function selectedTypesFromChip(types: NotificationType[], active: NotificationType[]) {
-  return types.every((type) => active.includes(type));
-}
 
 function EmptyState({
   activeTab,
@@ -143,7 +69,10 @@ function EmptyState({
           text: "No notifications need your attention.",
         }
       : activeTab === "read"
-        ? { heading: "Nothing here yet", text: "Read notifications appear here." }
+        ? {
+            heading: "Nothing here yet",
+            text: "Read notifications appear here.",
+          }
         : activeTab === "done"
           ? {
               heading: "Cleared notifications appear here",
@@ -232,7 +161,7 @@ function NotificationActions({
   onOpen: () => void;
   onDone: () => void;
   onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: "ACCEPTED" | "CANCELLED") => void;
+  onInvite: (response: InvitationResponse) => void;
 }) {
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const alwaysVisible = row.type === "TICKET_INVITATION";
@@ -352,7 +281,7 @@ function NotificationRowView({
   onOpen: () => void;
   onDone: () => void;
   onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: "ACCEPTED" | "CANCELLED") => void;
+  onInvite: (response: InvitationResponse) => void;
 }) {
   const Icon = notificationIcon(row.type);
   const isAction = row.tier === "action_required";
@@ -382,8 +311,13 @@ function NotificationRowView({
         <div className="notifications-row-left">
           <button
             type="button"
-            aria-label={selected ? "Deselect notification" : "Select notification"}
-            className={cn("notifications-check", selected && "notifications-check-on")}
+            aria-label={
+              selected ? "Deselect notification" : "Select notification"
+            }
+            className={cn(
+              "notifications-check",
+              selected && "notifications-check-on",
+            )}
             onClick={(event) => {
               event.stopPropagation();
               onToggleSelect();
@@ -400,22 +334,34 @@ function NotificationRowView({
               <button
                 type="button"
                 className="notifications-expand"
-                aria-label={expanded ? "Collapse notification group" : "Expand notification group"}
+                aria-label={
+                  expanded
+                    ? "Collapse notification group"
+                    : "Expand notification group"
+                }
                 onClick={(event) => {
                   event.stopPropagation();
                   onToggleExpand();
                 }}
               >
-                <ChevronDown className={cn("size-3.5", expanded && "rotate-180")} />
+                <ChevronDown
+                  className={cn("size-3.5", expanded && "rotate-180")}
+                />
               </button>
             ) : null}
-            <span className="notifications-ticket">#{row.ticket?.id ?? "ticket"}</span>
+            <span className="notifications-ticket">
+              #{row.ticket?.id ?? "ticket"}
+            </span>
             <span className="notifications-summary">{rowSummary(row)}</span>
             {row.eventCount > 1 ? (
-              <span className="notifications-count">{row.eventCount} updates</span>
+              <span className="notifications-count">
+                {row.eventCount} updates
+              </span>
             ) : null}
           </div>
-          <p className="notifications-title">{row.ticket?.subject ?? row.latestEvent.description}</p>
+          <p className="notifications-title">
+            {row.ticket?.subject ?? row.latestEvent.description}
+          </p>
           <p className="notifications-time">
             {relativeTime(row.latestEvent.at)}
           </p>
@@ -430,7 +376,12 @@ function NotificationRowView({
           onInvite={onInvite}
         />
       </div>
-      <div className={cn("notifications-thread-shell", expanded && "notifications-thread-open")}>
+      <div
+        className={cn(
+          "notifications-thread-shell",
+          expanded && "notifications-thread-open",
+        )}
+      >
         {expanded ? <ThreadEvents row={row} /> : null}
       </div>
     </div>
@@ -446,7 +397,9 @@ export const Notifications = () => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
-  const [dismissingIds, setDismissingIds] = useState<Set<string>>(() => new Set());
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [bulkSnoozeOpen, setBulkSnoozeOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -476,7 +429,9 @@ export const Notifications = () => {
     () => (data?.rows ?? []).filter((row) => !dismissingIds.has(row.id)),
     [data?.rows, dismissingIds],
   );
-  const unreadCount = countQuery.data?.inbox ?? rows.filter((row) => row.state === "inbox").length;
+  const unreadCount =
+    countQuery.data?.inbox ??
+    rows.filter((row) => row.state === "inbox").length;
   const hasFilters = activeTypes.length > 0;
   const selectedCount = selectedIds.size;
 
@@ -542,7 +497,10 @@ export const Notifications = () => {
 
   const snoozeRow = (row: NotificationRow, date: Date, label: string) => {
     dismissThen(row.id, () =>
-      snooze.mutate({ id: row.id, payload: { snoozedUntil: date.toISOString() } }),
+      snooze.mutate({
+        id: row.id,
+        payload: { snoozedUntil: date.toISOString() },
+      }),
     );
     setToast(`Snoozed until ${label.toLowerCase()} · Undo`);
   };
@@ -618,7 +576,13 @@ export const Notifications = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => bulk.mutate({ op: "done", scope: "ids", ids: rows.map((row) => row.id) })}
+                onClick={() =>
+                  bulk.mutate({
+                    op: "done",
+                    scope: "ids",
+                    ids: rows.map((row) => row.id),
+                  })
+                }
               >
                 <CheckCircle /> Mark all done
               </Button>
@@ -632,7 +596,9 @@ export const Notifications = () => {
               <button
                 key={tab.key}
                 type="button"
-                className={cn(activeTab === tab.key && "notifications-tab-active")}
+                className={cn(
+                  activeTab === tab.key && "notifications-tab-active",
+                )}
                 onClick={() => updateFilters({ tab: tab.key })}
               >
                 {tab.label}
@@ -641,7 +607,12 @@ export const Notifications = () => {
             ))}
           </nav>
 
-          <div className={cn("notifications-bulk", selectedCount > 0 && "notifications-bulk-open")}>
+          <div
+            className={cn(
+              "notifications-bulk",
+              selectedCount > 0 && "notifications-bulk-open",
+            )}
+          >
             <span>{selectedCount} selected</span>
             <div>
               <Button
@@ -649,7 +620,11 @@ export const Notifications = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  bulk.mutate({ op: "read", scope: "ids", ids: [...selectedIds] })
+                  bulk.mutate({
+                    op: "read",
+                    scope: "ids",
+                    ids: [...selectedIds],
+                  })
                 }
               >
                 Mark read
@@ -659,7 +634,11 @@ export const Notifications = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  bulk.mutate({ op: "done", scope: "ids", ids: [...selectedIds] });
+                  bulk.mutate({
+                    op: "done",
+                    scope: "ids",
+                    ids: [...selectedIds],
+                  });
                   setSelectedIds(new Set());
                 }}
               >
@@ -725,7 +704,10 @@ export const Notifications = () => {
             className="notifications-new-pill"
             onClick={() => {
               setNewRowsPending(0);
-              listTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              listTopRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
             }}
           >
             {newRowsPending} new notifications · Show
@@ -734,7 +716,8 @@ export const Notifications = () => {
 
         {isLoading ? (
           <div className="notifications-loading">
-            <LoaderCircle className="size-4 animate-spin" /> Loading notifications
+            <LoaderCircle className="size-4 animate-spin" /> Loading
+            notifications
           </div>
         ) : null}
         {isError ? (
@@ -770,14 +753,18 @@ export const Notifications = () => {
                     onToggleSelect={() =>
                       setSelectedIds((prev) => {
                         const next = new Set(prev);
-                        next.has(row.id) ? next.delete(row.id) : next.add(row.id);
+                        next.has(row.id)
+                          ? next.delete(row.id)
+                          : next.add(row.id);
                         return next;
                       })
                     }
                     onToggleExpand={() =>
                       setExpandedIds((prev) => {
                         const next = new Set(prev);
-                        next.has(row.id) ? next.delete(row.id) : next.add(row.id);
+                        next.has(row.id)
+                          ? next.delete(row.id)
+                          : next.add(row.id);
                         return next;
                       })
                     }
@@ -785,7 +772,8 @@ export const Notifications = () => {
                     onDone={() => markRowDone(row)}
                     onSnooze={(date, label) => snoozeRow(row, date, label)}
                     onInvite={(response) => {
-                      if (row.type !== "TICKET_INVITATION" || !row.invitationId) return;
+                      if (row.type !== "TICKET_INVITATION" || !row.invitationId)
+                        return;
                       const invitationId = row.invitationId;
                       dismissThen(row.id, () =>
                         invitation.mutate({
@@ -814,7 +802,12 @@ export const Notifications = () => {
 
       {shortcutsOpen ? (
         <div className="notifications-dialog-backdrop" role="presentation">
-          <div className="notifications-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+          <div
+            className="notifications-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shortcuts-title"
+          >
             <div className="notifications-dialog-header">
               <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
               <Button

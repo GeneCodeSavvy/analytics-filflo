@@ -1,13 +1,14 @@
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { messageApi } from "../api/messageApi";
-import { messageKeys, MessageFiltersSchema } from "../lib/messageParams";
+import { messageKeys } from "../lib/messageParams";
+import { MessageFiltersSchema } from "../types/messages";
 import type {
   MessageFilters,
   Thread,
   ThreadListRow,
   MessagesPage,
-} from "../lib/messageParams";
-import type { UserRef } from "@shared/schema/domain";
+  UserRef,
+} from "../types/messages";
 
 export function useThreadListQuery(filters: MessageFilters) {
   const validated = MessageFiltersSchema.parse(filters);

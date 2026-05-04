@@ -7,7 +7,7 @@ import type {
   SendMessagePayload,
   MessagesPage,
   FileUploadResponse,
-} from "../lib/messageParams";
+} from "../types/messages";
 
 export const messageApi = {
   getThreads: (

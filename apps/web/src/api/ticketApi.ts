@@ -13,7 +13,7 @@ import type {
   AssignPayload,
   BulkResult,
   ActivityEntry,
-} from "../lib/ticketParams";
+} from "../types/tickets";
 
 export interface CreateViewPayload {
   name: string;

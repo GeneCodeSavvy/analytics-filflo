@@ -1,41 +1,7 @@
-export {
-  NotificationStateSchema,
-  NotificationTierSchema,
-  NotificationRowSchema,
-  NotificationListResponseSchema,
-  NotificationCountResponseSchema,
-  NotificationThreadSchema,
-  NotificationEventSchema,
-  NotificationFiltersSchema,
-  NotificationListParamsSchema,
-  BulkNotificationPayloadSchema,
-  InvitationResponsePayloadSchema,
-} from "@shared/schema/notifications";
-export { NotificationTypeSchema } from "@shared/schema/domain";
-
-export type {
-  NotificationState,
-  NotificationType,
-  NotificationTier,
-  NotificationRow,
-  NotificationListResponse,
-  NotificationCountResponse,
-  NotificationThread,
-  NotificationEvent,
-  NotificationFilters,
-  NotificationListParams,
-  BulkNotificationPayload,
-  InvitationResponsePayload,
-} from "@shared/schema/notifications";
-
-export type SnoozePayload = {
-  snoozedUntil: string;
-};
-
 import type {
   NotificationFilters,
   NotificationType,
-} from "@shared/schema/notifications";
+} from "../types/notifications";
 
 export function parseFilters(params: URLSearchParams): NotificationFilters {
   const tab = (params.get("tab") ?? "inbox") as NotificationFilters["tab"];

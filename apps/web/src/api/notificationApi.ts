@@ -7,22 +7,19 @@ import type {
   SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
-} from "../lib/notificationParams";
+} from "../types/notifications";
 
 export const notificationApi = {
   getList: (
     params: NotificationListParams,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<NotificationListResponse> =>
     api.get<NotificationListResponse>("/notifications", { params, signal }),
 
   getCount: (signal?: AbortSignal): Promise<NotificationCountResponse> =>
     api.get<NotificationCountResponse>("/notifications/count", { signal }),
 
-  getThread: (
-    id: string,
-    signal?: AbortSignal
-  ): Promise<NotificationThread> =>
+  getThread: (id: string, signal?: AbortSignal): Promise<NotificationThread> =>
     api.get<NotificationThread>(`/notifications/${id}/thread`, { signal }),
 
   markRead: (id: string): Promise<void> =>
@@ -42,7 +39,7 @@ export const notificationApi = {
 
   respondToInvitation: (
     invitationId: string,
-    payload: InvitationResponsePayload
+    payload: InvitationResponsePayload,
   ): Promise<void> =>
     api.post(`/notifications/invitations/${invitationId}/respond`, payload),
 

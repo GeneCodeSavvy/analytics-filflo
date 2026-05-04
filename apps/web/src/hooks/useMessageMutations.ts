@@ -8,7 +8,7 @@ import type {
   ThreadListRow,
   SendMessagePayload,
   FileUploadResponse,
-} from "../lib/messageParams";
+} from "../types/messages";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

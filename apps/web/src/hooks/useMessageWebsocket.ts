@@ -2,11 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { messageKeys } from "../lib/messageParams";
-import type {
-  Message,
-  MessagesPage,
-  ThreadListRow,
-} from "../lib/messageParams";
+import type { Message, MessagesPage, ThreadListRow } from "../types/messages";
 
 const MIN_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 30_000;

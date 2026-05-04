@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
-import { useTicketStore } from '../stores/useTicketStore';
-import { mergeFilters, mergeSort } from '../lib/ticketParams';
-import type { TicketFilters, TicketSort } from '../lib/ticketParams';
+import { useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { useTicketStore } from "../stores/useTicketStore";
+import { mergeFilters, mergeSort } from "../lib/ticketParams";
+import type { TicketFilters, TicketSort } from "../types/tickets";
 
 export function useTicketsPageActions() {
   const navigate = useNavigate();
@@ -12,36 +12,36 @@ export function useTicketsPageActions() {
     (f: Partial<TicketFilters>) => {
       setSearchParams((p) => mergeFilters(new URLSearchParams(p), f));
     },
-    [setSearchParams]
+    [setSearchParams],
   );
 
   const setSort = useCallback(
     (s: TicketSort[]) => {
       setSearchParams((p) => mergeSort(new URLSearchParams(p), s));
     },
-    [setSearchParams]
+    [setSearchParams],
   );
 
   const setPage = useCallback(
     (n: number) => {
       setSearchParams((p) => {
         const next = new URLSearchParams(p);
-        next.set('page', String(n));
+        next.set("page", String(n));
         return next;
       });
     },
-    [setSearchParams]
+    [setSearchParams],
   );
 
   const setView = useCallback(
     (id: string | null) => {
       setSearchParams((p) => {
         const next = new URLSearchParams(p);
-        id ? next.set('view', id) : next.delete('view');
+        id ? next.set("view", id) : next.delete("view");
         return next;
       });
     },
-    [setSearchParams]
+    [setSearchParams],
   );
 
   const clearView = useCallback(() => setView(null), [setView]);
@@ -49,7 +49,7 @@ export function useTicketsPageActions() {
   const openModal = useCallback(() => {
     setSearchParams((p) => {
       const next = new URLSearchParams(p);
-      next.set('modal', 'create');
+      next.set("modal", "create");
       return next;
     });
   }, [setSearchParams]);
@@ -57,20 +57,17 @@ export function useTicketsPageActions() {
   const closeModal = useCallback(() => {
     setSearchParams((p) => {
       const next = new URLSearchParams(p);
-      next.delete('modal');
+      next.delete("modal");
       return next;
     });
   }, [setSearchParams]);
 
   const openDrawer = useCallback(
     (id: string) => navigate(`/tickets/${id}`),
-    [navigate]
+    [navigate],
   );
 
-  const closeDrawer = useCallback(
-    () => navigate('/tickets'),
-    [navigate]
-  );
+  const closeDrawer = useCallback(() => navigate("/tickets"), [navigate]);
 
   const setSelectedRows = useTicketStore((s) => s.setSelectedRows);
   const toggleRowSelected = useTicketStore((s) => s.toggleRowSelected);

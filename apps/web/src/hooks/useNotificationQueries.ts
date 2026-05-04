@@ -1,16 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { notificationApi } from "../api/notificationApi";
-import {
-  NotificationListParamsSchema,
-  buildListKey,
-} from "../lib/notificationParams";
+import { NotificationListParamsSchema } from "../types/notifications";
+import { buildListKey } from "../lib/notificationParams";
 import type {
   NotificationListParams,
   NotificationListResponse,
   NotificationCountResponse,
   NotificationThread,
-} from "../lib/notificationParams";
+} from "../types/notifications";
 
 export function useNotificationsQuery(params: NotificationListParams) {
   const validated = NotificationListParamsSchema.parse(params);
@@ -46,8 +44,7 @@ export function useNotificationCountQuery() {
 export function useNotificationThreadQuery(notificationId: string | null) {
   return useQuery<NotificationThread>({
     queryKey: ["notifications", "thread", notificationId],
-    queryFn: ({ signal }) =>
-      notificationApi.getThread(notificationId!, signal),
+    queryFn: ({ signal }) => notificationApi.getThread(notificationId!, signal),
     enabled: !!notificationId,
     staleTime: 60_000,
   });

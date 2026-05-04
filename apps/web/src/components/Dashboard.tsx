@@ -13,58 +13,36 @@ import {
 import {
   IconAlertCircle,
   IconChevronDown,
-  IconCheck,
-  IconCircleCheck,
-  IconClock,
   IconInbox,
   IconTicket,
-  IconTrendingUp,
 } from "@tabler/icons-react";
 import { useDashboardFilters } from "../hooks/useDashboardFilters";
 import { useZone1Query } from "../hooks/useZone1Query";
 import { useZone2Query } from "../hooks/useZone2Query";
 import { useZone3Query } from "../hooks/useZone3Query";
+import {
+  ageLabel,
+  avatarColor,
+  dashboardKpiMeta,
+  dashboardPriorityColor,
+  dashboardRanges,
+  dashboardStatusColor,
+  formatDashboardNumber,
+  initials,
+  muted,
+  parseKpiValue,
+  teal,
+  timeAgo,
+  warning,
+} from "../lib/dashboardComponent";
 import type {
   ActivityEntry,
   AgingTicket,
   KpiCard,
   MyQueueTicket,
-  Range,
-  Status,
   StatusDonutSlice,
   TrendPoint,
 } from "../types/dashboard";
-
-const RANGES: Range[] = ["7d", "30d", "90d", "all"];
-const MUTED = "#9CA3AF";
-const AMBER = "oklch(0.6716 0.1368 48.5130)";
-const TEAL = "oklch(0.5360 0.0398 196)";
-const RESOLVED = "oklch(0.5940 0.0443 196)";
-const REVIEW = "oklch(0.6268 0 0)";
-const WARNING = "oklch(0.6368 0.2078 25)";
-
-const statusColor: Record<Status, string> = {
-  OPEN: "#D97706",
-  IN_PROGRESS: TEAL,
-  REVIEW,
-  ON_HOLD: "#D97706",
-  CLOSED: "#D1CEC7",
-  RESOLVED,
-};
-
-const priorityColor = {
-  HIGH: WARNING,
-  MEDIUM: "#D97706",
-  LOW: RESOLVED,
-} as const;
-
-const kpiMeta = [
-  { key: "totalTickets", icon: IconTicket, accent: AMBER, positive: "up" },
-  { key: "pending", icon: IconClock, accent: "#D97706", positive: "down" },
-  { key: "awaitingReview", icon: IconTrendingUp, accent: REVIEW, positive: "down" },
-  { key: "resolved", icon: IconCircleCheck, accent: RESOLVED, positive: "up" },
-  { key: "avgResolutionTime", icon: IconCheck, accent: TEAL, positive: "down" },
-] as const;
 
 function useCountUp(target: number, duration = 400) {
   const [value, setValue] = useState(0);
@@ -85,19 +63,6 @@ function useCountUp(target: number, duration = 400) {
   return value;
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US").format(value);
-}
-
-function parseKpiValue(value: KpiCard["value"]) {
-  if (typeof value === "number") return { numeric: value, suffix: "" };
-  const match = value.match(/^([\d.]+)(.*)$/);
-  return {
-    numeric: match ? Number(match[1]) : 0,
-    suffix: match ? match[2] : value,
-  };
-}
-
 function Sparkline({ card, accent }: { card: KpiCard; accent: string }) {
   const points = card.sparkline;
   const path = useMemo(() => {
@@ -112,7 +77,10 @@ function Sparkline({ card, accent }: { card: KpiCard; accent: string }) {
       return [x, y] as const;
     });
     const line = coords
-      .map(([x, y], index) => `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`)
+      .map(
+        ([x, y], index) =>
+          `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`,
+      )
       .join(" ");
     const fill = `${line} L 100 32 L 0 32 Z`;
     return { line, fill };
@@ -149,7 +117,7 @@ function KpiCardView({
   const parsed = parseKpiValue(card.value);
   const count = useCountUp(parsed.numeric);
   const isGood = card.delta?.direction === positive;
-  const deltaColor = isGood ? "#059669" : WARNING;
+  const deltaColor = isGood ? "#059669" : warning;
 
   return (
     <section className="rounded-xl border border-[#E8E6E0] bg-white p-5 shadow-sm">
@@ -160,14 +128,16 @@ function KpiCardView({
         <Icon size={14} className="text-[#9CA3AF]" />
       </div>
       <div className="mt-3 font-mono text-5xl font-medium leading-none text-[#08060d]">
-        {typeof card.value === "number" ? formatNumber(count) : `${count}${parsed.suffix}`}
+        {typeof card.value === "number"
+          ? formatDashboardNumber(count)
+          : `${count}${parsed.suffix}`}
       </div>
       {card.label.toLowerCase().includes("resolution") ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {[
-            ["HIGH", "4h", priorityColor.HIGH],
-            ["MED", "1.2d", priorityColor.MEDIUM],
-            ["LOW", "3.5d", priorityColor.LOW],
+            ["HIGH", "4h", dashboardPriorityColor.HIGH],
+            ["MED", "1.2d", dashboardPriorityColor.MEDIUM],
+            ["LOW", "3.5d", dashboardPriorityColor.LOW],
           ].map(([label, value, color]) => (
             <span
               key={label}
@@ -181,7 +151,8 @@ function KpiCardView({
       ) : null}
       <div className="mt-3 flex items-baseline gap-1.5">
         <span className="font-mono text-xs" style={{ color: deltaColor }}>
-          {card.delta?.direction === "up" ? "↑" : "↓"} {card.delta?.percent ?? 0}%
+          {card.delta?.direction === "up" ? "↑" : "↓"}{" "}
+          {card.delta?.percent ?? 0}%
         </span>
         <span className="text-[10px] text-[#9CA3AF]">vs last 30d</span>
       </div>
@@ -197,9 +168,15 @@ function ChartTooltip({ active, payload }: any) {
   return (
     <div className="rounded-lg bg-[#08060d] px-3 py-2 text-xs text-white shadow-lg">
       {payload
-        .filter((entry: any) => entry.dataKey === "created" || entry.dataKey === "resolved")
+        .filter(
+          (entry: any) =>
+            entry.dataKey === "created" || entry.dataKey === "resolved",
+        )
         .map((entry: any) => (
-          <div key={entry.dataKey} className="flex min-w-32 items-center justify-between gap-5">
+          <div
+            key={entry.dataKey}
+            className="flex min-w-32 items-center justify-between gap-5"
+          >
             <span className="capitalize text-white/70">{entry.dataKey}</span>
             <span className="font-mono">{entry.value}</span>
           </div>
@@ -211,8 +188,12 @@ function ChartTooltip({ active, payload }: any) {
 function TrendChart({ points }: { points: TrendPoint[] }) {
   const data = points.map((point) => ({
     ...point,
-    label: new Date(point.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    backlogRange: point.created > point.resolved ? [point.resolved, point.created] : null,
+    label: new Date(point.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    backlogRange:
+      point.created > point.resolved ? [point.resolved, point.created] : null,
   }));
 
   return (
@@ -221,7 +202,8 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
         <h2 className="text-[13px] font-medium text-[#08060d]">Volume trend</h2>
         <div className="flex items-center gap-4 text-xs">
           <span className="flex items-center gap-1.5 text-[#6B7280]">
-            <span className="h-px w-5 border-t border-dashed border-[#D97706]" /> Created
+            <span className="h-px w-5 border-t border-dashed border-[#D97706]" />{" "}
+            Created
           </span>
           <span className="flex items-center gap-1.5 text-[#6B7280]">
             <span className="h-px w-5 bg-[oklch(0.5360_0.0398_196)]" /> Resolved
@@ -230,22 +212,36 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
       </div>
       <div className="h-[224px] cursor-crosshair">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 6, left: 0, bottom: 0 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 8, right: 6, left: 0, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="resolvedFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={TEAL} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={TEAL} stopOpacity={0} />
+                <stop offset="0%" stopColor={teal} stopOpacity={0.1} />
+                <stop offset="100%" stopColor={teal} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="#F0EDE8" strokeDasharray="4 4" />
+            <CartesianGrid
+              vertical={false}
+              stroke="#F0EDE8"
+              strokeDasharray="4 4"
+            />
             <XAxis
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: MUTED, fontSize: 10, fontFamily: "Geist Mono, ui-monospace, monospace" }}
+              tick={{
+                fill: muted,
+                fontSize: 10,
+                fontFamily: "Geist Mono, ui-monospace, monospace",
+              }}
               dy={8}
             />
-            <Tooltip cursor={{ stroke: "#E8E6E0" }} content={<ChartTooltip />} />
+            <Tooltip
+              cursor={{ stroke: "#E8E6E0" }}
+              content={<ChartTooltip />}
+            />
             <Area
               type="monotone"
               dataKey="backlogRange"
@@ -257,11 +253,11 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
             <Area
               type="monotone"
               dataKey="resolved"
-              stroke={TEAL}
+              stroke={teal}
               strokeWidth={2}
               fill="url(#resolvedFill)"
               dot={false}
-              activeDot={{ r: 4, fill: TEAL, stroke: "#fff", strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: teal, stroke: "#fff", strokeWidth: 2 }}
             />
             <Area
               type="monotone"
@@ -272,7 +268,12 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
               strokeDasharray="5 5"
               fill="transparent"
               dot={false}
-              activeDot={{ r: 4, fill: "#D97706", stroke: "#fff", strokeWidth: 2 }}
+              activeDot={{
+                r: 4,
+                fill: "#D97706",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -281,13 +282,21 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
   );
 }
 
-function StatusDonut({ slices, total }: { slices: StatusDonutSlice[]; total: number }) {
+function StatusDonut({
+  slices,
+  total,
+}: {
+  slices: StatusDonutSlice[];
+  total: number;
+}) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const active = activeIndex === null ? null : slices[activeIndex];
 
   return (
     <section className="dashboard-chart-panel dashboard-panel-enter [animation-delay:80ms]">
-      <h2 className="mb-2 text-[13px] font-medium text-[#08060d]">Status donut</h2>
+      <h2 className="mb-2 text-[13px] font-medium text-[#08060d]">
+        Status donut
+      </h2>
       <div className="relative h-[180px] cursor-crosshair">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -307,8 +316,12 @@ function StatusDonut({ slices, total }: { slices: StatusDonutSlice[]; total: num
               {slices.map((slice, index) => (
                 <Cell
                   key={slice.status}
-                  fill={statusColor[slice.status]}
-                  className={index === activeIndex ? "dashboard-donut-active" : "dashboard-donut-cell"}
+                  fill={dashboardStatusColor[slice.status]}
+                  className={
+                    index === activeIndex
+                      ? "dashboard-donut-active"
+                      : "dashboard-donut-cell"
+                  }
                 />
               ))}
             </Pie>
@@ -325,8 +338,14 @@ function StatusDonut({ slices, total }: { slices: StatusDonutSlice[]; total: num
       </div>
       <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
         {slices.map((slice) => (
-          <div key={slice.status} className="flex items-center gap-1.5 text-xs text-[#6B7280]">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: statusColor[slice.status] }} />
+          <div
+            key={slice.status}
+            className="flex items-center gap-1.5 text-xs text-[#6B7280]"
+          >
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: dashboardStatusColor[slice.status] }}
+            />
             <span>{slice.status.replace("_", " ")}</span>
             <span className="font-mono text-[#08060d]">{slice.count}</span>
             <span className="font-mono text-[#9CA3AF]">{slice.percent}%</span>
@@ -335,36 +354,6 @@ function StatusDonut({ slices, total }: { slices: StatusDonutSlice[]; total: num
       </div>
     </section>
   );
-}
-
-function ageLabel(ms: number) {
-  const days = ms / 86_400_000;
-  if (days >= 1) return `${days.toFixed(days >= 10 ? 0 : 1)}d`;
-  return `${Math.max(1, Math.round(ms / 3_600_000))}h`;
-}
-
-function timeAgo(value: string) {
-  const diff = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(1, Math.round(diff / 60_000));
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function avatarColor(name: string) {
-  const colors = ["#0F766E", "#92400E", "#525252", "#047857", "#A16207"];
-  const total = name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return colors[total % colors.length];
 }
 
 function Panel({
@@ -401,12 +390,16 @@ function AgingTickets({ tickets }: { tickets: AgingTicket[] }) {
           >
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: priorityColor[ticket.priority] }}
+              style={{
+                backgroundColor: dashboardPriorityColor[ticket.priority],
+              }}
             />
             <span className="truncate font-mono text-xs text-[#08060d] transition group-hover:text-[#D97706]">
               {ticket.id}
             </span>
-            <span className="truncate text-sm text-[#08060d]">{ticket.subject}</span>
+            <span className="truncate text-sm text-[#08060d]">
+              {ticket.subject}
+            </span>
             <span
               className={`flex items-center justify-end gap-1 font-mono text-xs ${
                 ticket.isStaleHigh ? "text-[#DC2626]" : "text-[#9CA3AF]"
@@ -415,11 +408,16 @@ function AgingTickets({ tickets }: { tickets: AgingTicket[] }) {
               {ticket.isStaleHigh ? <IconAlertCircle size={12} /> : null}
               {ageLabel(ticket.ageMs)}
             </span>
-            <span className="text-[#D97706] opacity-0 transition group-hover:opacity-100">→</span>
+            <span className="text-[#D97706] opacity-0 transition group-hover:opacity-100">
+              →
+            </span>
           </button>
         ))}
       </div>
-      <button type="button" className="cursor-crosshair px-5 py-3 text-xs font-medium text-[#D97706]">
+      <button
+        type="button"
+        className="cursor-crosshair px-5 py-3 text-xs font-medium text-[#D97706]"
+      >
         Show all →
       </button>
     </Panel>
@@ -431,7 +429,10 @@ function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
     <Panel title="Recent activity" count={activity.length}>
       <div className="dashboard-feed max-h-[330px] overflow-y-auto px-5 py-4">
         {activity.map((entry, index) => (
-          <div key={`${entry.ticket.id}-${entry.at}`} className="relative flex gap-3 pb-4 last:pb-0">
+          <div
+            key={`${entry.ticket.id}-${entry.at}`}
+            className="relative flex gap-3 pb-4 last:pb-0"
+          >
             {index < activity.length - 1 ? (
               <span className="absolute left-3 top-7 h-[calc(100%-28px)] w-px bg-[#F0EDE8]" />
             ) : null}
@@ -442,8 +443,12 @@ function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
               {initials(entry.actor.name)}
             </div>
             <p className="min-w-0 pt-0.5 text-[13px] leading-5 text-[#08060d]">
-              <span>{entry.actor.name} {entry.action} </span>
-              <span className="font-mono text-[#D97706]">{entry.ticket.id}</span>
+              <span>
+                {entry.actor.name} {entry.action}{" "}
+              </span>
+              <span className="font-mono text-[#D97706]">
+                {entry.ticket.id}
+              </span>
               <span className="text-[#9CA3AF]"> · {timeAgo(entry.at)}</span>
             </p>
           </div>
@@ -468,15 +473,19 @@ function MyQueue({ tickets }: { tickets: MyQueueTicket[] }) {
                 <span
                   className="rounded-full border px-2 py-0.5 text-[10px] font-medium"
                   style={{
-                    color: priorityColor[ticket.priority],
-                    borderColor: priorityColor[ticket.priority],
+                    color: dashboardPriorityColor[ticket.priority],
+                    borderColor: dashboardPriorityColor[ticket.priority],
                   }}
                 >
                   {ticket.priority}
                 </span>
-                <span className="font-mono text-[11px] text-[#6B7280]">{ticket.id}</span>
+                <span className="font-mono text-[11px] text-[#6B7280]">
+                  {ticket.id}
+                </span>
               </div>
-              <div className="truncate text-[13px] font-medium text-[#08060d]">{ticket.subject}</div>
+              <div className="truncate text-[13px] font-medium text-[#08060d]">
+                {ticket.subject}
+              </div>
               <div className="mt-1 truncate text-[10px] uppercase tracking-[0.08em] text-[#9CA3AF]">
                 {ticket.requester?.name ?? ticket.status.replace("_", " ")}
               </div>
@@ -512,12 +521,20 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <main className="dashboard-page flex items-center justify-center">
-        <div className="font-mono text-sm text-[#9CA3AF]">Preparing dashboard</div>
+        <div className="font-mono text-sm text-[#9CA3AF]">
+          Preparing dashboard
+        </div>
       </main>
     );
   }
 
-  if (isError || !zone1.data || !zone2.status.data || !zone2.trend.data || !zone3.data) {
+  if (
+    isError ||
+    !zone1.data ||
+    !zone2.status.data ||
+    !zone2.trend.data ||
+    !zone3.data
+  ) {
     return (
       <main className="dashboard-page flex items-center justify-center">
         <div className="rounded-xl border border-[#E8E6E0] bg-white px-4 py-3 text-sm text-[#08060d]">
@@ -529,7 +546,9 @@ export default function Dashboard() {
 
   return (
     <main className="dashboard-page">
-      <div className={`mx-auto max-w-[1320px] ${isRefreshing ? "dashboard-refreshing" : ""}`}>
+      <div
+        className={`mx-auto max-w-[1320px] ${isRefreshing ? "dashboard-refreshing" : ""}`}
+      >
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#E8E6E0] bg-[#FAFAF8]/95 backdrop-blur">
           <div className="flex items-center gap-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E8E6E0] bg-white font-mono text-xs font-medium text-[#08060d]">
@@ -539,7 +558,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-lg border border-[#E8E6E0] bg-white p-0.5">
-              {RANGES.map((range) => (
+              {dashboardRanges.map((range) => (
                 <button
                   key={range}
                   type="button"
@@ -565,7 +584,7 @@ export default function Dashboard() {
 
         <div className="dashboard-data-zones py-3">
           <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {kpiMeta.map((meta) => (
+            {dashboardKpiMeta.map((meta) => (
               <KpiCardView
                 key={meta.key}
                 card={zone1.data[meta.key]}
@@ -578,7 +597,10 @@ export default function Dashboard() {
 
           <section className="mt-3 grid min-h-[280px] grid-cols-1 gap-3 lg:grid-cols-[3fr_2fr]">
             <TrendChart points={zone2.trend.data.points} />
-            <StatusDonut slices={zone2.status.data.slices} total={zone2.status.data.total} />
+            <StatusDonut
+              slices={zone2.status.data.slices}
+              total={zone2.status.data.total}
+            />
           </section>
 
           <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
