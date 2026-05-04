@@ -1,11 +1,11 @@
 import "./App.css";
-import Dashboard from "./components/Dashboard";
 import NavSidebar from "./components/NavSidebar";
 import { Routes, Route, Link } from "react-router";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
-import { Tickets } from "./components/Tickets";
-import { Messages } from "./components/Messages";
-import { Notifications } from "./components/Notifications";
+import Dashboard from "./components/dashboard/index";
+import { Tickets } from "./components/tickets/index";
+import { Messages } from "./components/messages/index";
+import { Notifications } from "./components/notifications/index";
 import { Teams } from "./components/teams";
 import { InvitationAccept } from "./components/InvitationAccept";
 import { SignUpPage } from "./components/SignUpPage";
