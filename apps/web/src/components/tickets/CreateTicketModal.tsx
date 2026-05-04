@@ -1,7 +1,16 @@
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { IconX } from "@tabler/icons-react";
-import type { TicketCategory, TicketDraft, TicketPriority } from "../../types/tickets";
+import type {
+  TicketCategory,
+  TicketDraft,
+  TicketPriority,
+} from "../../types/tickets";
 import { CATEGORIES, PRIORITIES } from "../../lib/ticketsComponent";
+import {
+  ticketFormInput,
+  ticketPrimaryButton,
+  ticketSecondaryButton,
+} from "./styles";
 
 type CreateTicketModalProps = {
   closeModal: () => void;
@@ -22,14 +31,14 @@ export function CreateTicketModal({
 }: CreateTicketModalProps) {
   return (
     <div
-      className="tickets-modal-backdrop"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
       onKeyDown={(event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === "Enter")
           submitDraft();
       }}
     >
       <form
-        className="tickets-modal"
+        className="w-[min(520px,calc(100vw_-_32px))] rounded-sm border border-border bg-background shadow-xl"
         onSubmit={(event) => {
           event.preventDefault();
           submitDraft();
@@ -54,7 +63,7 @@ export function CreateTicketModal({
               }))
             }
             placeholder="Subject"
-            className="tickets-form-input text-[18px]"
+            className={`${ticketFormInput} text-[18px]`}
           />
           <textarea
             value={draft.description}
@@ -65,7 +74,7 @@ export function CreateTicketModal({
               }))
             }
             placeholder="Description"
-            className="tickets-form-input min-h-32 resize-none"
+            className={`${ticketFormInput} min-h-32 resize-none`}
           />
           <div className="grid grid-cols-2 gap-2">
             <select
@@ -76,7 +85,7 @@ export function CreateTicketModal({
                   category: event.target.value as TicketCategory | "",
                 }))
               }
-              className="tickets-form-input"
+              className={ticketFormInput}
             >
               <option value="">Category</option>
               {CATEGORIES.map((category) => (
@@ -93,7 +102,7 @@ export function CreateTicketModal({
                   priority: event.target.value as TicketPriority,
                 }))
               }
-              className="tickets-form-input"
+              className={ticketFormInput}
             >
               {PRIORITIES.map((priority) => (
                 <option key={priority}>{priority}</option>
@@ -105,11 +114,15 @@ export function CreateTicketModal({
           <button
             type="button"
             onClick={closeModal}
-            className="tickets-secondary"
+            className={ticketSecondaryButton}
           >
             Cancel
           </button>
-          <button type="submit" disabled={isPending} className="tickets-primary">
+          <button
+            type="submit"
+            disabled={isPending}
+            className={ticketPrimaryButton}
+          >
             Create
           </button>
         </div>

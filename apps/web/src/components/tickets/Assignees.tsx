@@ -24,9 +24,13 @@ export function Assignees({ row }: AssigneesProps) {
           />
         ))
       )}
-      {hidden > 0 && <span className="tickets-plus-chip">+{hidden}</span>}
+      {hidden > 0 && (
+        <span className="-ml-2 inline-flex h-[22px] min-w-6 items-center justify-center rounded-full border-2 border-background bg-muted font-mono text-[10px] leading-none text-muted-foreground">
+          +{hidden}
+        </span>
+      )}
       {assignees.length > 0 && (
-        <div className="tickets-popover pointer-events-none absolute right-0 top-7 z-30 min-w-44 opacity-0 group-hover/assignees:opacity-100">
+        <div className="pointer-events-none absolute right-0 top-7 z-30 min-w-44 rounded-sm border border-border bg-popover opacity-0 shadow-lg transition-opacity duration-100 group-hover/assignees:opacity-100">
           {assignees.map((user) => (
             <div
               key={user.id}

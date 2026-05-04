@@ -5,11 +5,17 @@ import {
   IconMaximize,
   IconX,
 } from "@tabler/icons-react";
-import type { DrawerTab, TicketDetail, TicketStatus } from "../../types/tickets";
+import type {
+  DrawerTab,
+  TicketDetail,
+  TicketStatus,
+} from "../../types/tickets";
 import { displayId, relativeTime } from "../../lib/ticketsComponent";
+import { cn } from "../../lib/utils";
 import { ActivityList } from "./ActivityList";
 import { Assignees } from "./Assignees";
 import { StatusPill } from "./StatusPill";
+import { ticketEditable } from "./styles";
 
 type TicketDrawerProps = {
   closeDrawer: () => void;
@@ -47,8 +53,8 @@ export function TicketDrawer({
   subjectRef,
 }: TicketDrawerProps) {
   return (
-    <aside className="tickets-drawer">
-      <div className="tickets-drawer-top">
+    <aside className="absolute bottom-0 right-0 top-[88px] z-30 flex w-[min(560px,calc(100%_-_382px))] min-w-[360px] animate-in slide-in-from-right duration-200 flex-col border-l border-border bg-background shadow-xl motion-reduce:animate-none max-[760px]:w-full max-[760px]:min-w-0">
+      <div className="flex h-[52px] shrink-0 items-center gap-2 border-b border-border px-3 text-[13px]">
         <button type="button" title="Close" onClick={closeDrawer}>
           <IconX className="h-4 w-4" />
         </button>
@@ -76,17 +82,17 @@ export function TicketDrawer({
               if (event.key === "Enter") saveSubject(event.currentTarget.value);
               if (event.key === "Escape") setEditSubject(false);
             }}
-            className="tickets-title-input"
+            className="mb-3.5 w-full border-0 bg-transparent font-sans text-2xl font-medium leading-tight text-foreground outline-none"
           />
         ) : (
           <h2
             onClick={() => setEditSubject(true)}
-            className="tickets-drawer-title"
+            className="mb-3.5 w-full font-sans text-2xl font-medium leading-tight text-foreground"
           >
             {detail.subject}
           </h2>
         )}
-        <div className="tickets-meta">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3.5">
           <button
             type="button"
             onClick={() =>
@@ -98,7 +104,10 @@ export function TicketDrawer({
           >
             <StatusPill status={detail.status} />
           </button>
-          <button type="button" className="tickets-priority-chip">
+          <button
+            type="button"
+            className="inline-flex h-[22px] items-center rounded-sm bg-muted px-[7px] text-[11px] text-muted-foreground"
+          >
             {detail.priority}
           </button>
           <Assignees row={detail} />
@@ -109,20 +118,22 @@ export function TicketDrawer({
             Updated {relativeTime(detail.updatedAt)}
           </span>
         </div>
-        <div className="tickets-drawer-tabs">
+        <div className="relative flex h-[38px] items-center border-b border-border">
           {DRAWER_TABS.map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setDrawerTab(tab)}
-              className={
-                drawerTab === tab ? "text-foreground" : "text-muted-foreground"
-              }
+              className={cn(
+                "h-full w-[84px] text-[13px] font-medium",
+                drawerTab === tab ? "text-foreground" : "text-muted-foreground",
+              )}
             >
               {tab}
             </button>
           ))}
           <span
+            className="absolute bottom-0 left-0 h-[1.5px] w-[84px] bg-primary transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
             style={{
               transform: `translateX(${DRAWER_TABS.indexOf(drawerTab) * 100}%)`,
             }}
@@ -140,22 +151,26 @@ export function TicketDrawer({
                     saveDescription(event.currentTarget.value);
                   if (event.key === "Escape") setEditDescription(false);
                 }}
-                className="tickets-description-input"
+                className={ticketEditable}
               />
             ) : (
               <div
                 onClick={() => setEditDescription(true)}
-                className="tickets-editable"
+                className={ticketEditable}
               >
                 {detail.description || detail.descriptionPreview}
               </div>
             )}
-            <div className="tickets-editable text-sm text-muted-foreground">
+            <div
+              className={cn(ticketEditable, "text-sm text-muted-foreground")}
+            >
               Category: {detail.category ?? "Uncategorized"}
             </div>
           </div>
         )}
-        {drawerTab === "Activity" && <ActivityList activity={detail.activity} />}
+        {drawerTab === "Activity" && (
+          <ActivityList activity={detail.activity} />
+        )}
         {drawerTab === "Messages" && (
           <div className="pt-4 text-sm text-muted-foreground">
             No messages attached to this ticket.

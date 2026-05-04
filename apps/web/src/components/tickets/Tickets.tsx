@@ -17,6 +17,7 @@ import {
 } from "../../hooks/useTicketMutations";
 import { useAuthState } from "../../stores/useAuthStore";
 import { useTicketStore } from "../../stores/useTicketStore";
+import { cn } from "../../lib/utils";
 import type {
   Density,
   DrawerTab,
@@ -42,6 +43,7 @@ import { HeaderIconButton } from "./HeaderIconButton";
 import { TicketDrawer } from "./TicketDrawer";
 import { TicketsTable } from "./TicketsTable";
 import { UserTicketList } from "./UserTicketList";
+import { ticketChip, ticketPrimaryButton } from "./styles";
 
 export const Tickets = () => {
   const { data, status, url, ui } = useTicketsPageData();
@@ -341,11 +343,13 @@ export const Tickets = () => {
           : "No tickets in this view.";
 
   return (
-    <div className="app-page-frame tickets-page">
-      <div className="app-page-frame-content tickets-page-content">
-        <header className="tickets-header">
-          <div className="tickets-title">Tickets</div>
-          <label className="tickets-search">
+    <div className="app-page-frame relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground max-[760px]:-m-2">
+      <div className="app-page-frame-content relative flex h-full min-h-0 flex-col overflow-hidden">
+        <header className="grid h-12 shrink-0 grid-cols-[minmax(120px,1fr)_minmax(240px,480px)_minmax(140px,1fr)] items-center gap-4 border-b border-border px-4 max-[760px]:grid-cols-[1fr_auto]">
+          <div className="m-0 font-sans text-xl font-medium leading-none text-foreground">
+            Tickets
+          </div>
+          <label className="flex h-8 items-center gap-2 rounded-sm border border-border bg-background px-2 max-[760px]:order-3 max-[760px]:col-span-full">
             <IconSearch className="h-4 w-4 text-muted-foreground" />
             <input
               ref={searchRef}
@@ -355,13 +359,16 @@ export const Tickets = () => {
                 setFilters({ q: event.target.value || undefined });
               }}
               placeholder="Search tickets"
+              className="min-w-0 flex-1 border-0 bg-transparent font-sans text-[13px] leading-none text-foreground outline-none"
             />
-            <kbd>/</kbd>
+            <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border font-mono text-[12px] leading-none text-muted-foreground">
+              /
+            </kbd>
           </label>
           <button
             type="button"
             onClick={actions.openModal}
-            className="tickets-primary"
+            className={ticketPrimaryButton}
           >
             <IconPlus className="h-4 w-4" />
             New ticket
@@ -372,8 +379,8 @@ export const Tickets = () => {
           <UserTicketList rows={sortedRows} onOpen={actions.openDrawer} />
         ) : (
           <>
-            <div className="tickets-tabs">
-              <div className="tickets-view-tabs">
+            <div className="flex h-10 shrink-0 items-center gap-3 overflow-x-auto border-b border-border px-2.5">
+              <div className="relative flex h-full items-center gap-0.5">
                 {activeViews.map((view, index) => {
                   const active =
                     url.viewId === view.id || (!url.viewId && view.id === null);
@@ -385,23 +392,29 @@ export const Tickets = () => {
                         setTabIndex(index);
                         actions.setView(view.id);
                       }}
-                      className={`tickets-view-tab ${active ? "text-foreground" : "text-muted-foreground"}`}
+                      className={cn(
+                        "relative z-[1] h-full min-w-[118px] whitespace-nowrap px-2.5 text-[13px] font-medium",
+                        active ? "text-foreground" : "text-muted-foreground",
+                      )}
                     >
                       {view.name}
                     </button>
                   );
                 })}
                 <span
-                  className="tickets-tab-underline"
+                  className="absolute bottom-0 left-0 h-0.5 w-[118px] bg-primary transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
                   style={{ transform: `translateX(${tabIndex * 100}%)` }}
                 />
-                <HeaderIconButton label="Save current filters">
+                <HeaderIconButton
+                  label="Save current filters"
+                  className="h-full flex-[0_0_28px]"
+                >
                   <IconPlus className="h-4 w-4" />
                 </HeaderIconButton>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-1.5">
                 {FILTERS.map((filter) => (
-                  <button key={filter} type="button" className="tickets-chip">
+                  <button key={filter} type="button" className={ticketChip}>
                     {filter}
                     <IconChevronDown className="h-3 w-3" />
                   </button>
@@ -410,12 +423,15 @@ export const Tickets = () => {
                   <button
                     type="button"
                     onClick={() => setGroupByOrg((value) => !value)}
-                    className={`tickets-chip ${groupByOrg ? "border-primary text-primary" : ""}`}
+                    className={cn(
+                      ticketChip,
+                      groupByOrg && "border-primary text-primary",
+                    )}
                   >
                     Group by Org
                   </button>
                 )}
-                <div className="tickets-density">
+                <div className="inline-flex h-7 items-center rounded-sm border border-border p-px">
                   <HeaderIconButton
                     label="Compact rows"
                     active={density === "compact"}
@@ -458,6 +474,7 @@ export const Tickets = () => {
               refreshNewTickets={refreshNewTickets}
               role={role}
               rowHeight={rowHeight}
+              density={density as Density}
               secondarySort={secondarySort}
               selectedCount={selectedCount}
               selectedRowIds={ui.selectedRowIds}
@@ -517,7 +534,11 @@ export const Tickets = () => {
           />
         )}
 
-        {toast && <div className="tickets-toast">{toast}</div>}
+        {toast && (
+          <div className="fixed bottom-[18px] right-[18px] z-[80] animate-in fade-in slide-in-from-right-5 rounded-sm border border-border bg-background px-2.5 py-2 text-[12px] text-muted-foreground shadow-lg duration-200 motion-reduce:animate-none">
+            {toast}
+          </div>
+        )}
         {anyMutationPending && (
           <span className="sr-only">Saving ticket changes</span>
         )}
