@@ -37,7 +37,12 @@ export type {
 } from "@shared/schema/tickets";
 export type { UserRef } from "@shared/schema/domain";
 
-import type { TicketRow, TicketSort } from "@shared/schema/tickets";
+import type {
+  TicketCategory,
+  TicketPriority,
+  TicketRow,
+  TicketSort,
+} from "@shared/schema/tickets";
 
 export type SortField = TicketSort["field"];
 export type Density = "compact" | "comfortable";
@@ -51,3 +56,10 @@ export type TicketGroup = {
 export type FlatTicketRow =
   | { kind: "group"; id: string; group: TicketGroup }
   | { kind: "row"; id: string; row: TicketRow };
+
+export type TicketDraft = {
+  subject: string;
+  description: string;
+  category: TicketCategory | "";
+  priority: TicketPriority;
+};

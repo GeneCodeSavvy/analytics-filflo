@@ -1,12 +1,7 @@
 import {
   CheckCircle,
-  ChevronDown,
   CircleHelp,
-  Clock,
-  Eye,
-  Inbox,
   LoaderCircle,
-  MessageSquare,
   X,
 } from "lucide-react";
 import {
@@ -17,32 +12,19 @@ import {
   type KeyboardEvent,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import type {
-  EmptyStateProps,
-  NotificationActionsProps,
-  NotificationRow,
-  NotificationRowViewProps,
-  SnoozeMenuProps,
-  ThreadEventsProps,
-} from "../types/notifications";
+import type { NotificationRow } from "../types/notifications";
 import { mergeFilters, parseFilters } from "../lib/notificationParams";
 import {
-  emptyStateCopy,
   filterChips,
   groupNotificationRows,
-  notificationIcon,
   notificationShortcuts,
-  relativeTime,
-  rowSummary,
   selectedTypesFromChip,
-  snoozeOptions,
   tabs,
   ticketHref,
 } from "../lib/notificationsComponent";
 import {
   useNotificationCountQuery,
   useNotificationsQuery,
-  useNotificationThreadQuery,
 } from "../hooks/useNotificationQueries";
 import {
   useBulkMutation,
@@ -52,299 +34,9 @@ import {
 } from "../hooks/useNotificationMutations";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-
-function EmptyState({
-  activeTab,
-  hasFilters,
-  onClear,
-}: EmptyStateProps) {
-  const copy = emptyStateCopy(activeTab, hasFilters);
-
-  return (
-    <div className="notifications-empty">
-      <Inbox className="size-10" />
-      <h2>{copy.heading}</h2>
-      <p>{copy.text}</p>
-      {hasFilters ? (
-        <button type="button" onClick={onClear}>
-          Clear filters
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function SnoozeMenu({
-  onSelect,
-}: SnoozeMenuProps) {
-  return (
-    <div className="notifications-popover" role="menu">
-      {snoozeOptions.map((option) => (
-        <button
-          key={option.label}
-          type="button"
-          role="menuitem"
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelect(option.getDate(), option.label);
-          }}
-        >
-          <Clock className="size-3.5" />
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ThreadEvents({ row }: ThreadEventsProps) {
-  const { data, isLoading } = useNotificationThreadQuery(row.id);
-
-  return (
-    <div className="notifications-thread">
-      {isLoading ? (
-        <div className="notifications-thread-loading">
-          <LoaderCircle className="size-3.5 animate-spin" />
-          Loading updates
-        </div>
-      ) : null}
-      {(data?.events ?? []).map((event) => {
-        const Icon = notificationIcon(event.type);
-        return (
-          <div key={event.id} className="notifications-thread-item">
-            <Icon className="size-3.5" />
-            <div>
-              <p>{event.description}</p>
-              <span>
-                {event.actor.name} · {relativeTime(event.at)}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function NotificationActions({
-  row,
-  visible,
-  onOpen,
-  onDone,
-  onSnooze,
-  onInvite,
-}: NotificationActionsProps) {
-  const [snoozeOpen, setSnoozeOpen] = useState(false);
-  const alwaysVisible = row.type === "TICKET_INVITATION";
-
-  if (row.type === "TICKET_INVITATION") {
-    return (
-      <div className="notifications-actions notifications-actions-visible">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            onInvite("ACCEPTED");
-          }}
-        >
-          <CheckCircle /> Accept
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            onInvite("CANCELLED");
-          }}
-        >
-          <X /> Decline
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "notifications-actions",
-        (visible || alwaysVisible) && "notifications-actions-visible",
-      )}
-    >
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={(event) => {
-          event.stopPropagation();
-          onOpen();
-        }}
-      >
-        {row.type === "REVIEW_REQUESTED" ? <Eye /> : <MessageSquare />}
-        {row.type === "REVIEW_REQUESTED"
-          ? "Review"
-          : row.type === "MESSAGE_ACTIVITY"
-            ? "Open thread"
-            : "Open"}
-      </Button>
-      {row.type === "REVIEW_REQUESTED" ? (
-        <div className="notifications-snooze-wrap">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              setSnoozeOpen((value) => !value);
-            }}
-          >
-            <Clock /> Snooze
-          </Button>
-          {snoozeOpen ? (
-            <SnoozeMenu
-              onSelect={(date, label) => {
-                setSnoozeOpen(false);
-                onSnooze(date, label);
-              }}
-            />
-          ) : null}
-        </div>
-      ) : null}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={(event) => {
-          event.stopPropagation();
-          onDone();
-        }}
-      >
-        <CheckCircle /> Done
-      </Button>
-    </div>
-  );
-}
-
-function NotificationRowView({
-  row,
-  focused,
-  selected,
-  expanded,
-  dismissing,
-  onFocus,
-  onToggleSelect,
-  onToggleExpand,
-  onOpen,
-  onDone,
-  onSnooze,
-  onInvite,
-}: NotificationRowViewProps) {
-  const Icon = notificationIcon(row.type);
-  const isAction = row.tier === "action_required";
-  const isStatus = row.tier === "status_update";
-
-  return (
-    <div
-      tabIndex={0}
-      className={cn(
-        "notifications-row",
-        isAction && "notifications-row-action",
-        isStatus && "notifications-row-status",
-        focused && "notifications-row-focused",
-        selected && "notifications-row-selected",
-        dismissing && "notifications-row-dismissing",
-      )}
-      onFocus={onFocus}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
-    >
-      <div className="notifications-row-inner">
-        <div className="notifications-row-left">
-          <button
-            type="button"
-            aria-label={
-              selected ? "Deselect notification" : "Select notification"
-            }
-            className={cn(
-              "notifications-check",
-              selected && "notifications-check-on",
-            )}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleSelect();
-            }}
-          >
-            {selected ? <CheckCircle className="size-3.5" /> : null}
-          </button>
-          <Icon className="notifications-type-icon" />
-        </div>
-
-        <div className="notifications-main">
-          <div className="notifications-line">
-            {row.eventCount > 1 ? (
-              <button
-                type="button"
-                className="notifications-expand"
-                aria-label={
-                  expanded
-                    ? "Collapse notification group"
-                    : "Expand notification group"
-                }
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleExpand();
-                }}
-              >
-                <ChevronDown
-                  className={cn("size-3.5", expanded && "rotate-180")}
-                />
-              </button>
-            ) : null}
-            <span className="notifications-ticket">
-              #{row.ticket?.id ?? "ticket"}
-            </span>
-            <span className="notifications-summary">{rowSummary(row)}</span>
-            {row.eventCount > 1 ? (
-              <span className="notifications-count">
-                {row.eventCount} updates
-              </span>
-            ) : null}
-          </div>
-          <p className="notifications-title">
-            {row.ticket?.subject ?? row.latestEvent.description}
-          </p>
-          <p className="notifications-time">
-            {relativeTime(row.latestEvent.at)}
-          </p>
-        </div>
-
-        <NotificationActions
-          row={row}
-          visible={focused}
-          onOpen={onOpen}
-          onDone={onDone}
-          onSnooze={onSnooze}
-          onInvite={onInvite}
-        />
-      </div>
-      <div
-        className={cn(
-          "notifications-thread-shell",
-          expanded && "notifications-thread-open",
-        )}
-      >
-        {expanded ? <ThreadEvents row={row} /> : null}
-      </div>
-    </div>
-  );
-}
+import { EmptyState } from "./notifications/EmptyState";
+import { SnoozeMenu } from "./notifications/SnoozeMenu";
+import { NotificationRowView } from "./notifications/NotificationRowView";
 
 export const Notifications = () => {
   const navigate = useNavigate();
