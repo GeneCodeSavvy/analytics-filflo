@@ -38,15 +38,6 @@ export function AuthStoreBridge() {
       logout();
       return;
     }
-    console.log({
-      id: user.id,
-      displayName:
-        user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "User",
-      email: user.primaryEmailAddress?.emailAddress ?? "",
-      avatarUrl: user.imageUrl,
-      role: metadataRole(user.publicMetadata?.role),
-      orgId: metadataString(user.publicMetadata?.orgId) ?? "",
-    });
 
     setUser({
       id: user.id,

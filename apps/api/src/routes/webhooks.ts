@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { Webhook } from "svix";
 import type { DbClient } from "../lib/db";
+import { syncClerkPublicMetadata } from "../lib/auth";
 
 const webhooksRouter: Router = Router();
 
@@ -77,7 +78,7 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
     const lastName = data.last_name ?? "";
     const displayName = [firstName, lastName].filter(Boolean).join(" ") || email;
 
-    await db.user.update({
+    const linkedUser = await db.user.update({
       where: { id: stubUser.id },
       data: {
         clerkUserId: data.id,
@@ -85,6 +86,8 @@ webhooksRouter.post("/clerk", async (req: Request, res: Response) => {
         ...(data.image_url ? { avatarUrl: data.image_url } : {}),
       },
     });
+
+    await syncClerkPublicMetadata(data.id, linkedUser);
   } catch {
     console.error(`[webhook] DB error processing user.created for ${email}`);
     res.status(500).json({ error: "Internal error" });

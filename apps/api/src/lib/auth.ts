@@ -12,6 +12,16 @@ export type DbUser = {
   orgId: string;
 };
 
+const dbUserSelect = {
+  id: true,
+  clerkUserId: true,
+  email: true,
+  displayName: true,
+  avatarUrl: true,
+  role: true,
+  orgId: true,
+} as const;
+
 type ClerkUserForLinking = Awaited<
   ReturnType<typeof clerkClient.users.getUser>
 >;
@@ -42,24 +52,30 @@ const getDisplayName = (user: ClerkUserForLinking, email: string) => {
   return name || email;
 };
 
+export const syncClerkPublicMetadata = async (
+  clerkUserId: string,
+  user: Pick<DbUser, "id" | "role" | "orgId">,
+) => {
+  await clerkClient.users.updateUserMetadata(clerkUserId, {
+    publicMetadata: {
+      appUserId: user.id,
+      role: user.role,
+      orgId: user.orgId,
+    },
+  });
+};
+
 export const reconcileDbUserForClerkId = async (
   db: DbClient,
   clerkUserId: string,
 ): Promise<DbUser | null> => {
   const existing = await db.user.findUnique({
     where: { clerkUserId },
-    select: {
-      id: true,
-      clerkUserId: true,
-      email: true,
-      displayName: true,
-      avatarUrl: true,
-      role: true,
-      orgId: true,
-    },
+    select: dbUserSelect,
   });
 
   if (existing) {
+    await syncClerkPublicMetadata(clerkUserId, existing);
     return existing;
   }
 
@@ -84,36 +100,30 @@ export const reconcileDbUserForClerkId = async (
   }
 
   try {
-    return await db.user.update({
+    const linkedUser = await db.user.update({
       where: { id: stubUser.id },
       data: {
         clerkUserId,
         displayName: getDisplayName(clerkUser, email),
         ...(clerkUser.imageUrl ? { avatarUrl: clerkUser.imageUrl } : {}),
       },
-      select: {
-        id: true,
-        clerkUserId: true,
-        email: true,
-        displayName: true,
-        avatarUrl: true,
-        role: true,
-        orgId: true,
-      },
+      select: dbUserSelect,
     });
+
+    await syncClerkPublicMetadata(clerkUserId, linkedUser);
+
+    return linkedUser;
   } catch {
-    return db.user.findUnique({
+    const linkedUser = await db.user.findUnique({
       where: { clerkUserId },
-      select: {
-        id: true,
-        clerkUserId: true,
-        email: true,
-        displayName: true,
-        avatarUrl: true,
-        role: true,
-        orgId: true,
-      },
+      select: dbUserSelect,
     });
+
+    if (linkedUser) {
+      await syncClerkPublicMetadata(clerkUserId, linkedUser);
+    }
+
+    return linkedUser;
   }
 };
 
