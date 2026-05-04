@@ -41,33 +41,33 @@ export function CreateOrgModal({
   };
 
   return (
-    <div className="fixed inset-0 z-30 bg-[rgba(26,25,23,0.28)] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[--z-modal] bg-[--surface-overlay] flex items-center justify-center p-4 backdrop-blur-[4px]">
       <form
-        className="w-[min(420px,100%)] rounded-lg border border-[#E8E6E1] bg-white shadow-[0_18px_50px_rgba(26,25,23,0.18)]"
+        className="w-[min(480px,100%)] rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] shadow-[--elev-4]"
         onSubmit={submit}
       >
-        <div className="flex items-center justify-between border-b border-[#E8E6E1] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[--border-subtle] px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <Building2 size={17} />
-            <h2 className="m-0 text-[15px] leading-none font-semibold">
+            <Building2 size={17} className="text-[--ink-1]" />
+            <h2 className="m-0 text-[15px] leading-none font-semibold text-[--ink-1]">
               Create org
             </h2>
           </div>
           <button
             aria-label="Close"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E8E6E1] bg-white text-[#78756E]"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-[--radius-sm] border border-transparent bg-transparent text-[--ink-3] hover:bg-[--surface-sunken]"
             onClick={onClose}
             type="button"
           >
             <X size={16} />
           </button>
         </div>
-        <div className="grid gap-4 px-5 py-4">
+        <div className="grid gap-4 px-5 py-4 text-[13px] font-mono">
           <label className="grid gap-1.5">
-            <span className="text-[#78756E]">Org name</span>
+            <span className="text-[--ink-3]">Org name</span>
             <input
               autoFocus
-              className="rounded-md border border-[#E8E6E1] bg-white px-3 py-2.5 text-[#1A1917] outline-[#C4642A]"
+              className="rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[10px] py-[9px] text-[--ink-1] outline-none focus:border-[--border-focus]"
               maxLength={120}
               onChange={(event) => setDisplayName(event.target.value)}
               placeholder="Acme Support"
@@ -75,30 +75,30 @@ export function CreateOrgModal({
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-[#78756E]">Logo URL</span>
+            <span className="text-[--ink-3]">Logo URL</span>
             <input
-              className="rounded-md border border-[#E8E6E1] bg-white px-3 py-2.5 text-[#1A1917] outline-[#C4642A]"
+              className="rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[10px] py-[9px] text-[--ink-1] outline-none focus:border-[--border-focus]"
               onChange={(event) => setLogoUrl(event.target.value)}
               placeholder="https://..."
               value={logoUrl}
             />
           </label>
           {createOrg.isError ? (
-            <div className="rounded-md border border-[#F1B8AF] bg-[#FFF7F5] px-3 py-2 text-[#B83A2A]">
+            <div className="rounded-[--radius-sm] border border-[--status-danger-border] bg-[--status-danger-bg] px-3 py-2 text-[--status-danger-fg]">
               Unable to create org.
             </div>
           ) : null}
         </div>
-        <div className="flex justify-end gap-2 border-t border-[#E8E6E1] px-5 py-4">
+        <div className="flex justify-end gap-2 border-t border-[--border-subtle] px-5 py-4">
           <button
-            className="rounded-md border border-[#E8E6E1] bg-white px-3 py-2 text-[#78756E]"
+            className="rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-3 py-[9px] text-[13px] font-medium text-[--ink-1] hover:bg-[--surface-sunken]"
             onClick={onClose}
             type="button"
           >
             Cancel
           </button>
           <button
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-transparent bg-[#C4642A] px-3 py-2 text-white hover:bg-[#A8521E] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-[--radius-sm] border border-transparent bg-[--action-bg] px-3 py-[9px] text-[13px] font-medium text-[--action-fg] hover:bg-[--action-bg-hover] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={!displayName.trim() || createOrg.isPending}
             type="submit"
           >

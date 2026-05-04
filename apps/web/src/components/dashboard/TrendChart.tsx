@@ -15,7 +15,7 @@ import {
 import type { TrendChartProps } from "../../types/dashboard";
 
 const chartPanelClass =
-  "min-h-[280px] rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] p-5 opacity-0 shadow-[--elev-1] translate-y-20 animate-[dashboard-panel-enter_300ms_ease-out_forwards]";
+  "min-h-[280px] rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] p-5 shadow-[--elev-1] animate-in fade-in slide-in-from-bottom-8 duration-300 ease-out";
 
 function ChartTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;

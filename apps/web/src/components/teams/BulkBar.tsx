@@ -14,10 +14,10 @@ export function BulkBar({
   const bulkMutation = useBulkTeamMembersMutation();
   if (!selectedIds.length) return null;
   return (
-    <div className="sticky bottom-0 flex items-center gap-[10px] p-3 border-t border-[#E8E6E1] bg-white shadow-[0_-6px_18px_rgba(26,25,23,0.08)] animate-[teams-slide-up_180ms_ease-out]">
-      <strong>{selectedIds.length} selected</strong>
+    <div className="fixed bottom-6 left-1/2 z-[--z-toast] flex h-12 w-[min(720px,calc(100vw-32px))] -translate-x-1/2 animate-[teams-slide-up_180ms_ease-out] items-center gap-3 rounded-[--radius-lg] border border-[--border-default] bg-[--surface-card] px-3.5 shadow-[--elev-3]">
+      <strong className="text-[13px] text-[--ink-1]">{selectedIds.length} selected</strong>
       <select
-        className="border border-[#E8E6E1] rounded-md bg-white text-[#1A1917] px-2.5 py-[9px]"
+        className="rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] text-[--ink-1] px-[10px] py-[6px] text-[13px] outline-none focus:border-[--border-focus]"
         onChange={(event) =>
           bulkMutation.mutate({
             ids: selectedIds,
@@ -38,7 +38,7 @@ export function BulkBar({
         ))}
       </select>
       <button
-        className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-transparent px-3 py-[9px] bg-transparent text-[#B83A2A] transition-[background,box-shadow,transform] duration-150 ease-in-out"
+        className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent px-3 py-1.5 bg-transparent text-[13px] font-medium text-[--brick-500] hover:bg-[--brick-50]"
         onClick={() =>
           bulkMutation.mutate({ ids: selectedIds, orgId, op: "remove" })
         }
@@ -47,7 +47,7 @@ export function BulkBar({
         Remove
       </button>
       <button
-        className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-transparent px-3 py-[9px] bg-transparent text-[#78756E] transition-[background,box-shadow,transform] duration-150 ease-in-out"
+        className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent px-3 py-1.5 bg-transparent text-[13px] font-medium text-[--ink-3] hover:bg-[--surface-sunken]"
         onClick={clearSelection}
         type="button"
       >

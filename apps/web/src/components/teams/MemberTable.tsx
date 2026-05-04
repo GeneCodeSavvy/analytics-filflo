@@ -44,8 +44,8 @@ export function MemberTable({
       <table className="w-full border-separate border-spacing-0">
         <thead>
           <tr>
-            {showCheckboxes ? <th className="w-[38px]" /> : null}
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">
+            {showCheckboxes ? <th className="w-[38px] border-b border-[--border-default]" /> : null}
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
               <SortHeader
                 label="Member"
                 sortKey="member"
@@ -54,7 +54,7 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
               <SortHeader
                 label="Role"
                 sortKey="role"
@@ -63,7 +63,7 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
               <SortHeader
                 label="Joined"
                 sortKey="joined"
@@ -72,7 +72,7 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
               Actions
             </th>
           </tr>
@@ -84,15 +84,15 @@ export function MemberTable({
               <tr
                 key={`${member?.org?.id}-${member.id}`}
                 className={[
-                  "group transition-colors duration-150 hover:bg-[#F5F4F0] [&:last-child>td]:border-b-0",
+                  "group transition-[background] duration-150 ease-linear hover:bg-[--surface-sunken] [&:last-child>td]:border-b-0",
                   checked
-                    ? "!bg-[rgba(196,100,42,0.08)] shadow-[inset_3px_0_0_#C4642A]"
+                    ? "bg-[--action-tint-bg] shadow-[inset_3px_0_0_var(--action-bg)]"
                     : "",
                 ].join(" ")}
                 tabIndex={0}
               >
                 {showCheckboxes ? (
-                  <td className="w-[38px] p-3 border-b border-[#F0EEE9] align-middle">
+                  <td className="w-[38px] border-b border-[--border-subtle] p-3 align-middle">
                     <input
                       aria-label={`Select ${member.name}`}
                       checked={checked}
@@ -105,12 +105,12 @@ export function MemberTable({
                     />
                   </td>
                 ) : null}
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
-                  <div className="flex items-center gap-[10px] min-w-[280px]">
+                <td className="border-b border-[--border-subtle] p-3 align-middle">
+                  <div className="flex min-w-[280px] items-center gap-[10px]">
                     <Avatar member={member} />
                     <div>
                       <button
-                        className="border-0 bg-transparent p-0 text-[#1A1917] font-medium text-left hover:underline"
+                        className="border-0 bg-transparent p-0 text-left font-medium text-[--ink-1] hover:underline"
                         onClick={() =>
                           openMemberDetail(member.id, member.org.id)
                         }
@@ -118,19 +118,19 @@ export function MemberTable({
                       >
                         <HighlightedText text={member.name} query={query} />
                       </button>
-                      <div className="text-[#78756E] text-[12px]">
+                      <div className="text-[12px] text-[--ink-3]">
                         <HighlightedText text={member.email} query={query} />
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
+                <td className="border-b border-[--border-subtle] p-3 align-middle">
                   <RolePill role={member.role} />
                 </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
+                <td className="border-b border-[--border-subtle] p-3 align-middle text-[--ink-1]">
                   {formatDate(member.joinedAt)}
                 </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
+                <td className="border-b border-[--border-subtle] p-3 align-middle">
                   <ActionMenu
                     member={member}
                     onProfile={() =>
@@ -146,10 +146,10 @@ export function MemberTable({
         </tbody>
       </table>
       {!rows.length ? (
-        <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-[#78756E] text-center">
+        <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-center text-[--ink-3]">
           <Users size={20} />
           <span>No members match this view yet.</span>
-          <small className="text-[#A8A49C]">
+          <small className="text-[--ink-4]">
             {orgs.length
               ? "Try a different filter."
               : "Backend team data will appear here when available."}

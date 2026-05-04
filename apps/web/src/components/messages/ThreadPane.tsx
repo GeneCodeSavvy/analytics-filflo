@@ -6,7 +6,7 @@ import { ThreadHeader } from "./ThreadHeader";
 import { SystemMessage } from "./SystemMessage";
 import { UserMessage } from "./UserMessage";
 import { Composer } from "./Composer";
-import { messagePanel, messageSubtlePanel } from "./styles";
+import { messagePanel } from "./styles";
 
 type ThreadPaneProps = {
   thread: Thread | undefined;
@@ -38,9 +38,9 @@ export function ThreadPane({
       <section
         className={`${messagePanel} grid min-h-0 place-items-center overflow-hidden`}
       >
-        <div className={`${messageSubtlePanel} px-6 py-8 text-center`}>
+        <div className="text-center">
           <Inbox className="mx-auto size-9 text-[--ink-3]" />
-          <p className="mt-3 mb-0 text-[13px] text-[--ink-2]">
+          <p className="mt-3 mb-0 text-[13px] text-[--ink-3]">
             Select a ticket conversation.
           </p>
         </div>

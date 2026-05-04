@@ -33,21 +33,21 @@ export const ROW_HEIGHT: Record<Density, number> = {
 export const OVERSCAN = 8;
 
 export function statusClass(status: string) {
-  if (status === "OPEN") return "bg-primary/10 text-primary";
-  if (status === "IN_PROGRESS") return "bg-secondary/10 text-secondary";
+  if (status === "OPEN") return "bg-[--status-success-bg] text-[--status-success-fg]";
+  if (status === "IN_PROGRESS") return "bg-[--status-info-bg] text-[--status-info-fg]";
   if (status === "REVIEW") {
-    return "bg-[oklch(0.78_0.14_78/.12)] text-[oklch(0.66_0.13_78)]";
+    return "bg-[--status-warn-bg] text-[--status-warn-fg]";
   }
   if (status === "RESOLVED") {
-    return "bg-muted text-muted-foreground line-through";
+    return "bg-[--status-neutral-bg] text-[--status-neutral-fg] line-through";
   }
-  return "bg-muted text-muted-foreground";
+  return "bg-[--status-neutral-bg] text-[--status-neutral-fg]";
 }
 
 export function priorityBar(priority: string) {
-  if (priority === "HIGH") return "bg-[oklch(0.62_0.22_25)]";
-  if (priority === "MEDIUM") return "bg-[oklch(0.78_0.14_78)]";
-  return "bg-border";
+  if (priority === "HIGH") return "bg-[--status-danger-fg]";
+  if (priority === "MEDIUM") return "bg-[--status-warn-fg]";
+  return "bg-[--status-success-fg]";
 }
 
 export function displayId(id: string) {

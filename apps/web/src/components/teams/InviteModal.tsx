@@ -33,17 +33,17 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[rgba(26,25,23,0.22)] backdrop-blur-[4px]"
+      className="fixed inset-0 z-[--z-modal] bg-[--surface-overlay] backdrop-blur-[4px]"
       onMouseDown={closeInviteModal}
     >
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[#E8E6E1] rounded-lg bg-white p-5 shadow-[0_24px_70px_rgba(26,25,23,0.18)]"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[--border-default] rounded-[--radius-md] bg-[--surface-card] p-5 shadow-[--elev-4] font-mono text-[13px]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="m-0 text-lg">Invite a new member</h2>
+          <h2 className="m-0 text-[18px] font-semibold text-[--ink-1]">Invite a new member</h2>
           <button
-            className="inline-flex items-center justify-center w-[30px] h-[30px] border border-[#E8E6E1] rounded-md bg-white text-[#78756E]"
+            className="inline-flex items-center justify-center w-[30px] h-[30px] border border-transparent rounded-[--radius-sm] bg-transparent text-[--ink-3] hover:bg-[--surface-sunken]"
             onClick={closeInviteModal}
             type="button"
           >
@@ -51,9 +51,9 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
           </button>
         </div>
         <label className="grid gap-1.5 my-3">
-          <span className="text-[#78756E] text-xs">Email</span>
+          <span className="text-[--ink-3] text-[12px]">Email</span>
           <input
-            className="w-full border border-[#E8E6E1] rounded-md bg-white text-[#1A1917] px-[10px] py-[9px] outline-[#C4642A]"
+            className="w-full border border-[--border-default] rounded-[--radius-sm] bg-[--surface-card] text-[--ink-1] px-[10px] py-[9px] outline-none focus:border-[--border-focus]"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="name@company.com"
@@ -64,16 +64,16 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
             <button
               className={
                 option === role
-                  ? "flex items-center justify-between gap-3 border border-[#C4642A] rounded-lg bg-[rgba(196,100,42,0.08)] p-3 text-left"
-                  : "flex items-center justify-between gap-3 border border-[#E8E6E1] rounded-lg bg-white p-3 text-left"
+                  ? "flex items-center justify-between gap-3 border border-[--action-bg] rounded-[--radius-sm] bg-[--action-tint-bg] p-3 text-left"
+                  : "flex items-center justify-between gap-3 border border-[--border-default] rounded-[--radius-sm] bg-[--surface-card] p-3 text-left transition-colors hover:border-[--border-strong]"
               }
               key={option}
               onClick={() => setRole(option)}
               type="button"
             >
               <div>
-                <strong className="block">{roleLabels[option]}</strong>
-                <span className="block mt-[3px] text-[#78756E] text-xs">
+                <strong className="block font-medium text-[--ink-1]">{roleLabels[option]}</strong>
+                <span className="block mt-[3px] text-[--ink-3] text-[12px]">
                   {roleDescriptions[option]}
                 </span>
               </div>
@@ -83,9 +83,9 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
         </div>
         {actorRole === "SUPER_ADMIN" ? (
           <label className="grid gap-1.5 my-3">
-            <span className="text-[#78756E] text-xs">Organization</span>
+            <span className="text-[--ink-3] text-[12px]">Organization</span>
             <select
-              className="w-full border border-[#E8E6E1] rounded-md bg-white text-[#1A1917] px-[10px] py-[9px] outline-[#C4642A]"
+              className="w-full border border-[--border-default] rounded-[--radius-sm] bg-[--surface-card] text-[--ink-1] px-[10px] py-[9px] outline-none focus:border-[--border-focus]"
               value={orgId}
               onChange={(event) => setOrgId(event.target.value)}
             >
@@ -99,7 +99,7 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
         ) : null}
         <div className="flex justify-end gap-2 mt-4">
           <button
-            className="inline-flex items-center justify-center gap-[7px] rounded-md border border-transparent px-3 py-[9px] bg-[#C4642A] text-white transition-colors duration-150 ease-in hover:bg-[#A8521E] disabled:opacity-45 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent px-3 py-[9px] font-medium bg-[--action-bg] text-[--action-fg] transition-colors hover:bg-[--action-bg-hover] disabled:opacity-45 disabled:cursor-not-allowed"
             disabled={!email || !orgId}
             onClick={submit}
             type="button"
@@ -107,7 +107,7 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
             Send Invitation
           </button>
           <button
-            className="inline-flex items-center justify-center gap-[7px] rounded-md border border-[#E8E6E1] px-3 py-[9px] bg-white text-[#1A1917]"
+            className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] font-medium bg-[--surface-card] text-[--ink-1] transition-colors hover:bg-[--surface-sunken]"
             onClick={closeInviteModal}
             type="button"
           >

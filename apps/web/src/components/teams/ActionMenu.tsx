@@ -26,17 +26,17 @@ export function ActionMenu({
   return (
     <div className="relative inline-flex">
       <button
-        className="inline-flex items-center justify-center w-[30px] h-[30px] border border-[#E8E6E1] rounded-[6px] bg-white text-[#78756E]"
+        className="inline-flex items-center justify-center w-[30px] h-[30px] border border-[--border-default] rounded-[--radius-sm] bg-[--surface-card] text-[--ink-3] hover:bg-[--surface-sunken] transition-colors"
         onClick={() => setOpen((value) => !value)}
         type="button"
       >
         <MoreHorizontal size={16} />
       </button>
       {open ? (
-        <div className="absolute right-0 top-[34px] z-30 min-w-[190px] border border-[#E8E6E1] rounded-[8px] bg-white shadow-[0_12px_30px_rgba(26,25,23,0.12)] p-[6px]">
+        <div className="absolute right-0 top-[34px] z-[--z-popover] min-w-[190px] border border-[--border-default] rounded-[--radius-md] bg-[--surface-card] shadow-[--elev-2] p-[6px] font-mono text-[13px]">
           {options.length ? (
             <div>
-              <div className="px-2 py-[6px] text-[#A8A49C] text-[11px]">
+              <div className="px-2 py-[6px] text-[--ink-3] text-[11px] font-medium tracking-[0.04em] uppercase">
                 Change role
               </div>
               {options.map((role) => (
@@ -44,7 +44,7 @@ export function ActionMenu({
                   key={role}
                   onClick={() => onRole(role)}
                   type="button"
-                  className="w-full flex items-center gap-2 border-0 rounded-[5px] bg-transparent p-2 text-[#1A1917] text-left hover:bg-[#F5F4F0]"
+                  className="w-full flex items-center gap-2 border-0 rounded-[--radius-sm] bg-transparent p-2 text-[--ink-1] text-left hover:bg-[--surface-sunken]"
                 >
                   <RolePill role={role} />
                 </button>
@@ -54,13 +54,13 @@ export function ActionMenu({
           <button
             onClick={onProfile}
             type="button"
-            className="w-full flex items-center gap-2 border-0 rounded-[5px] bg-transparent p-2 text-[#1A1917] text-left hover:bg-[#F5F4F0]"
+            className="w-full flex items-center gap-2 border-0 rounded-[--radius-sm] bg-transparent p-2 text-[--ink-1] text-left hover:bg-[--surface-sunken]"
           >
             View profile
           </button>
-          <div className="h-px bg-[#E8E6E1] my-1" />
+          <div className="h-px bg-[--border-subtle] my-1" />
           <button
-            className="w-full flex items-center gap-2 border-0 rounded-[5px] bg-transparent p-2 text-[#B83A2A] text-left hover:bg-[#F5F4F0]"
+            className="w-full flex items-center gap-2 border-0 rounded-[--radius-sm] bg-transparent p-2 text-[--brick-500] text-left hover:bg-[--brick-50]"
             onClick={onRemove}
             type="button"
           >

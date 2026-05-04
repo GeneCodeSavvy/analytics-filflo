@@ -1,7 +1,7 @@
 import type { PanelProps } from "../../types/dashboard";
 
 const panelClass =
-  "overflow-hidden rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] shadow-[--elev-1]";
+  "overflow-hidden rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] shadow-[--elev-1] animate-in fade-in slide-in-from-bottom-8 duration-300 ease-out";
 
 export function Panel({ title, count, children }: PanelProps) {
   return (

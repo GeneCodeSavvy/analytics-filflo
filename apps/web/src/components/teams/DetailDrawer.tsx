@@ -25,15 +25,15 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[rgba(26,25,23,0.22)] backdrop-blur-[4px]"
+      className="fixed inset-0 z-[--z-drawer] bg-[--surface-overlay] backdrop-blur-[4px]"
       onMouseDown={closeMemberDetail}
     >
       <aside
-        className="absolute right-0 top-0 w-[min(400px,100vw)] h-full overflow-auto bg-white border-l border-[#E8E6E1] p-6 shadow-[-18px_0_40px_rgba(26,25,23,0.14)] animate-[teams-drawer-in_250ms_ease-out]"
+        className="absolute right-0 top-0 w-[min(560px,calc(100%-382px))] min-w-[360px] h-full overflow-auto bg-[--surface-card] border-l border-[--border-default] p-6 shadow-[--elev-drawer] animate-[teams-drawer-in_220ms_ease-out_forwards] font-mono text-[13px] text-[--ink-1]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <button
-          className="absolute right-4 top-4 inline-flex items-center justify-center w-[30px] h-[30px] border border-[#E8E6E1] rounded-[6px] bg-white text-[#78756E]"
+          className="absolute right-4 top-4 inline-flex items-center justify-center w-[30px] h-[30px] border border-transparent rounded-[--radius-sm] bg-transparent text-[--ink-3] hover:bg-[--surface-sunken]"
           onClick={closeMemberDetail}
           type="button"
         >
@@ -43,35 +43,35 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
           <>
             <div className="grid justify-items-start gap-2 mb-6">
               <Avatar member={member} size={64} />
-              <h2 className="mt-1 mb-0">{member.name}</h2>
-              <p className="m-0 text-[#78756E]">{member.email}</p>
+              <h2 className="mt-1 mb-0 text-[20px] font-semibold text-[--ink-1]">{member.name}</h2>
+              <p className="m-0 text-[--ink-3]">{member.email}</p>
               <RolePill role={member.role} />
-              <span>Member since {formatMonth(member.joinedAt)}</span>
+              <span className="text-[--ink-3]">Member since {formatMonth(member.joinedAt)}</span>
             </div>
-            <section className="border-t border-[#E8E6E1] pt-[18px] mt-[18px]">
-              <h3 className="m-0 mb-2.5 text-[13px]">Activity</h3>
+            <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
+              <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Activity</h3>
               <div className="grid grid-cols-2 gap-2">
-                <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">
+                <div className="border border-[--border-default] rounded-[--radius-md] p-3">
+                  <span className="block text-[--ink-3] text-[11px] font-medium tracking-[0.04em] uppercase">
                     Tickets Requested
                   </span>
-                  <strong className="block mt-[5px] text-[18px]">
+                  <strong className="block mt-[5px] text-[18px] font-normal text-[--ink-1]">
                     {member.stats.ticketsRequested}
                   </strong>
                 </div>
-                <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">
+                <div className="border border-[--border-default] rounded-[--radius-md] p-3">
+                  <span className="block text-[--ink-3] text-[11px] font-medium tracking-[0.04em] uppercase">
                     Tickets Resolved
                   </span>
-                  <strong className="block mt-[5px] text-[18px]">
+                  <strong className="block mt-[5px] text-[18px] font-normal text-[--ink-1]">
                     {member.stats.ticketsAssigned}
                   </strong>
                 </div>
-                <div className="border border-[#E8E6E1] rounded-lg p-3">
-                  <span className="block text-[#A8A49C] text-[11px]">
+                <div className="border border-[--border-default] rounded-[--radius-md] p-3">
+                  <span className="block text-[--ink-3] text-[11px] font-medium tracking-[0.04em] uppercase">
                     Avg Response Time
                   </span>
-                  <strong className="block mt-[5px] text-[18px]">
+                  <strong className="block mt-[5px] text-[18px] font-normal text-[--ink-1]">
                     {member.stats.avgResolutionMs
                       ? `${(member.stats.avgResolutionMs / 3_600_000).toFixed(1)}h`
                       : "n/a"}
@@ -80,38 +80,40 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
               </div>
             </section>
             {actorRole === "SUPER_ADMIN" ? (
-              <section className="border-t border-[#E8E6E1] pt-[18px] mt-[18px]">
-                <h3 className="m-0 mb-2.5 text-[13px]">Organizations</h3>
+              <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
+                <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Organizations</h3>
                 <div className="grid gap-2">
-                  <div className="flex items-center justify-between border border-[#E8E6E1] rounded-lg p-[10px]">
-                    <span>{member.org.name}</span>
+                  <div className="flex items-center justify-between border border-[--border-default] rounded-[--radius-md] p-[10px]">
+                    <span className="text-[--ink-1]">{member.org.name}</span>
                     <RolePill role={member.role} />
                   </div>
                 </div>
               </section>
             ) : null}
-            <section className="border-t border-[#E8E6E1] pt-[18px] mt-[18px]">
-              <h3 className="m-0 mb-2.5 text-[13px]">Actions</h3>
-              <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-[#E8E6E1] px-3 py-[9px] bg-white text-[#1A1917]"
-                type="button"
-              >
-                Change role
-              </button>
-              <button
-                className="bg-transparent text-[#B83A2A] border border-transparent"
-                type="button"
-              >
-                Remove from org
-              </button>
+            <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
+              <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Actions</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] bg-[--surface-card] text-[--ink-1] font-medium transition-colors hover:bg-[--surface-sunken]"
+                  type="button"
+                >
+                  Change role
+                </button>
+                <button
+                  className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent bg-transparent text-[--brick-500] px-3 py-[9px] font-medium transition-colors hover:bg-[--brick-50]"
+                  type="button"
+                >
+                  Remove from org
+                </button>
+              </div>
             </section>
           </>
         ) : (
-          <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-[#78756E] text-center">
+          <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-[--ink-3] text-center">
             Member details will appear when the backend returns this record.
           </div>
         )}
-        <span className="block mt-3 text-[#A8A49C]">
+        <span className="block mt-3 text-[11px] text-[--ink-4]">
           {selectedMemberOrgId ? orgNameFor(selectedMemberOrgId, orgs) : ""}
         </span>
       </aside>

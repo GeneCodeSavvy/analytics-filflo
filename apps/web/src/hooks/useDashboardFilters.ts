@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useSearchParams } from "react-router";
 import type { DashboardFilters, Priority, Range } from "../types/dashboard";
 import { VALID_RANGES, VALID_PRIORITIES } from "../config/dashboard";
@@ -23,14 +24,14 @@ function parseList(val: string | null): string[] | undefined {
 export function useDashboardFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const filters: DashboardFilters = {
+  const filters: DashboardFilters = useMemo(() => ({
     range: parseRange(searchParams.get("range")),
     rangeFrom: searchParams.get("rangeFrom") ?? undefined,
     rangeTo: searchParams.get("rangeTo") ?? undefined,
     orgIds: parseList(searchParams.get("orgIds")),
     priority: parsePriority(searchParams.get("priority")),
     category: parseList(searchParams.get("category")),
-  };
+  }), [searchParams]);
 
   const setFilters = (partial: Partial<DashboardFilters>) => {
     setSearchParams((prev) => {

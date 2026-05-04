@@ -9,18 +9,18 @@ export function UserGrid({ rows }: { rows: TeamMemberListItem[] }) {
     <div className="grid grid-cols-3 gap-3">
       {rows.map((member) => (
         <button
-          className="flex min-h-[168px] flex-col items-center justify-center gap-[9px] border border-[#E8E6E1] rounded-lg bg-white p-4 text-[#1A1917] transition-[transform,box-shadow] duration-150 ease-[ease] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(26,25,23,0.09)]"
+          className="flex min-h-[168px] flex-col items-center justify-center gap-[9px] border border-[--border-default] rounded-[--radius-md] bg-[--surface-card] p-4 text-[--ink-1] transition-[transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[--elev-2]"
           key={`${member.org.id}-${member.id}`}
           onClick={() => openMemberDetail(member.id, member.org.id)}
           type="button"
         >
           <Avatar member={member} size={48} />
-          <strong>{member.name}</strong>
+          <strong className="font-semibold text-[15px]">{member.name}</strong>
           <RolePill role={member.role} />
         </button>
       ))}
       {!rows.length ? (
-        <div className="flex min-h-[120px] flex-col items-center justify-center gap-1.5 text-[#78756E] text-center col-span-full bg-white border border-[#E8E6E1] rounded-lg">
+        <div className="flex min-h-[120px] flex-col items-center justify-center gap-1.5 text-[--ink-3] text-center col-span-full bg-[--surface-card] border border-[--border-default] rounded-[--radius-md]">
           No teammates to show yet.
         </div>
       ) : null}

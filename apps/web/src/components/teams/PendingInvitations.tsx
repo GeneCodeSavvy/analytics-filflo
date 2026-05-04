@@ -11,16 +11,16 @@ export function PendingInvitations({ invitations }: { invitations: Invitation[] 
   const resend = useResendTeamInvitationMutation();
   const cancel = useCancelTeamInvitationMutation();
   return (
-    <div className="border border-[#E8E6E1] rounded-[8px] bg-white shadow-[0_1px_3px_rgba(26,25,23,0.06),0_1px_2px_rgba(26,25,23,0.04)]">
+    <div className="rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] shadow-[--elev-1]">
       <table className="w-full border-spacing-0" style={{ borderCollapse: "separate" }}>
         <thead>
           <tr>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Email</th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Role</th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Invited By</th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Sent</th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Expires</th>
-            <th className="px-3 py-[10px] border-b border-[#E8E6E1] text-[#78756E] font-semibold text-left whitespace-nowrap">Actions</th>
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Email</th>
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Role</th>
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Invited By</th>
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Sent</th>
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Expires</th>
+            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -29,31 +29,31 @@ export function PendingInvitations({ invitations }: { invitations: Invitation[] 
             return (
               <tr
                 key={invite.id}
-                className="transition-[background] duration-150 ease-linear hover:bg-[#F5F4F0] [&:last-child>td]:border-b-0"
+                className="transition-[background] duration-150 ease-linear hover:bg-[--surface-sunken] [&:last-child>td]:border-b-0"
               >
-                <td className={`p-3 border-b border-[#F0EEE9] align-middle${expired ? " line-through text-[#A8A49C]" : ""}`}>{invite.email}</td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
+                <td className={`border-b border-[--border-subtle] p-3 align-middle${expired ? " line-through text-[--ink-4]" : " text-[--ink-1]"}`}>{invite.email}</td>
+                <td className="border-b border-[--border-subtle] p-3 align-middle">
                   <RolePill role={invite.role} />
                 </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">{invite.invitedBy.name}</td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">{formatDate(invite.sentAt)}</td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle">
+                <td className="border-b border-[--border-subtle] p-3 align-middle text-[--ink-1]">{invite.invitedBy.name}</td>
+                <td className="border-b border-[--border-subtle] p-3 align-middle text-[--ink-1]">{formatDate(invite.sentAt)}</td>
+                <td className="border-b border-[--border-subtle] p-3 align-middle text-[--ink-1]">
                   {expired ? (
-                    <span className="inline-flex border border-[rgba(184,58,42,0.25)] rounded-[4px] bg-[rgba(184,58,42,0.08)] text-[#B83A2A] px-[6px] py-[2px]">Expired</span>
+                    <span className="inline-flex rounded-[--radius-xs] border border-[--status-danger-border] bg-[--status-danger-bg] px-[6px] py-[2px] text-[11px] font-medium tracking-[0.04em] text-[--status-danger-fg]">Expired</span>
                   ) : (
                     formatDate(invite.expiresAt)
                   )}
                 </td>
-                <td className="p-3 border-b border-[#F0EEE9] align-middle flex gap-[6px] flex-wrap">
+                <td className="flex flex-wrap gap-[6px] border-b border-[--border-subtle] p-3 align-middle text-[13px]">
                   <button
-                    className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-[#E8E6E1] px-[9px] py-[7px] bg-white text-[#1A1917]"
+                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[9px] py-[7px] text-[--ink-1]"
                     onClick={() => resend.mutate(invite.id)}
                     type="button"
                   >
                     <RefreshCw size={14} /> Resend
                   </button>
                   <button
-                    className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-[#E8E6E1] px-[9px] py-[7px] bg-white text-[#1A1917]"
+                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[9px] py-[7px] text-[--ink-1]"
                     onClick={() =>
                       navigator.clipboard?.writeText(invite.inviteUrl)
                     }
@@ -62,7 +62,7 @@ export function PendingInvitations({ invitations }: { invitations: Invitation[] 
                     <Link size={14} /> Copy link
                   </button>
                   <button
-                    className="bg-transparent text-[#B83A2A] border border-transparent px-[9px] py-[7px]"
+                    className="border border-transparent bg-transparent px-[9px] py-[7px] text-[--brick-500]"
                     onClick={() => cancel.mutate(invite.id)}
                     type="button"
                   >
@@ -75,7 +75,7 @@ export function PendingInvitations({ invitations }: { invitations: Invitation[] 
         </tbody>
       </table>
       {!invitations.length ? (
-        <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-[#78756E] text-center">No pending invitations.</div>
+        <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-center text-[--ink-3]">No pending invitations.</div>
       ) : null}
     </div>
   );

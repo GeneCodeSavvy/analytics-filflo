@@ -38,38 +38,38 @@ export function ConfirmationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[rgba(26,25,23,0.22)] backdrop-blur-[4px]"
+      className="fixed inset-0 z-[--z-modal] bg-[--surface-overlay] backdrop-blur-[4px]"
       onMouseDown={onClose}
     >
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[#E8E6E1] rounded-[8px] bg-white p-5 shadow-[0_24px_70px_rgba(26,25,23,0.18)]"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[--border-default] rounded-[--radius-md] bg-[--surface-card] p-5 shadow-[--elev-4] font-mono text-[13px] text-[--ink-1]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         {modal.type === "role" ? (
           <>
-            <h2 className="m-0 text-[18px]">
+            <h2 className="m-0 text-[18px] font-semibold">
               Promote {member.name} from {roleLabels[member.role]} to{" "}
               {roleLabels[modal.nextRole]}?
             </h2>
-            <p className="text-[#78756E]">
+            <p className="mt-1 mb-0 text-[--ink-3]">
               They&apos;ll be able to manage Users and handle ticket assignments
               in this org.
             </p>
             <div className="flex items-center gap-[10px] my-4">
               <RolePill role={member.role} />
-              <ArrowRight size={16} />
+              <ArrowRight size={16} className="text-[--ink-3]" />
               <RolePill role={modal.nextRole} />
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-transparent px-3 py-[9px] bg-[#C4642A] text-white transition-[background] duration-150 ease-[ease]"
+                className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent px-3 py-[9px] bg-[--action-bg] text-[--action-fg] font-medium transition-colors hover:bg-[--action-bg-hover]"
                 onClick={confirm}
                 type="button"
               >
                 Confirm
               </button>
               <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-[#E8E6E1] px-3 py-[9px] bg-white text-[#1A1917]"
+                className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] bg-[--surface-card] text-[--ink-1] font-medium transition-colors hover:bg-[--surface-sunken]"
                 onClick={onClose}
                 type="button"
               >
@@ -79,25 +79,25 @@ export function ConfirmationModal({
           </>
         ) : (
           <>
-            <h2 className="m-0 text-[18px] text-[#B83A2A]">
+            <h2 className="m-0 text-[18px] font-semibold text-[--brick-500]">
               Remove {member.name} from org?
             </h2>
-            <p className="text-[#78756E]">
+            <p className="mt-1 mb-0 text-[--ink-3]">
               Their open tickets will be reassigned to you.
             </p>
             <label className="grid gap-[6px] my-3">
-              <span className="text-[#78756E] text-[12px]">
+              <span className="text-[--ink-3] text-[12px]">
                 Type REMOVE to confirm
               </span>
               <input
-                className="w-full border border-[#E8E6E1] rounded-[6px] bg-white text-[#1A1917] px-[10px] py-[9px] outline-[#C4642A]"
+                className="w-full border border-[--border-default] rounded-[--radius-sm] bg-[--surface-card] text-[--ink-1] px-[10px] py-[9px] outline-none focus:border-[--border-focus]"
                 value={typed}
                 onChange={(event) => setTyped(event.target.value)}
               />
             </label>
             <div className="flex justify-end gap-2 mt-4">
               <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-transparent px-3 py-[9px] bg-[#B83A2A] text-white disabled:opacity-45 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent px-3 py-[9px] bg-[--brick-500] text-[--ink-on-accent] font-medium disabled:opacity-45 disabled:cursor-not-allowed hover:bg-[--brick-700]"
                 disabled={typed !== "REMOVE"}
                 onClick={confirm}
                 type="button"
@@ -105,7 +105,7 @@ export function ConfirmationModal({
                 Remove member
               </button>
               <button
-                className="inline-flex items-center justify-center gap-[7px] rounded-[6px] border border-[#E8E6E1] px-3 py-[9px] bg-white text-[#1A1917]"
+                className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] bg-[--surface-card] text-[--ink-1] font-medium transition-colors hover:bg-[--surface-sunken]"
                 onClick={onClose}
                 type="button"
               >

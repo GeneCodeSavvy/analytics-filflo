@@ -3,7 +3,7 @@ import { cn } from "../../lib/utils";
 import type { MessageFilters, ThreadListRow } from "../../types/messages";
 import { filters } from "../../lib/messagesComponent";
 import { ThreadRow } from "./ThreadRow";
-import { messageInput, messagePanel, messageSubtlePanel } from "./styles";
+import { messageInput, messagePanel } from "./styles";
 
 type ThreadListProps = {
   rows: ThreadListRow[];
@@ -58,9 +58,9 @@ export function ThreadList({
               type="button"
               onClick={() => onFilterChange(filter.value)}
               className={cn(
-                "h-8 shrink-0 rounded-[--radius-sm] border px-3 text-[12px] font-medium transition-colors duration-200",
+                "inline-flex h-[26px] shrink-0 items-center rounded-[--radius-sm] border px-2 text-[12px] transition-colors duration-200",
                 activeFilter === filter.value
-                  ? "border-[--action-bg] bg-[--action-bg] text-[--action-fg]"
+                  ? "border-[--border-default] bg-[--surface-sunken] text-[--ink-1]"
                   : "border-[--border-default] bg-[--surface-card] text-[--ink-3] hover:border-[--border-strong] hover:bg-[--surface-sunken] hover:text-[--ink-1]",
               )}
             >
@@ -78,9 +78,9 @@ export function ThreadList({
           </div>
         ) : rows.length === 0 ? (
           <div className="grid h-56 place-items-center p-4">
-            <div className={`${messageSubtlePanel} px-5 py-6 text-center`}>
+            <div className="text-center">
               <Inbox className="mx-auto size-8 text-[--ink-3]" />
-              <p className="mt-3 mb-0 text-[13px] text-[--ink-2]">
+              <p className="mt-3 mb-0 text-[13px] text-[--ink-3]">
                 No matching ticket conversations.
               </p>
             </div>

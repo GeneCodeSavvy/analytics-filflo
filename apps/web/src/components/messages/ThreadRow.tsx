@@ -11,7 +11,7 @@ export function ThreadRow({ row, active, onSelect }: MessageThreadRowProps) {
       type="button"
       onClick={onSelect}
       className={cn(
-        "group relative w-full border-l-[3px] border-l-transparent px-3 py-3 text-left transition-colors duration-200 hover:bg-[--surface-sunken]",
+        "group relative w-full border-l-[3px] border-l-transparent px-[12px] py-[10px] text-left transition-colors duration-200 hover:bg-[--surface-sunken]",
         active && "border-l-[--action-bg] bg-[--surface-sunken]",
         unread && !active && "border-l-[--border-strong]",
         resolved && "opacity-60",
