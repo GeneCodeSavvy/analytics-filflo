@@ -8,7 +8,8 @@
         "check-types": "tsc --noEmit",
         "dev": "tsx watch src/index.ts",
         "lint": "eslint . --max-warnings 0",
-        "prisma": "prisma"
+        "prisma": "prisma",
+        "seed:super-admin": "tsx src/scripts/seedSuperAdmin.ts"
     },
     "dependencies": {
         "@clerk/express": "^2.1.12",
