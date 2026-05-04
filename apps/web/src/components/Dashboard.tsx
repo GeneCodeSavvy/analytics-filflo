@@ -14,7 +14,6 @@ import {
   IconAlertCircle,
   IconChevronDown,
   IconInbox,
-  IconTicket,
 } from "@tabler/icons-react";
 import { useDashboardFilters } from "../hooks/useDashboardFilters";
 import { useZone1Query } from "../hooks/useZone1Query";
@@ -26,8 +25,11 @@ import {
   dashboardKpiMeta,
   dashboardPriorityColor,
   dashboardRanges,
+  dashboardResolutionBreakdown,
   dashboardStatusColor,
   formatDashboardNumber,
+  getSparklinePath,
+  getTrendChartData,
   initials,
   muted,
   parseKpiValue,
@@ -38,10 +40,12 @@ import {
 import type {
   ActivityEntry,
   AgingTicket,
-  KpiCard,
+  KpiCardViewProps,
   MyQueueTicket,
+  PanelProps,
+  SparklineProps,
   StatusDonutSlice,
-  TrendPoint,
+  TrendChartProps,
 } from "../types/dashboard";
 
 function useCountUp(target: number, duration = 400) {
@@ -63,28 +67,9 @@ function useCountUp(target: number, duration = 400) {
   return value;
 }
 
-function Sparkline({ card, accent }: { card: KpiCard; accent: string }) {
+function Sparkline({ card, accent }: SparklineProps) {
   const points = card.sparkline;
-  const path = useMemo(() => {
-    if (!points.length) return { line: "", fill: "" };
-    const values = points.map((point) => point.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const spread = Math.max(max - min, 1);
-    const coords = points.map((point, index) => {
-      const x = points.length === 1 ? 0 : (index / (points.length - 1)) * 100;
-      const y = 28 - ((point.value - min) / spread) * 24;
-      return [x, y] as const;
-    });
-    const line = coords
-      .map(
-        ([x, y], index) =>
-          `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`,
-      )
-      .join(" ");
-    const fill = `${line} L 100 32 L 0 32 Z`;
-    return { line, fill };
-  }, [points]);
+  const path = useMemo(() => getSparklinePath(points), [points]);
 
   return (
     <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-8 w-full">
@@ -108,12 +93,7 @@ function KpiCardView({
   accent,
   positive,
   icon: Icon,
-}: {
-  card: KpiCard;
-  accent: string;
-  positive: "up" | "down";
-  icon: typeof IconTicket;
-}) {
+}: KpiCardViewProps) {
   const parsed = parseKpiValue(card.value);
   const count = useCountUp(parsed.numeric);
   const isGood = card.delta?.direction === positive;
@@ -134,11 +114,7 @@ function KpiCardView({
       </div>
       {card.label.toLowerCase().includes("resolution") ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {[
-            ["HIGH", "4h", dashboardPriorityColor.HIGH],
-            ["MED", "1.2d", dashboardPriorityColor.MEDIUM],
-            ["LOW", "3.5d", dashboardPriorityColor.LOW],
-          ].map(([label, value, color]) => (
+          {dashboardResolutionBreakdown.map(({ label, value, color }) => (
             <span
               key={label}
               className="rounded-full border-l-2 bg-[#FAFAF8] px-2 py-0.5 text-[10px] font-medium text-[#6B7280]"
@@ -185,16 +161,8 @@ function ChartTooltip({ active, payload }: any) {
   );
 }
 
-function TrendChart({ points }: { points: TrendPoint[] }) {
-  const data = points.map((point) => ({
-    ...point,
-    label: new Date(point.date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    backlogRange:
-      point.created > point.resolved ? [point.resolved, point.created] : null,
-  }));
+function TrendChart({ points }: TrendChartProps) {
+  const data = getTrendChartData(points);
 
   return (
     <section className="dashboard-chart-panel dashboard-panel-enter">
@@ -360,11 +328,7 @@ function Panel({
   title,
   count,
   children,
-}: {
-  title: string;
-  count: number;
-  children: React.ReactNode;
-}) {
+}: PanelProps) {
   return (
     <section className="overflow-hidden rounded-xl border border-[#E8E6E0] bg-white">
       <div className="flex items-center justify-between border-b border-[#F0EDE8] px-5 pb-3 pt-4">

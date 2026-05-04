@@ -5,7 +5,18 @@ import {
   IconTicket,
   IconTrendingUp,
 } from "@tabler/icons-react";
-import type { KpiCard, Range, Status } from "../types/dashboard";
+import type {
+  DashboardKpiMeta,
+  DashboardResolutionBreakdown,
+  DashboardTrendChartPoint,
+  KpiCard,
+  ParsedKpiValue,
+  Range,
+  SparklinePath,
+  SparklinePathInput,
+  Status,
+  TrendPoint,
+} from "../types/dashboard";
 
 export const dashboardRanges: Range[] = ["7d", "30d", "90d", "all"];
 
@@ -42,13 +53,19 @@ export const dashboardKpiMeta = [
   },
   { key: "resolved", icon: IconCircleCheck, accent: resolved, positive: "up" },
   { key: "avgResolutionTime", icon: IconCheck, accent: teal, positive: "down" },
-] as const;
+] satisfies DashboardKpiMeta[];
+
+export const dashboardResolutionBreakdown: DashboardResolutionBreakdown[] = [
+  { label: "HIGH", value: "4h", color: dashboardPriorityColor.HIGH },
+  { label: "MED", value: "1.2d", color: dashboardPriorityColor.MEDIUM },
+  { label: "LOW", value: "3.5d", color: dashboardPriorityColor.LOW },
+];
 
 export function formatDashboardNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
-export function parseKpiValue(value: KpiCard["value"]) {
+export function parseKpiValue(value: KpiCard["value"]): ParsedKpiValue {
   if (typeof value === "number") return { numeric: value, suffix: "" };
 
   const match = value.match(/^([\d.]+)(.*)$/);
@@ -57,6 +74,45 @@ export function parseKpiValue(value: KpiCard["value"]) {
     numeric: match ? Number(match[1]) : 0,
     suffix: match ? match[2] : value,
   };
+}
+
+export function getSparklinePath(
+  points: SparklinePathInput[],
+): SparklinePath {
+  if (!points.length) return { line: "", fill: "" };
+
+  const values = points.map((point) => point.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(max - min, 1);
+  const coords = points.map((point, index) => {
+    const x = points.length === 1 ? 0 : (index / (points.length - 1)) * 100;
+    const y = 28 - ((point.value - min) / spread) * 24;
+    return [x, y] as const;
+  });
+  const line = coords
+    .map(
+      ([x, y], index) =>
+        `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`,
+    )
+    .join(" ");
+  const fill = `${line} L 100 32 L 0 32 Z`;
+
+  return { line, fill };
+}
+
+export function getTrendChartData(
+  points: TrendPoint[],
+): DashboardTrendChartPoint[] {
+  return points.map((point) => ({
+    ...point,
+    label: new Date(point.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    backlogRange:
+      point.created > point.resolved ? [point.resolved, point.created] : null,
+  }));
 }
 
 export function ageLabel(ms: number) {
