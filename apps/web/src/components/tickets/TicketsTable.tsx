@@ -194,15 +194,15 @@ export function TicketsTable({
           </thead>
           <tbody className="relative block" style={{ height: totalHeight }}>
             {status.loading && (
-              <tr>
-                <td colSpan={visibleColumns}>
+              <tr className="block w-full">
+                <td className="block w-full" colSpan={visibleColumns}>
                   <PageLoader inline className="h-32" />
                 </td>
               </tr>
             )}
             {status.error && (
-              <tr>
-                <td colSpan={visibleColumns}>
+              <tr className="block w-full">
+                <td className="block w-full" colSpan={visibleColumns}>
                   <div className="flex min-h-[320px] flex-col items-center justify-center gap-[7px] text-center">
                     <IconAlertCircle className="h-6 w-6 text-destructive" />
                     <div className="text-[16px] font-medium text-foreground">
@@ -224,10 +224,10 @@ export function TicketsTable({
               </tr>
             )}
             {!status.loading && !status.error && sortedRows.length === 0 && (
-              <tr>
-                <td colSpan={visibleColumns}>
+              <tr className="block w-full">
+                <td className="block w-full" colSpan={visibleColumns}>
                   {total === 0 && !hasActiveFilters ? (
-                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-2">
+                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-2 text-center">
                       <IconInbox className="h-8 w-8 text-muted-foreground" />
                       <div className="text-[16px] font-medium text-foreground">
                         No tickets yet
@@ -238,7 +238,7 @@ export function TicketsTable({
                       <button
                         type="button"
                         onClick={onOpenModal}
-                        className={`${ticketPrimaryButton} mt-2`}
+                        className={`${ticketPrimaryButton} mt-2 self-center`}
                       >
                         Create your first ticket
                       </button>
