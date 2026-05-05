@@ -182,7 +182,7 @@ export const Teams = () => {
               </button>
             ) : null}
           </div>
-          {superAdminView ? (
+          {superAdminView || adminView ? (
             <button
               className="col-start-2 border-0 bg-transparent p-0 text-right text-[--action-tint-fg]"
               onClick={() =>
@@ -229,7 +229,7 @@ export const Teams = () => {
           <PendingInvitations invitations={invitations} />
         ) : userView ? (
           <UserGrid rows={visibleRows} />
-        ) : superAdminView ? (
+        ) : superAdminView || adminView ? (
           <div className="grid gap-3">
             {orgs.map((org) => {
               const rows = rowsByOrg.get(org.org.id) ?? [];

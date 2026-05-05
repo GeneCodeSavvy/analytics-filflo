@@ -13,6 +13,8 @@ import type {
   RoleChangePayload,
 } from "../types/teams";
 import { useTeamsStore } from "../stores/useTeamsStore";
+import { useAuthState } from "../stores/useAuthStore";
+import { TeamInvitationListParamsSchema } from "../types/teams";
 
 function invalidateTeamLists(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({
@@ -130,10 +132,39 @@ export function useInviteTeamMemberMutation() {
 
   return useMutation<Invitation, Error, InvitePayload>({
     mutationFn: (payload) => teamsApi.invite(payload),
-    onSuccess: () => {
-      const store = useTeamsStore.getState();
-      store.clearInviteDraft();
-      store.closeInviteModal();
+    onMutate: async (payload) => {
+      const pendingKey = teamKeys.invitations(
+        TeamInvitationListParamsSchema.parse({ status: "PENDING" }),
+      );
+      await queryClient.cancelQueries({ queryKey: pendingKey });
+      const previous = queryClient.getQueryData<Invitation[]>(pendingKey);
+
+      const actor = useAuthState.getState().user;
+      const optimistic: Invitation = {
+        id: `optimistic-${Date.now()}`,
+        email: payload.email,
+        role: payload.role,
+        orgId: payload.orgId,
+        orgName: "",
+        invitedBy: { id: actor?.id ?? "", name: actor?.displayName ?? "" },
+        sentAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        status: "PENDING",
+        inviteUrl: "",
+      };
+
+      queryClient.setQueryData<Invitation[]>(pendingKey, (old) => [
+        optimistic,
+        ...(old ?? []),
+      ]);
+
+      return { previous, pendingKey };
+    },
+    onError: (_error, _payload, context) => {
+      const ctx = context as { previous: Invitation[] | undefined; pendingKey: readonly unknown[] } | undefined;
+      if (ctx?.previous !== undefined) {
+        queryClient.setQueryData(ctx.pendingKey, ctx.previous);
+      }
     },
     onSettled: () => {
       invalidateTeamInvitations(queryClient);

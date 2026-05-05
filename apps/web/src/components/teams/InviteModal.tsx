@@ -10,7 +10,7 @@ import { useAuthState } from "@/stores/useAuthStore";
 export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
   const actorRole = useAuthState((state) => state.user?.role);
   if (!actorRole) throw new Error("Authentication not completed");
-  const { inviteModalOpen, closeInviteModal, inviteDraft, saveInviteDraft } =
+  const { inviteModalOpen, closeInviteModal, inviteDraft, saveInviteDraft, clearInviteDraft } =
     useTeamsStore();
   const inviteMutation = useInviteTeamMemberMutation();
   const [email, setEmail] = useState(inviteDraft?.email ?? "");
@@ -26,18 +26,26 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
 
   if (!inviteModalOpen) return null;
 
+  const visibleRoles =
+    actorRole === "SUPER_ADMIN"
+      ? roles
+      : actorRole === "MODERATOR"
+        ? roles.filter((r) => r === "MODERATOR" || r === "USER")
+        : [];
+
   const submit = () => {
-    saveInviteDraft({ email, role, orgId, message: "" });
     inviteMutation.mutate({ email, role, orgId, message: "" });
+    closeInviteModal();
+    clearInviteDraft();
   };
 
   return (
     <div
-      className="fixed inset-0 z-[--z-modal] bg-[--surface-overlay] backdrop-blur-[4px]"
+      className="fixed inset-0 z-[--z-modal] bg-transparent"
       onMouseDown={closeInviteModal}
     >
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[--border-default] rounded-[--radius-md] bg-[--surface-card] p-5 shadow-[--elev-4] font-mono text-[13px]"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(480px,calc(100vw-32px))] border border-[--border-default] rounded-[--radius-md] bg-white bg-[--surface-card] p-5 shadow-[0_8px_40px_rgba(0,0,0,0.18),0_2px_12px_rgba(0,0,0,0.12)] font-mono text-[13px]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -60,11 +68,11 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
           />
         </label>
         <div className="grid gap-2">
-          {roles.map((option) => (
+          {visibleRoles.map((option) => (
             <button
               className={
                 option === role
-                  ? "flex items-center justify-between gap-3 border border-[--action-bg] rounded-[--radius-sm] bg-[--action-tint-bg] p-3 text-left"
+                  ? "flex items-center justify-between gap-3 border border-(--action-bg) rounded-[--radius-sm] bg-(--action-tint-bg) text-(--action-tint-fg) p-3 text-left font-semibold"
                   : "flex items-center justify-between gap-3 border border-[--border-default] rounded-[--radius-sm] bg-[--surface-card] p-3 text-left transition-colors hover:border-[--border-strong]"
               }
               key={option}

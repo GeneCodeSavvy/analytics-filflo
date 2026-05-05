@@ -56,6 +56,13 @@
   --slate-500: #527575;
   --slate-700: #2e4654;
 
+  --z-base: 0;
+  --z-overlay: 10;
+  --z-popover: 20;
+  --z-drawer: 30;
+  --z-toast: 40;
+  --z-modal: 50;
+
   --surface-page: var(--stone-50);
   --surface-card: #ffffff;
   --surface-sunken: var(--stone-100);
