@@ -47,7 +47,9 @@ export function Composer({
         <div className="flex items-center justify-between border-t border-[--border-default] px-2 py-2">
           <button
             type="button"
-            className={messageIconButton}
+            disabled
+            title="File upload coming soon"
+            className={`${messageIconButton} opacity-40`}
             aria-label="Attach file"
           >
             <Paperclip className="size-4" />
@@ -73,9 +75,6 @@ export function Composer({
           </div>
         </div>
       </div>
-      <p className="mt-2 text-[12px] text-[--ink-3]">
-        Use @ to mention, # to reference tickets.
-      </p>
     </footer>
   );
 }

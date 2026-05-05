@@ -8,6 +8,7 @@ import {
 } from "../controllers/messages/messages";
 import { joinThread } from "../controllers/messages/mutations";
 import {
+  createThread,
   getParticipants,
   getThread,
   getThreads,
@@ -16,6 +17,7 @@ import {
 const messageRouter: Router = Router();
 
 messageRouter.get("/", getThreads);
+messageRouter.post("/", createThread);
 messageRouter.get("/:id", getThread);
 messageRouter.patch("/:threadId/read", markThreadRead);
 messageRouter.get("/:id/participants", getParticipants);

@@ -210,6 +210,22 @@ export function useAddParticipantMutation() {
   });
 }
 
+// ─── useCreateThreadMutation ─────────────────────────────────────────────────
+
+export function useCreateThreadMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ThreadListRow, Error, string>({
+    mutationFn: (ticketId) => messageApi.createThread(ticketId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["messages", "threads"],
+        refetchType: "active",
+      });
+    },
+  });
+}
+
 // ─── useUploadFileMutation ───────────────────────────────────────────────────
 // Returns { fileId, url, thumbnailUrl? }. Caller (composer) stages the fileId
 // in local component state — this mutation has NO Zustand side-effects.

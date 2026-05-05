@@ -1,10 +1,12 @@
 import { ArrowUpRight } from "lucide-react";
+import { useNavigate } from "react-router";
 import type { MessageThreadHeaderProps } from "../../types/messages";
 import { Badge } from "./Badge";
 import { ParticipantAvatar } from "./ParticipantAvatar";
 import { messageSecondaryButton } from "./styles";
 
 export function ThreadHeader({ thread }: MessageThreadHeaderProps) {
+  const navigate = useNavigate();
   return (
     <header className="flex min-h-20 items-center justify-between gap-4 border-b border-[--border-default] bg-[--surface-card] px-4 py-3 max-[720px]:flex-col max-[720px]:items-start">
       <div className="min-w-0">
@@ -35,6 +37,7 @@ export function ThreadHeader({ thread }: MessageThreadHeaderProps) {
         <button
           type="button"
           className={messageSecondaryButton}
+          onClick={() => navigate(`/tickets?id=${thread.ticket.id}`)}
         >
           <ArrowUpRight className="size-3.5" />
           View Ticket

@@ -70,6 +70,12 @@ export const SendMessagePayloadSchema = z.object({
   fileIds: z.string().array().optional(),
 });
 
+export const CreateThreadPayloadSchema = z.object({
+  ticketId: z.string().min(1),
+});
+
+export type CreateThreadPayload = z.infer<typeof CreateThreadPayloadSchema>;
+
 export const FileUploadResponseSchema = z.object({
   fileId: z.string(),
   url: z.string(),

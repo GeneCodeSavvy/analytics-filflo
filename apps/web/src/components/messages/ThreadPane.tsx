@@ -1,4 +1,5 @@
-import { Inbox } from "lucide-react";
+import { Inbox, LoaderCircle } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { PageLoader } from "../PageLoader";
 import type { RefObject } from "react";
 import type { Message, Thread } from "../../types/messages";
@@ -13,6 +14,8 @@ type ThreadPaneProps = {
   thread: Thread | undefined;
   messages: Message[];
   messagesLoading: boolean;
+  hasMoreMessages: boolean;
+  isFetchingMore: boolean;
   lastSentId: string | null;
   draft: string;
   canSend: boolean;
@@ -20,12 +23,15 @@ type ThreadPaneProps = {
   scrollRef: RefObject<HTMLDivElement | null>;
   onDraftChange: (value: string) => void;
   onSend: () => void;
+  onLoadMore: () => void;
 };
 
 export function ThreadPane({
   thread,
   messages,
   messagesLoading,
+  hasMoreMessages,
+  isFetchingMore,
   lastSentId,
   draft,
   canSend,
@@ -33,7 +39,23 @@ export function ThreadPane({
   scrollRef,
   onDraftChange,
   onSend,
+  onLoadMore,
 }: ThreadPaneProps) {
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    if (!sentinel || !hasMoreMessages) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) onLoadMore();
+      },
+      { root: scrollRef.current, threshold: 0.1 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreMessages, onLoadMore, scrollRef]);
+
   if (!thread) {
     return (
       <section
@@ -59,6 +81,12 @@ export function ThreadPane({
         className="min-h-0 flex-1 overflow-y-auto bg-[--surface-sunken] px-4 py-4"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
+          <div ref={topSentinelRef} />
+          {isFetchingMore && (
+            <div className="flex justify-center py-2">
+              <LoaderCircle className="size-4 animate-spin text-[--ink-3]" />
+            </div>
+          )}
           {messagesLoading ? (
             <PageLoader inline />
           ) : (

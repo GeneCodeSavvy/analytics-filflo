@@ -4,27 +4,12 @@ import type {
   ThreadListRow,
 } from "../types/messages";
 
-export const CURRENT_USER_ID = "usr-201";
-
 export const filters: MessageFilterOption[] = [
   { label: "All", value: "all" },
   { label: "Unread", value: "unread" },
   { label: "Assigned", value: "mine" },
   { label: "Org", value: "org" },
 ];
-
-export const statusClasses: Record<string, string> = {
-  OPEN: "border-zinc-300 bg-white text-zinc-700",
-  IN_PROGRESS: "border-amber-300 bg-amber-50 text-amber-800",
-  REVIEW: "border-zinc-300 bg-zinc-50 text-zinc-700",
-  RESOLVED: "border-emerald-300 bg-emerald-50 text-emerald-800",
-};
-
-export const priorityClasses: Record<string, string> = {
-  HIGH: "border-rose-300 bg-rose-50 text-rose-700",
-  MEDIUM: "border-amber-300 bg-amber-50 text-amber-800",
-  LOW: "border-zinc-300 bg-zinc-50 text-zinc-600",
-};
 
 export function formatRelative(value: string) {
   const then = new Date(value).getTime();
@@ -70,6 +55,7 @@ export function sortThreadRows(rows: ThreadListRow[]) {
   });
 }
 
+// FILE_ATTACHMENT without text content has no sender context worth showing inline
 export function rendersAsSystemMessage(message: Message) {
   return message.kind === "FILE_ATTACHMENT" && !message.content;
 }

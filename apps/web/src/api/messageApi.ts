@@ -82,6 +82,10 @@ export const messageApi = {
   unmuteThread: (threadId: string): Promise<void> =>
     api.delete(`/threads/${threadId}/mute`),
 
+  /** Create a new thread for a ticket. Returns the created ThreadListRow. */
+  createThread: (ticketId: string): Promise<ThreadListRow> =>
+    api.post("/threads", { ticketId }),
+
   /** Upload a file placeholder for a writable thread. */
   uploadFile: (threadId: string, file: File): Promise<FileUploadResponse> => {
     const form = new FormData();

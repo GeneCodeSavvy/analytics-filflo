@@ -9,3 +9,4 @@ export { ThreadHeader } from "./ThreadHeader";
 export { Composer } from "./Composer";
 export { ThreadList } from "./ThreadList";
 export { ThreadPane } from "./ThreadPane";
+export { CreateThreadModal } from "./CreateThreadModal";

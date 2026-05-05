@@ -190,6 +190,47 @@ const getThreadRow = async (
   };
 };
 
+export const createThreadForTicket = async (
+  db: DbClient,
+  ticketId: string,
+  actor: Pick<DbUser, "id">,
+): Promise<ThreadListRow | null> => {
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true },
+  });
+
+  if (!ticket) return null;
+
+  const thread = await db.thread.upsert({
+    where: { ticketId },
+    create: { ticketId },
+    update: {},
+    include: threadInclude,
+  });
+
+  return getThreadRow(db, thread, actor.id);
+};
+
+export const getTicketAccessTarget = async (db: DbClient, ticketId: string) => {
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    select: {
+      orgId: true,
+      participants: {
+        select: { userId: true, role: true },
+      },
+    },
+  });
+
+  if (!ticket) return null;
+
+  return {
+    orgId: ticket.orgId,
+    participants: ticket.participants,
+  };
+};
+
 export const getThreadById = async (
   db: DbClient,
   id: string,

@@ -1,10 +1,12 @@
 import { cn } from "../../lib/utils";
 import type { MessageUserMessageProps } from "../../types/messages";
-import { CURRENT_USER_ID, formatTime } from "../../lib/messagesComponent";
+import { formatTime } from "../../lib/messagesComponent";
+import { useAuthState } from "../../stores/useAuthStore";
 import { FileAttachment } from "./FileAttachment";
 
 export function UserMessage({ message, justSent }: MessageUserMessageProps) {
-  const own = message.sender.id === CURRENT_USER_ID;
+  const currentUserId = useAuthState((s) => s.user?.id);
+  const own = !!currentUserId && message.sender.id === currentUserId;
   return (
     <div
       className={cn(

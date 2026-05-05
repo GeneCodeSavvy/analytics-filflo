@@ -1,10 +1,10 @@
-import { Inbox, Search } from "lucide-react";
+import { Inbox, Plus, Search } from "lucide-react";
 import { PageLoader } from "../PageLoader";
 import { cn } from "../../lib/utils";
 import type { MessageFilters, ThreadListRow } from "../../types/messages";
 import { filters } from "../../lib/messagesComponent";
 import { ThreadRow } from "./ThreadRow";
-import { messageInput, messagePanel } from "./styles";
+import { messageInput, messagePanel, messagePrimaryButton } from "./styles";
 
 type ThreadListProps = {
   rows: ThreadListRow[];
@@ -15,6 +15,7 @@ type ThreadListProps = {
   onFilterChange: (tab: MessageFilters["tab"]) => void;
   onSearchChange: (value: string) => void;
   onSelectThread: (id: string, orgId: string) => void;
+  onNewThread: () => void;
 };
 
 export function ThreadList({
@@ -26,6 +27,7 @@ export function ThreadList({
   onFilterChange,
   onSearchChange,
   onSelectThread,
+  onNewThread,
 }: ThreadListProps) {
   return (
     <aside className={`${messagePanel} flex min-h-0 flex-col overflow-hidden`}>
@@ -52,22 +54,33 @@ export function ThreadList({
             className={`${messageInput} min-w-0 flex-1`}
           />
         </label>
-        <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
-          {filters.map((filter) => (
-            <button
-              key={filter.value}
-              type="button"
-              onClick={() => onFilterChange(filter.value)}
-              className={cn(
-                "inline-flex h-[26px] shrink-0 items-center rounded-[--radius-sm] border px-2 text-[12px] transition-colors duration-200",
-                activeFilter === filter.value
-                  ? "border-[--border-default] bg-[--surface-sunken] text-[--ink-1]"
-                  : "border-[--border-default] bg-[--surface-card] text-[--ink-3] hover:border-[--border-strong] hover:bg-[--surface-sunken] hover:text-[--ink-1]",
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
+        <div className="mt-3 flex items-center gap-1.5">
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
+            {filters.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => onFilterChange(filter.value)}
+                className={cn(
+                  "inline-flex h-[26px] shrink-0 items-center rounded-[--radius-sm] border px-2 text-[12px] transition-colors duration-200",
+                  activeFilter === filter.value
+                    ? "border-[--border-default] bg-[--surface-sunken] text-[--ink-1]"
+                    : "border-[--border-default] bg-[--surface-card] text-[--ink-3] hover:border-[--border-strong] hover:bg-[--surface-sunken] hover:text-[--ink-1]",
+                )}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onNewThread}
+            className={`${messagePrimaryButton} shrink-0`}
+            title="New thread"
+          >
+            <Plus className="size-3.5" />
+            New
+          </button>
         </div>
       </header>
 

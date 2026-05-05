@@ -9,7 +9,7 @@ export function SystemMessage({ message }: MessageSystemMessageProps) {
       <span className="inline-flex max-w-[70%] items-center gap-1.5 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-2.5 py-1 shadow-[--elev-1]">
         <Clock className="size-3.5" />
         <span className="truncate">
-          Ticket activity • {formatTime(message.at)}
+          {message.content ?? "Ticket activity"} • {formatTime(message.at)}
         </span>
       </span>
       <span className="h-px flex-1 bg-[--border-default]" />

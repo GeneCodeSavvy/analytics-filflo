@@ -22,6 +22,8 @@ import {
   serializeSort,
   buildListKey,
 } from "../lib/ticketParams";
+import { viewToFilters } from "../lib/ticketsComponent";
+import { useAuthState } from "../stores/useAuthStore";
 
 const logger = createLogger("useTicketsPageData");
 
@@ -29,6 +31,7 @@ export function useTicketsPageData() {
   const { ticketId } = useParams();
   const [searchParams] = useSearchParams();
   const { closeDrawer } = useTicketsPageActions();
+  const userId = useAuthState((s) => s.user?.id);
 
   const rawParams = searchParams.toString();
 
@@ -44,13 +47,26 @@ export function useTicketsPageData() {
     [rawParams],
   );
 
+  const viewFilters = useMemo(
+    () => viewToFilters(viewId, userId),
+    [viewId, userId],
+  );
+
+  // Strip empty arrays so view filters aren't overridden by unset URL params
+  const userFilters = useMemo(
+    () => Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0))
+    ),
+    [filters],
+  );
+
   const listParams = useMemo(
-    () => ({ ...filters, sort: serializeSort(sort), page, pageSize: 25 }),
-    [filters, sort, page],
+    () => ({ ...viewFilters, ...userFilters, sort: serializeSort(sort), page, pageSize: 25 }),
+    [viewFilters, userFilters, sort, page],
   );
   const filterParams = useMemo(
-    () => ({ ...filters, sort: serializeSort(sort) }),
-    [filters, sort],
+    () => ({ ...viewFilters, ...userFilters, sort: serializeSort(sort) }),
+    [viewFilters, userFilters, sort],
   );
 
   const selectedRowIds = useTicketStore((s) => s.selectedRowIds);

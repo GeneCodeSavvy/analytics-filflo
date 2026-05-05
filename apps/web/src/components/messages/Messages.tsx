@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { MessageFilters } from "../../types/messages";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MessageFilters, ThreadListRow } from "../../types/messages";
 import { sortThreadRows } from "../../lib/messagesComponent";
 import {
   useThreadListQuery,
@@ -14,6 +14,7 @@ import { useMessageWebSocket } from "../../hooks/useMessageWebsocket";
 import { useMessageStore } from "../../stores/useMessageStore";
 import { ThreadList } from "./ThreadList";
 import { ThreadPane } from "./ThreadPane";
+import { CreateThreadModal } from "./CreateThreadModal";
 import { messagePage } from "./styles";
 
 export function Messages() {
@@ -23,6 +24,7 @@ export function Messages() {
   const [orgId, setOrgId] = useState<string | undefined>(undefined);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [lastSentId, setLastSentId] = useState<string | null>(null);
+  const [showNewThreadModal, setShowNewThreadModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const { saveDraft, clearDraft, getDraft } = useMessageStore();
 
@@ -59,6 +61,7 @@ export function Messages() {
 
   const sendMutation = useSendMessageMutation(activeThreadId ?? "");
   const markReadMutation = useMarkThreadReadMutation();
+  const markReadMutate = markReadMutation.mutate;
   const draft = activeThreadId ? getDraft(activeThreadId) : "";
 
   const messages = useMemo(() => {
@@ -79,9 +82,15 @@ export function Messages() {
     if (!activeThreadId) return;
     const row = rows.find((item) => item.id === activeThreadId);
     if (row && row.unreadCount > 0) {
-      markReadMutation.mutate(activeThreadId);
+      markReadMutate(activeThreadId);
     }
-  }, [activeThreadId, markReadMutation, rows]);
+  }, [activeThreadId, markReadMutate, rows]);
+
+  const handleLoadMore = useCallback(() => {
+    if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+      messagesQuery.fetchNextPage();
+    }
+  }, [messagesQuery]);
 
   const activeThread = activeThreadQuery.data;
   const canSend = Boolean(activeThread?.permissions.canSend);
@@ -134,11 +143,14 @@ export function Messages() {
               setActiveThreadId(id);
               setOrgId(newOrgId);
             }}
+            onNewThread={() => setShowNewThreadModal(true)}
           />
           <ThreadPane
             thread={activeThread}
             messages={messages}
             messagesLoading={messagesQuery.isLoading}
+            hasMoreMessages={messagesQuery.hasNextPage}
+            isFetchingMore={messagesQuery.isFetchingNextPage}
             lastSentId={lastSentId}
             draft={draft}
             canSend={canSend}
@@ -148,9 +160,19 @@ export function Messages() {
               activeThreadId && saveDraft(activeThreadId, value)
             }
             onSend={handleSend}
+            onLoadMore={handleLoadMore}
           />
         </div>
       </div>
+      {showNewThreadModal && (
+        <CreateThreadModal
+          onClose={() => setShowNewThreadModal(false)}
+          onCreated={(thread: ThreadListRow) => {
+            setActiveThreadId(thread.id);
+            setOrgId(thread.ticket.orgId);
+          }}
+        />
+      )}
     </main>
   );
 }

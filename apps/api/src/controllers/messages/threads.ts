@@ -1,6 +1,8 @@
 import { IdParamsSchema } from "@shared/schema/domain";
 import {
+  CreateThreadPayloadSchema,
   ParticipantsSchema,
+  ThreadListRowSchema,
   ThreadListSchema,
   ThreadSchema,
 } from "@shared/schema/messages";
@@ -8,12 +10,18 @@ import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
 import {
+  createThreadForTicket,
   getThreadAccessTarget,
   getThreadById,
   getThreadList,
   getThreadParticipants,
+  getTicketAccessTarget,
 } from "./data";
-import { ensureThreadReadable, scopeMessageFilters } from "./permissions";
+import {
+  canReadThreadTarget,
+  ensureThreadReadable,
+  scopeMessageFilters,
+} from "./permissions";
 import { parseMessageFilters } from "./utils";
 
 export const getThreads: RequestHandler = async (req, res) => {
@@ -104,4 +112,31 @@ export const getParticipants: RequestHandler = async (req, res) => {
     participants,
     "Thread participants data",
   );
+};
+
+export const createThread: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
+  const body = CreateThreadPayloadSchema.safeParse(req.body);
+
+  if (!body.success) {
+    return sendInvalidRequest(res, "create thread body", body.error.issues);
+  }
+
+  const target = await getTicketAccessTarget(db, body.data.ticketId);
+
+  if (!target) {
+    return res.status(404).json({ success: false, error: "Ticket not found" });
+  }
+
+  if (!canReadThreadTarget(req.dbUser, target)) {
+    return res.status(403).json({ success: false, error: "Forbidden" });
+  }
+
+  const row = await createThreadForTicket(db, body.data.ticketId, req.dbUser);
+
+  if (!row) {
+    return res.status(404).json({ success: false, error: "Ticket not found" });
+  }
+
+  return sendValidatedData(res, ThreadListRowSchema, row, "Created thread");
 };
