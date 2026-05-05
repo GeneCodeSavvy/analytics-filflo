@@ -107,6 +107,7 @@ export const ActivityEntrySchema = z.object({
 export const TicketDetailSchema = TicketRowSchema.extend({
   description: z.string(),
   activity: ActivityEntrySchema.array(),
+  threadId: z.string().nullable(),
 });
 
 export const NewTicketDraftSchema = z.object({

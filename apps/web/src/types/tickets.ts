@@ -46,7 +46,7 @@ import type {
 
 export type SortField = TicketSort["field"];
 export type Density = "compact" | "comfortable";
-export type DrawerTab = "Details" | "Activity" | "Messages";
+export type DrawerTab = "Details" | "Activity";
 
 export type TicketGroup = {
   org: string;

@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
-import { IconChevronRight, IconX } from "@tabler/icons-react";
+import { useNavigate } from "react-router";
+import { IconChevronRight, IconMessage, IconX } from "@tabler/icons-react";
 import type {
   DrawerTab,
   TicketDetail,
@@ -11,6 +12,45 @@ import { ActivityList } from "./ActivityList";
 import { Assignees } from "./Assignees";
 import { StatusPill } from "./StatusPill";
 import { ticketEditable } from "./styles";
+import { useCreateThreadMutation } from "../../hooks/useMessageMutations";
+
+function ThreadNavigateRow({
+  threadId,
+  ticketId,
+}: {
+  threadId: string | null;
+  ticketId: string;
+}) {
+  const navigate = useNavigate();
+  const createThreadMutation = useCreateThreadMutation();
+
+  const handleClick = async () => {
+    if (threadId) {
+      navigate(`/messages?threadId=${threadId}`);
+      return;
+    }
+    try {
+      const thread = await createThreadMutation.mutateAsync(ticketId);
+      navigate(`/messages?threadId=${thread.id}`);
+    } catch (e) {
+      console.error("Failed to create thread:", e);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="flex w-full items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted/50"
+    >
+      <IconMessage className="h-4 w-4" />
+      <span className="flex-1 text-left">
+        {threadId ? "Go to Messages" : "Create Message Thread"}
+      </span>
+      <IconChevronRight className="h-4 w-4" />
+    </button>
+  );
+}
 
 type TicketDrawerProps = {
   closeDrawer: () => void;
@@ -30,7 +70,7 @@ type TicketDrawerProps = {
   subjectRef: RefObject<HTMLInputElement | null>;
 };
 
-const DRAWER_TABS: DrawerTab[] = ["Details", "Activity", "Messages"];
+const DRAWER_TABS: DrawerTab[] = ["Details", "Activity"];
 
 export function TicketDrawer({
   closeDrawer,
@@ -161,15 +201,14 @@ export function TicketDrawer({
             >
               Category: {detail.category ?? "Uncategorized"}
             </div>
+            <ThreadNavigateRow
+              threadId={detail.threadId}
+              ticketId={detail.id}
+            />
           </div>
         )}
         {drawerTab === "Activity" && (
           <ActivityList activity={detail.activity} />
-        )}
-        {drawerTab === "Messages" && (
-          <div className="pt-4 text-sm text-muted-foreground">
-            No messages attached to this ticket.
-          </div>
         )}
       </div>
     </aside>

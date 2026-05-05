@@ -86,6 +86,7 @@ const ticketInclude = {
     include: { actor: true },
     orderBy: { createdAt: "asc" as const },
   },
+  thread: { select: { id: true } },
 } satisfies Prisma.TicketInclude;
 
 type TicketWithRelations = Prisma.TicketGetPayload<{
@@ -139,6 +140,7 @@ const toTicketDetail = (ticket: TicketWithRelations): TicketDetail => {
         createdAt: act.createdAt.toISOString(),
       };
     }),
+    threadId: ticket.thread?.id ?? null,
   };
 };
 
