@@ -84,7 +84,11 @@ export const Tickets = () => {
   const statusMutation = useStatusMutation();
   const bulkUpdate = useBulkUpdateMutation();
   const saveViewMutation = useSaveViewMutation();
-  const draftStorage = useTicketDraft();
+  const {
+    clear: clearDraftStorage,
+    load: loadDraftStorage,
+    save: saveDraftStorage,
+  } = useTicketDraft();
   const anyMutationPending = useMutationState({
     filters: { status: "pending" },
   }).some(Boolean);
@@ -191,17 +195,29 @@ export const Tickets = () => {
 
   useEffect(() => {
     if (!url.modalOpen) return;
-    const saved = draftStorage.load();
-    if (saved && !draft.subject && !draft.description && !draft.category) {
-      setDraft({
+    setDraft((current) => {
+      const saved = loadDraftStorage();
+      if (
+        !saved ||
+        current.subject ||
+        current.description ||
+        current.category
+      ) {
+        return current;
+      }
+
+      return {
         subject: saved.subject ?? "",
         description: saved.description ?? "",
         category: saved.category ?? "",
         priority: saved.priority ?? "MEDIUM",
-      });
-    }
-    requestAnimationFrame(() => modalSubjectRef.current?.focus());
-  }, [draft, draftStorage, url.modalOpen]);
+      };
+    });
+    const frame = requestAnimationFrame(() =>
+      modalSubjectRef.current?.focus(),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [loadDraftStorage, url.modalOpen]);
 
   useEffect(() => {
     if (editSubject) requestAnimationFrame(() => subjectRef.current?.focus());
@@ -318,7 +334,7 @@ export const Tickets = () => {
 
   const closeModal = () => {
     if (draft.subject || draft.description || draft.category) {
-      draftStorage.save({
+      saveDraftStorage({
         subject: draft.subject,
         description: draft.description,
         category: draft.category || undefined,
@@ -353,7 +369,7 @@ export const Tickets = () => {
       },
       {
         onSuccess: () => {
-          draftStorage.clear();
+          clearDraftStorage();
           setDraft({
             subject: "",
             description: "",
