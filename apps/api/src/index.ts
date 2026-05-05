@@ -30,7 +30,7 @@ const app = createApp(db);
 
 const server = http.createServer(app);
 export const wss = new WebSocketServer({ server });
-setupMessageWebSocket(wss);
+setupMessageWebSocket(wss, db);
 
 server.listen(PORT, () => {
   console.log(`API + WS running on http://localhost:${PORT}`);

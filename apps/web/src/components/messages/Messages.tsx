@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import type { MessageFilters, ThreadListRow } from "../../types/messages";
 import { sortThreadRows } from "../../lib/messagesComponent";
 import {
@@ -20,9 +21,13 @@ import { messagePage } from "./styles";
 export function Messages() {
   const [activeFilter, setActiveFilter] =
     useState<MessageFilters["tab"]>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlThreadId = searchParams.get("threadId");
   const [search, setSearch] = useState("");
   const [orgId, setOrgId] = useState<string | undefined>(undefined);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(
+    urlThreadId,
+  );
   const [lastSentId, setLastSentId] = useState<string | null>(null);
   const [showNewThreadModal, setShowNewThreadModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -42,12 +47,30 @@ export function Messages() {
     return sortThreadRows(threadListQuery.data ?? []);
   }, [threadListQuery.data]);
 
+  const selectThread = useCallback(
+    (id: string, newOrgId?: string) => {
+      setActiveThreadId(id);
+      setOrgId(newOrgId);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("threadId", id);
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+
+  useEffect(() => {
+    if (urlThreadId && urlThreadId !== activeThreadId) {
+      setActiveThreadId(urlThreadId);
+    }
+  }, [activeThreadId, urlThreadId]);
+
   useEffect(() => {
     if (!activeThreadId && rows[0]) {
-      setActiveThreadId(rows[0].id);
-      if (!orgId) setOrgId(rows[0].ticket.orgId);
+      selectThread(rows[0].id, orgId ?? rows[0].ticket.orgId);
     }
-  }, [activeThreadId, orgId, rows]);
+  }, [activeThreadId, orgId, rows, selectThread]);
 
   useEffect(() => {
     if (activeFilter === "org" && !orgId && rows[0]) {
@@ -57,7 +80,7 @@ export function Messages() {
 
   const activeThreadQuery = useThreadQuery(activeThreadId);
   const messagesQuery = useThreadMessagesQuery(activeThreadId);
-  useMessageWebSocket(activeThreadId);
+  useMessageWebSocket(activeThreadQuery.isSuccess ? activeThreadId : null);
 
   const sendMutation = useSendMessageMutation(activeThreadId ?? "");
   const markReadMutation = useMarkThreadReadMutation();
@@ -139,10 +162,7 @@ export function Messages() {
             activeThreadId={activeThreadId}
             onFilterChange={setActiveFilter}
             onSearchChange={setSearch}
-            onSelectThread={(id, newOrgId) => {
-              setActiveThreadId(id);
-              setOrgId(newOrgId);
-            }}
+            onSelectThread={selectThread}
             onNewThread={() => setShowNewThreadModal(true)}
           />
           <ThreadPane
@@ -168,8 +188,7 @@ export function Messages() {
         <CreateThreadModal
           onClose={() => setShowNewThreadModal(false)}
           onCreated={(thread: ThreadListRow) => {
-            setActiveThreadId(thread.id);
-            setOrgId(thread.ticket.orgId);
+            selectThread(thread.id, thread.ticket.orgId);
           }}
         />
       )}

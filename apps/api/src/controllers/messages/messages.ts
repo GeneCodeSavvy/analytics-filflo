@@ -8,6 +8,7 @@ import {
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
+import { broadcastMessageToThread } from "../../lib/ws";
 import {
   createThreadMessage,
   getThreadAccessTarget,
@@ -99,6 +100,8 @@ export const sendMessage: RequestHandler = async (req, res) => {
       error: "Thread not found",
     });
   }
+
+  broadcastMessageToThread(params.data.threadId, message);
 
   return sendValidatedData(res, MessageSchema, message, "Sent message data");
 };

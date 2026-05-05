@@ -30,11 +30,23 @@ function replaceInInfinitePages(
   real: Message,
 ): InfiniteData<MessagesPage> | undefined {
   if (!data) return data;
+
+  const seen = new Set<string>();
+
   return {
     ...data,
     pages: data.pages.map((page) => ({
       ...page,
-      messages: page.messages.map((m) => (m.id === pendingId ? real : m)),
+      messages: page.messages
+        .map((m) => (m.id === pendingId ? real : m))
+        .filter((message) => {
+          if (seen.has(message.id)) {
+            return false;
+          }
+
+          seen.add(message.id);
+          return true;
+        }),
     })),
   };
 }
