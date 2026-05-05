@@ -1,8 +1,4 @@
-import { Prisma } from "@prisma/client";
-import {
-  NotificationListParamsSchema,
-  type NotificationFilters,
-} from "@shared/schema/notifications";
+import { NotificationListParamsSchema } from "@shared/schema/notifications";
 import { getQuerySource, toNumber, toStringArray } from "../../lib/controllers";
 import type { ValidationIssue } from "../../lib/controllers";
 
@@ -63,19 +59,3 @@ export const parseNotificationListParams = (query: unknown) => {
 export const NotificationListParamsRequestSchema = {
   safeParse: parseNotificationListParams,
 };
-
-export const buildNotificationWhere = (
-  currentUserId: string,
-  filters?: Pick<NotificationFilters, "type" | "ticketId" | "orgId">,
-): Prisma.NotificationWhereInput => ({
-  recipientId: currentUserId,
-  ...(filters?.type?.length ? { type: { in: filters.type } } : {}),
-  ...(filters?.ticketId ? { ticketId: filters.ticketId } : {}),
-  ...(filters?.orgId
-    ? {
-        ticket: {
-          orgId: filters.orgId,
-        },
-      }
-    : {}),
-});

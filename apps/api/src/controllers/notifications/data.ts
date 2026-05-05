@@ -10,13 +10,10 @@ import type {
 } from "@shared/schema/notifications";
 import type { TicketRef, UserRef } from "@shared/schema/domain";
 import type { DbClient } from "../../lib/db";
-import { buildNotificationWhere } from "./utils";
-
-const currentUserRoles: UserRole[] = [
-  UserRole.SUPER_ADMIN,
-  UserRole.ADMIN,
-  UserRole.MODERATOR,
-];
+import {
+  createNotificationAccessWhere,
+  type NotificationActor,
+} from "./permissions";
 
 const doneTypes = new Set<NotificationType>([
   "TICKET_RESOLVED",
@@ -88,7 +85,9 @@ const toUserRef = (user: {
 const resolveActor = (notification: NotificationRecord) =>
   notification.actor ?? notification.recipient;
 
-const resolveTicket = (notification: NotificationRecord): TicketRef | undefined => {
+const resolveTicket = (
+  notification: NotificationRecord,
+): TicketRef | undefined => {
   const ticket =
     notification.ticket ??
     notification.thread?.ticket ??
@@ -111,7 +110,10 @@ const resolveTicket = (notification: NotificationRecord): TicketRef | undefined 
 };
 
 const getNotificationScopeKey = (notification: NotificationRecord) =>
-  notification.threadId ?? notification.messageId ?? notification.ticketId ?? notification.id;
+  notification.threadId ??
+  notification.messageId ??
+  notification.ticketId ??
+  notification.id;
 
 const getNotificationGroupKey = (notification: NotificationRecord) =>
   `${getNotificationScopeKey(notification)}:${notification.type}`;
@@ -124,7 +126,9 @@ const getNotificationState = (notification: NotificationRecord) => {
   return notification.readAt ? ("read" as const) : ("inbox" as const);
 };
 
-const toNotificationEvent = (notification: NotificationRecord): NotificationEvent => ({
+const toNotificationEvent = (
+  notification: NotificationRecord,
+): NotificationEvent => ({
   id: notification.id,
   type: notification.type,
   description: notification.body ?? notification.title,
@@ -159,31 +163,23 @@ const toNotificationRow = (
       at: notification.createdAt.toISOString(),
     },
     eventCount,
-    ...(notification.readAt ? { readAt: notification.readAt.toISOString() } : {}),
+    ...(notification.readAt
+      ? { readAt: notification.readAt.toISOString() }
+      : {}),
   };
 };
 
-const getCurrentUser = async (db: DbClient) => {
-  return db.user.findFirst({
-    where: { role: { in: currentUserRoles } },
-    orderBy: { createdAt: "asc" },
-  });
-};
-
-const getNotificationsForCurrentUser = async (db: DbClient) => {
-  const currentUser = await getCurrentUser(db);
-
-  if (!currentUser) {
-    return { currentUser: null, notifications: [] as NotificationRecord[] };
-  }
-
+const getNotificationsForActor = async (
+  db: DbClient,
+  actor: NotificationActor,
+) => {
   const notifications = await db.notification.findMany({
-    where: buildNotificationWhere(currentUser.id),
+    where: createNotificationAccessWhere(actor),
     include: notificationInclude,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
-  return { currentUser, notifications };
+  return notifications;
 };
 
 const groupNotifications = (notifications: NotificationRecord[]) => {
@@ -236,17 +232,9 @@ const getInvitationForNotification = async (
 export const getNotificationList = async (
   db: DbClient,
   filters: NotificationListParams,
+  actor: NotificationActor,
 ): Promise<NotificationListResponse> => {
-  const { currentUser, notifications } = await getNotificationsForCurrentUser(db);
-
-  if (!currentUser) {
-    return {
-      rows: [],
-      total: 0,
-      page: 1,
-      pageSize: 25,
-    };
-  }
+  const notifications = await getNotificationsForActor(db, actor);
 
   const grouped = groupNotifications(notifications);
   const rows = await Promise.all(
@@ -270,9 +258,10 @@ export const getNotificationList = async (
     }),
   );
 
-  const filteredRows = rows.filter((row): row is NotificationRow => row !== null).filter((row) => {
-      const matchesTab =
-        filters.tab === "all" || row.state === filters.tab;
+  const filteredRows = rows
+    .filter((row): row is NotificationRow => row !== null)
+    .filter((row) => {
+      const matchesTab = filters.tab === "all" || row.state === filters.tab;
       const matchesTypes =
         filters.type === undefined ||
         filters.type.length === 0 ||
@@ -298,8 +287,9 @@ export const getNotificationList = async (
 
 export const getNotificationCount = async (
   db: DbClient,
+  actor: NotificationActor,
 ): Promise<NotificationCountResponse> => {
-  const { notifications } = await getNotificationsForCurrentUser(db);
+  const notifications = await getNotificationsForActor(db, actor);
   const grouped = groupNotifications(notifications);
 
   return {
@@ -313,8 +303,9 @@ export const getNotificationCount = async (
 export const getNotificationThread = async (
   db: DbClient,
   id: string,
+  actor: NotificationActor,
 ): Promise<NotificationThread | null> => {
-  const { notifications } = await getNotificationsForCurrentUser(db);
+  const notifications = await getNotificationsForActor(db, actor);
   const current = notifications.find((notification) => notification.id === id);
 
   if (!current) {
@@ -323,7 +314,9 @@ export const getNotificationThread = async (
 
   const groupKey = getNotificationGroupKey(current);
   const events = notifications
-    .filter((notification) => getNotificationGroupKey(notification) === groupKey)
+    .filter(
+      (notification) => getNotificationGroupKey(notification) === groupKey,
+    )
     .sort(
       (left, right) =>
         left.createdAt.getTime() - right.createdAt.getTime() ||
@@ -337,8 +330,12 @@ export const getNotificationThread = async (
   };
 };
 
-export const getNotificationById = async (db: DbClient, id: string) => {
-  const { notifications } = await getNotificationsForCurrentUser(db);
+export const getNotificationById = async (
+  db: DbClient,
+  id: string,
+  actor: NotificationActor,
+) => {
+  const notifications = await getNotificationsForActor(db, actor);
   return notifications.find((notification) => notification.id === id) ?? null;
 };
 
@@ -346,8 +343,9 @@ export const updateNotificationState = async (
   db: DbClient,
   id: string,
   state: "inbox" | "read" | "done",
+  actor: NotificationActor,
 ) => {
-  const notification = await getNotificationById(db, id);
+  const notification = await getNotificationById(db, id, actor);
 
   if (!notification) {
     return false;
@@ -356,7 +354,7 @@ export const updateNotificationState = async (
   await db.notification.update({
     where: { id },
     data: {
-      readAt: state === "inbox" ? null : notification.readAt ?? new Date(),
+      readAt: state === "inbox" ? null : (notification.readAt ?? new Date()),
     },
   });
 
@@ -366,8 +364,9 @@ export const updateNotificationState = async (
 export const snoozeNotification = async (
   db: DbClient,
   id: string,
+  actor: NotificationActor,
 ) => {
-  const notification = await getNotificationById(db, id);
+  const notification = await getNotificationById(db, id, actor);
 
   if (!notification) {
     return false;
@@ -391,13 +390,15 @@ export const bulkNotifications = async (
     ids?: string[];
     ticketId?: string;
   },
+  actor: NotificationActor,
 ) => {
   const targetIds =
     payload.scope === "ids"
-      ? payload.ids ?? []
+      ? (payload.ids ?? [])
       : (
           await db.notification.findMany({
             where: {
+              recipientId: actor.id,
               ticketId: payload.ticketId,
             },
             select: { id: true },
@@ -410,14 +411,14 @@ export const bulkNotifications = async (
 
   if (payload.op === "unread") {
     await db.notification.updateMany({
-      where: { id: { in: targetIds } },
+      where: { recipientId: actor.id, id: { in: targetIds } },
       data: { readAt: null },
     });
     return true;
   }
 
   await db.notification.updateMany({
-    where: { id: { in: targetIds } },
+    where: { recipientId: actor.id, id: { in: targetIds } },
     data: { readAt: new Date() },
   });
 
@@ -449,20 +450,30 @@ export const respondToInvitation = async (
   return true;
 };
 
-export const muteTicket = async (db: DbClient, ticketId: string) => {
+export const getTicketAccessTarget = async (db: DbClient, ticketId: string) => {
   const ticket = await db.ticket.findUnique({
     where: { id: ticketId },
-    select: { id: true },
+    select: {
+      orgId: true,
+      participants: {
+        select: { userId: true, role: true },
+      },
+    },
   });
 
-  return !!ticket;
+  return ticket;
 };
 
-export const unmuteTicket = async (db: DbClient, ticketId: string) => {
-  const ticket = await db.ticket.findUnique({
-    where: { id: ticketId },
-    select: { id: true },
+export const getInvitationAccessTarget = async (
+  db: DbClient,
+  invitationId: string,
+) => {
+  return db.invitation.findUnique({
+    where: { id: invitationId },
+    select: { email: true },
   });
-
-  return !!ticket;
 };
+
+export const muteTicket = async (_db: DbClient, _ticketId: string) => true;
+
+export const unmuteTicket = async (_db: DbClient, _ticketId: string) => true;

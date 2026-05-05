@@ -5,16 +5,27 @@ import {
 } from "@shared/schema/notifications";
 import { EmptyResponseSchema } from "@shared/schema/domain";
 import type { RequestHandler } from "express";
-import { parseRequestData, sendNotFound, sendOk } from "../../lib/controllers";
+import {
+  parseRequestData,
+  sendInvalidRequest,
+  sendNotFound,
+  sendOk,
+} from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
 import {
   bulkNotifications as mutateBulkNotifications,
+  getInvitationAccessTarget,
+  getTicketAccessTarget,
   muteTicket as muteTicketRecord,
   respondToInvitation as respondToInvitationRecord,
   snoozeNotification as snoozeNotificationRecord,
   unmuteTicket as unmuteTicketRecord,
   updateNotificationState as updateNotificationStateRecord,
 } from "./data";
+import {
+  ensureInvitationRespondable,
+  ensureTicketAccessible,
+} from "./permissions";
 import { requiredParamSchema } from "./utils";
 
 const notificationIdSchema = requiredParamSchema("id");
@@ -38,7 +49,12 @@ export const updateNotificationState: RequestHandler = async (req, res) => {
 
   if (!params || !state) return;
 
-  const updated = await updateNotificationStateRecord(db, params.id, state);
+  const updated = await updateNotificationStateRecord(
+    db,
+    params.id,
+    state,
+    req.dbUser,
+  );
 
   if (!updated) {
     return sendNotFound(res, "Notification");
@@ -58,7 +74,7 @@ export const snoozeNotification: RequestHandler = async (req, res) => {
 
   if (!params) return;
 
-  const snoozed = await snoozeNotificationRecord(db, params.id);
+  const snoozed = await snoozeNotificationRecord(db, params.id, req.dbUser);
 
   if (!snoozed) {
     return sendNotFound(res, "Notification");
@@ -78,7 +94,29 @@ export const bulkNotifications: RequestHandler = async (req, res) => {
 
   if (!body) return;
 
-  await mutateBulkNotifications(db, body);
+  if (body.scope === "ticket") {
+    if (!body.ticketId) {
+      return sendInvalidRequest(res, "bulk notification payload", [
+        {
+          code: "invalid_type",
+          path: ["ticketId"],
+          message: "ticketId is required when scope is ticket",
+        },
+      ]);
+    }
+
+    const target = await getTicketAccessTarget(db, body.ticketId);
+
+    if (!target) {
+      return sendNotFound(res, "Ticket");
+    }
+
+    if (!ensureTicketAccessible(res, req.dbUser, target)) {
+      return;
+    }
+  }
+
+  await mutateBulkNotifications(db, body, req.dbUser);
 
   return sendOk(res, EmptyResponseSchema, "Bulk notification response");
 };
@@ -99,6 +137,16 @@ export const respondToInvitation: RequestHandler = async (req, res) => {
   );
 
   if (!params || !body) return;
+
+  const target = await getInvitationAccessTarget(db, params.invitationId);
+
+  if (!target) {
+    return sendNotFound(res, "Invitation");
+  }
+
+  if (!ensureInvitationRespondable(res, req.dbUser, target)) {
+    return;
+  }
 
   const updated = await respondToInvitationRecord(
     db,
@@ -124,6 +172,16 @@ export const muteTicket: RequestHandler = async (req, res) => {
 
   if (!body) return;
 
+  const target = await getTicketAccessTarget(db, body.ticketId);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketAccessible(res, req.dbUser, target)) {
+    return;
+  }
+
   const muted = await muteTicketRecord(db, body.ticketId);
 
   if (!muted) {
@@ -138,6 +196,16 @@ export const unmuteTicket: RequestHandler = async (req, res) => {
   const params = parseRequestData(res, ticketIdSchema, req.params, "ticket id");
 
   if (!params) return;
+
+  const target = await getTicketAccessTarget(db, params.ticketId);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketAccessible(res, req.dbUser, target)) {
+    return;
+  }
 
   const unmuted = await unmuteTicketRecord(db, params.ticketId);
 

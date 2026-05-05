@@ -15,7 +15,10 @@ import {
   getNotificationList as fetchNotificationList,
   getNotificationThread as fetchNotificationThread,
 } from "./data";
-import { NotificationListParamsRequestSchema, requiredParamSchema } from "./utils";
+import {
+  NotificationListParamsRequestSchema,
+  requiredParamSchema,
+} from "./utils";
 
 export const getNotifications: RequestHandler = async (req, res) => {
   const db = req.app.locals.db as DbClient;
@@ -28,7 +31,7 @@ export const getNotifications: RequestHandler = async (req, res) => {
 
   if (!params) return;
 
-  const notifications = await fetchNotificationList(db, params);
+  const notifications = await fetchNotificationList(db, params, req.dbUser);
 
   return sendValidatedData(
     res,
@@ -40,7 +43,7 @@ export const getNotifications: RequestHandler = async (req, res) => {
 
 export const getNotificationCount: RequestHandler = async (req, res) => {
   const db = req.app.locals.db as DbClient;
-  const count = await fetchNotificationCount(db);
+  const count = await fetchNotificationCount(db, req.dbUser);
 
   return sendValidatedData(
     res,
@@ -61,7 +64,7 @@ export const getNotificationThread: RequestHandler = async (req, res) => {
 
   if (!params) return;
 
-  const thread = await fetchNotificationThread(db, params.id);
+  const thread = await fetchNotificationThread(db, params.id, req.dbUser);
 
   if (!thread) {
     return sendNotFound(res, "Notification");
