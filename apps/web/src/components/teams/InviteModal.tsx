@@ -30,7 +30,7 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
     actorRole === "SUPER_ADMIN"
       ? roles
       : actorRole === "MODERATOR"
-        ? roles.filter((r) => r === "MODERATOR" || r === "USER")
+        ? (["MODERATOR", "USER"] as TeamRole[])
         : [];
 
   const submit = () => {

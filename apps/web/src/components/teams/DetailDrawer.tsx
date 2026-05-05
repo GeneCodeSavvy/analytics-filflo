@@ -97,27 +97,6 @@ export function DetailDrawer() {
                 </div>
               </div>
             </section>
-            {(actorRole === "SUPER_ADMIN" || actorRole === "MODERATOR") && (
-              <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
-                <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">
-                  Actions
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] bg-[--surface-card] text-[--ink-1] font-medium transition-colors hover:bg-[--surface-sunken]"
-                    type="button"
-                  >
-                    Change role
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent bg-transparent text-[--brick-500] px-3 py-[9px] font-medium transition-colors hover:bg-[--brick-50]"
-                    type="button"
-                  >
-                    Remove from org
-                  </button>
-                </div>
-              </section>
-            )}
           </>
         ) : (
           <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-[--ink-3] text-center">

@@ -7,7 +7,13 @@ import {
 } from "../../hooks/useTeamsMutations";
 import { RolePill } from "./RolePill";
 
-export function PendingInvitations({ invitations }: { invitations: Invitation[] }) {
+export function PendingInvitations({
+  invitations,
+  showActions,
+}: {
+  invitations: Invitation[];
+  showActions: boolean;
+}) {
   const resend = useResendTeamInvitationMutation();
   const cancel = useCancelTeamInvitationMutation();
   return (
@@ -20,7 +26,9 @@ export function PendingInvitations({ invitations }: { invitations: Invitation[] 
             <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Invited By</th>
             <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Sent</th>
             <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Expires</th>
-            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Actions</th>
+            {showActions ? (
+              <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">Actions</th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -44,31 +52,33 @@ export function PendingInvitations({ invitations }: { invitations: Invitation[] 
                     formatDate(invite.expiresAt)
                   )}
                 </td>
-                <td className="flex flex-wrap gap-[6px] border-b border-[--border-subtle] p-3 align-middle text-[13px]">
-                  <button
-                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[9px] py-[7px] text-[--ink-1]"
-                    onClick={() => resend.mutate(invite.id)}
-                    type="button"
-                  >
-                    <RefreshCw size={14} /> Resend
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[9px] py-[7px] text-[--ink-1]"
-                    onClick={() =>
-                      navigator.clipboard?.writeText(invite.inviteUrl)
-                    }
-                    type="button"
-                  >
-                    <Link size={14} /> Copy link
-                  </button>
-                  <button
-                    className="border border-transparent bg-transparent px-[9px] py-[7px] text-[--brick-500]"
-                    onClick={() => cancel.mutate(invite.id)}
-                    type="button"
-                  >
-                    Cancel
-                  </button>
-                </td>
+                {showActions ? (
+                  <td className="flex flex-wrap gap-[6px] border-b border-[--border-subtle] p-3 align-middle text-[13px]">
+                    <button
+                      className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[9px] py-[7px] text-[--ink-1]"
+                      onClick={() => resend.mutate(invite.id)}
+                      type="button"
+                    >
+                      <RefreshCw size={14} /> Resend
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-[9px] py-[7px] text-[--ink-1]"
+                      onClick={() =>
+                        navigator.clipboard?.writeText(invite.inviteUrl)
+                      }
+                      type="button"
+                    >
+                      <Link size={14} /> Copy link
+                    </button>
+                    <button
+                      className="border border-transparent bg-transparent px-[9px] py-[7px] text-[--brick-500]"
+                      onClick={() => cancel.mutate(invite.id)}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                ) : null}
               </tr>
             );
           })}

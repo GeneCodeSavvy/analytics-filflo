@@ -13,6 +13,7 @@ import type {
   SortDirection,
   SortKey,
   TeamMemberListItem,
+  TeamRole,
   TeamTab,
 } from "../../types/teams";
 import {
@@ -32,7 +33,6 @@ import {
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { MemberTable } from "./MemberTable";
 import { BulkBar } from "./BulkBar";
-import { UserGrid } from "./UserGrid";
 import { InviteModal } from "./InviteModal";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { DetailDrawer } from "./DetailDrawer";
@@ -120,8 +120,25 @@ export const Teams = () => {
   const moderatorView = actorRole === "MODERATOR";
   const adminView = actorRole === "ADMIN";
   const userView = actorRole === "USER";
+  const orgGroupedView = superAdminView || adminView;
   const canInvite = superAdminView || moderatorView;
+  const canModifyMembers = superAdminView || moderatorView;
+  const canManageInvitations = superAdminView || moderatorView;
+  const canCreateOrg = superAdminView;
+  const visibleRoleFilters = useMemo<TeamRole[]>(
+    () =>
+      orgGroupedView
+        ? roles
+        : roles.filter((role) => role === "MODERATOR" || role === "USER"),
+    [orgGroupedView],
+  );
   const allExpanded = orgs.length > 0 && expandedOrgIds.length >= orgs.length;
+
+  useEffect(() => {
+    if (roleFilter !== "ALL" && !visibleRoleFilters.includes(roleFilter)) {
+      setRoleFilter("ALL");
+    }
+  }, [roleFilter, visibleRoleFilters]);
 
   return (
     <div className={pageShell}>
@@ -157,7 +174,7 @@ export const Teams = () => {
               }
             >
               <option value="ALL">All roles</option>
-              {roles.map((role) => (
+              {visibleRoleFilters.map((role) => (
                 <option key={role} value={role}>
                   {roleLabels[role]}
                 </option>
@@ -172,7 +189,7 @@ export const Teams = () => {
                 <UserPlus size={16} /> Invite Member
               </button>
             ) : null}
-            {superAdminView ? (
+            {canCreateOrg ? (
               <button
                 className={secondaryButton}
                 onClick={() => setCreateOrgOpen(true)}
@@ -182,7 +199,7 @@ export const Teams = () => {
               </button>
             ) : null}
           </div>
-          {superAdminView || adminView ? (
+          {orgGroupedView ? (
             <button
               className="col-start-2 border-0 bg-transparent p-0 text-right text-[--action-tint-fg]"
               onClick={() =>
@@ -217,19 +234,19 @@ export const Teams = () => {
           </button>
         </nav>
 
-        {adminView && activeTab === "members" ? (
+        {(adminView || userView) && activeTab === "members" ? (
           <div className="mb-4 flex items-center gap-2.5 rounded-[--radius-md] border border-[--status-warn-border] bg-[--status-warn-bg] px-4 py-3 text-[--status-warn-fg]">
             <Info size={16} />
-            You have view-only access to team membership. Contact a Super Admin
-            to request changes.
+            You have view-only access to team membership.
           </div>
         ) : null}
 
         {activeTab === "pending" ? (
-          <PendingInvitations invitations={invitations} />
-        ) : userView ? (
-          <UserGrid rows={visibleRows} />
-        ) : superAdminView || adminView ? (
+          <PendingInvitations
+            invitations={invitations}
+            showActions={canManageInvitations}
+          />
+        ) : orgGroupedView ? (
           <div className="grid gap-3">
             {orgs.map((org) => {
               const rows = rowsByOrg.get(org.org.id) ?? [];
@@ -251,14 +268,6 @@ export const Teams = () => {
                     )}
                     <strong>{org.org.name}</strong>
                     <span className="text-[--ink-4]">{orgStats(rows)}</span>
-                    {superAdminView ? (
-                      <a
-                        className="text-[--ink-3] no-underline"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        Manage org
-                      </a>
-                    ) : null}
                   </button>
                   <div
                     className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "[grid-template-rows:1fr]" : "[grid-template-rows:0fr]"}`}
@@ -268,8 +277,8 @@ export const Teams = () => {
                         orgs={orgs}
                         query={deferredSearch}
                         rows={rows}
-                        showCheckboxes
-                        showActions={superAdminView}
+                        showCheckboxes={canModifyMembers}
+                        showActions={canModifyMembers}
                         sortDirection={sortDirection}
                         sortKey={sortKey}
                         onRemove={(member) =>
@@ -280,7 +289,12 @@ export const Teams = () => {
                         }
                         onSort={handleSort}
                       />
-                      <BulkBar orgId={org.org.id} selectedIds={selectedInOrg} />
+                      {canModifyMembers ? (
+                        <BulkBar
+                          orgId={org.org.id}
+                          selectedIds={selectedInOrg}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 </section>
@@ -300,8 +314,8 @@ export const Teams = () => {
               orgs={orgs}
               query={deferredSearch}
               rows={visibleRows}
-              showCheckboxes={moderatorView}
-              showActions={moderatorView}
+              showCheckboxes={canModifyMembers}
+              showActions={canModifyMembers}
               sortDirection={sortDirection}
               sortKey={sortKey}
               onRemove={(member) => setModal({ type: "remove", member })}
@@ -310,7 +324,7 @@ export const Teams = () => {
               }
               onSort={handleSort}
             />
-            {moderatorView && orgs[0] ? (
+            {canModifyMembers && orgs[0] ? (
               <BulkBar
                 orgId={orgs[0].org.id}
                 selectedIds={visibleRows
