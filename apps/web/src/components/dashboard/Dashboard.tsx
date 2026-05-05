@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { IconChevronDown } from "@tabler/icons-react";
+import { PageLoader } from "../PageLoader";
 import { useDashboardFilters } from "../../hooks/useDashboardFilters";
+import { useTeamOrgsQuery } from "../../hooks/useTeamsQueries";
 import { useZone1Query } from "../../hooks/useZone1Query";
 import { useZone2Query } from "../../hooks/useZone2Query";
 import { useZone3Query } from "../../hooks/useZone3Query";
@@ -19,10 +20,11 @@ const dashboardPageClass =
   "app-page-frame bg-[--surface-page] font-mono text-[--ink-1]";
 
 const controlButtonClass =
-  "h-8 cursor-crosshair rounded-[--radius-sm] px-3 text-[12px] font-medium leading-none transition-colors";
+  "h-8 rounded-[--radius-sm] px-3 text-[12px] font-medium leading-none transition-colors";
 
 export function Dashboard() {
   const { filters, setFilters } = useDashboardFilters();
+  const orgsQuery = useTeamOrgsQuery();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const zone1 = useZone1Query(filters);
   const zone2 = useZone2Query(filters);
@@ -38,13 +40,7 @@ export function Dashboard() {
   const isError = zone1.isError || zone2.isError || zone3.isError;
 
   if (isLoading) {
-    return (
-      <main
-        className={`${dashboardPageClass} flex items-center justify-center`}
-      >
-        <div className="text-[13px] text-[--ink-3]">Preparing dashboard</div>
-      </main>
-    );
+    return <PageLoader />;
   }
 
   if (
@@ -81,7 +77,7 @@ export function Dashboard() {
                   onClick={() => setFilters({ range })}
                   className={`${controlButtonClass} ${
                     filters.range === range
-                      ? "bg-[--action-bg] text-[--action-fg]"
+                      ? "bg-(--action-tint-bg) text-(--action-tint-fg) font-semibold"
                       : "text-[--ink-3] hover:bg-[--surface-sunken] hover:text-[--ink-1]"
                   }`}
                 >
@@ -89,12 +85,20 @@ export function Dashboard() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className="flex h-8 cursor-crosshair items-center gap-2 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-3 text-[12px] font-medium text-[--ink-1] shadow-[--elev-1] transition-colors hover:border-[--border-strong]"
+            <select
+              value={filters.orgIds?.[0] ?? ""}
+              onChange={(e) =>
+                setFilters({ orgIds: e.target.value ? [e.target.value] : undefined })
+              }
+              className="h-8 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-2 text-[12px] font-medium text-[--ink-1] shadow-[--elev-1] transition-colors hover:border-[--border-strong] focus:outline-none focus:ring-1 focus:ring-[--border-focus]"
             >
-              Org <IconChevronDown size={14} className="text-[--ink-3]" />
-            </button>
+              <option value="">All orgs</option>
+              {orgsQuery.data?.map((s) => (
+                <option key={s.org.id} value={s.org.id}>
+                  {s.org.name}
+                </option>
+              ))}
+            </select>
           </div>
         </header>
 
