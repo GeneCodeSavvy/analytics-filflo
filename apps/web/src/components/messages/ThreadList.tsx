@@ -1,4 +1,5 @@
-import { Inbox, LoaderCircle, Search } from "lucide-react";
+import { Inbox, Search } from "lucide-react";
+import { PageLoader } from "../PageLoader";
 import { cn } from "../../lib/utils";
 import type { MessageFilters, ThreadListRow } from "../../types/messages";
 import { filters } from "../../lib/messagesComponent";
@@ -72,10 +73,7 @@ export function ThreadList({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex h-40 items-center justify-center gap-2 text-[13px] text-[--ink-3]">
-            <LoaderCircle className="size-4 animate-spin" />
-            Loading threads
-          </div>
+          <PageLoader inline />
         ) : rows.length === 0 ? (
           <div className="grid h-56 place-items-center p-4">
             <div className="text-center">

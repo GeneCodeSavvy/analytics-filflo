@@ -1,9 +1,9 @@
 import {
   CheckCircle,
   CircleHelp,
-  LoaderCircle,
   X,
 } from "lucide-react";
+import { PageLoader } from "../PageLoader";
 import {
   useEffect,
   useMemo,
@@ -388,12 +388,7 @@ export const Notifications = () => {
           </button>
         ) : null}
 
-        {isLoading ? (
-          <div className="grid min-h-[280px] place-items-center text-center text-[--ink-3]">
-            <LoaderCircle className="size-4 animate-spin" /> Loading
-            notifications
-          </div>
-        ) : null}
+        {isLoading ? <PageLoader inline className="min-h-[280px]" /> : null}
         {isError ? (
           <div className="grid min-h-[280px] place-items-center text-center text-[--ink-3]">
             Could not load notifications from the API.

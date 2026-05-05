@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import type { ReactNode } from "react";
 import { useAuthState } from "../stores/useAuthStore";
 import { ticketPrimaryButton, ticketSecondaryButton } from "./tickets/styles";
+import { PageLoader } from "./PageLoader";
 
 export function AuthRequired({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -11,11 +12,7 @@ export function AuthRequired({ children }: { children: ReactNode }) {
   const authSearch = new URLSearchParams({ redirect_url: redirectUrl });
 
   if (isLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </main>
-    );
+    return <PageLoader />;
   }
 
   if (isAuthenticated) return children;

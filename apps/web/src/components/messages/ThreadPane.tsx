@@ -1,4 +1,5 @@
-import { Inbox, LoaderCircle } from "lucide-react";
+import { Inbox } from "lucide-react";
+import { PageLoader } from "../PageLoader";
 import type { RefObject } from "react";
 import type { Message, Thread } from "../../types/messages";
 import { rendersAsSystemMessage } from "../../lib/messagesComponent";
@@ -59,10 +60,7 @@ export function ThreadPane({
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
           {messagesLoading ? (
-            <div className="flex h-40 items-center justify-center gap-2 text-[13px] text-[--ink-3]">
-              <LoaderCircle className="size-4 animate-spin" />
-              Loading conversation
-            </div>
+            <PageLoader inline />
           ) : (
             messages.map((message) =>
               rendersAsSystemMessage(message) ? (

@@ -1,15 +1,27 @@
 import { DotmTriangle6 } from "@/components/ui/dotm-triangle-6";
+import { cn } from "@/lib/utils";
 
-export function PageLoader() {
+interface PageLoaderProps {
+  inline?: boolean;
+  className?: string;
+}
+
+export function PageLoader({ inline = false, className }: PageLoaderProps) {
   return (
-    <main className="flex min-h-svh w-full items-center justify-center bg-[--surface-page]">
+    <div
+      className={cn(
+        "flex w-full items-center justify-center bg-[--surface-page]",
+        inline ? "h-40" : "min-h-svh",
+        className
+      )}
+    >
       <DotmTriangle6
-        size={56}
-        dotSize={8}
+        size={inline ? 32 : 56}
+        dotSize={inline ? 5 : 8}
         color="var(--ember-500)"
         bloom
         ariaLabel="Loading"
       />
-    </main>
+    </div>
   );
 }

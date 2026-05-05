@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { PageLoader } from "../PageLoader";
 import {
   IconAlertCircle,
   IconCheck,
@@ -194,11 +195,8 @@ export function TicketsTable({
           <tbody className="relative block" style={{ height: totalHeight }}>
             {status.loading && (
               <tr>
-                <td
-                  colSpan={visibleColumns}
-                  className="h-32 text-center text-sm text-muted-foreground"
-                >
-                  Loading tickets...
+                <td colSpan={visibleColumns}>
+                  <PageLoader inline className="h-32" />
                 </td>
               </tr>
             )}

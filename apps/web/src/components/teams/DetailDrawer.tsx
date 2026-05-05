@@ -43,13 +43,32 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
           <>
             <div className="grid justify-items-start gap-2 mb-6 pr-10">
               <Avatar member={member} size={64} />
-              <h2 className="mt-1 mb-0 text-[20px] font-semibold text-[--ink-1]">{member.name}</h2>
+              <h2 className="mt-1 mb-0 text-[20px] font-semibold text-[--ink-1]">
+                {member.name}
+              </h2>
               <p className="m-0 text-[--ink-3]">{member.email}</p>
               <RolePill role={member.role} />
-              <span className="text-[--ink-3]">Member since {formatMonth(member.joinedAt)}</span>
+              <span className="text-[--ink-3]">
+                Member since {formatMonth(member.joinedAt)}
+              </span>
             </div>
+            {actorRole === "SUPER_ADMIN" || actorRole === "ADMIN" ? (
+              <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
+                <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">
+                  Organization
+                </h3>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between border border-[--border-default] rounded-[--radius-md] p-[10px]">
+                    <span className="text-[--ink-1]">{member.org.name}</span>
+                    <RolePill role={member.role} />
+                  </div>
+                </div>
+              </section>
+            ) : null}
             <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
-              <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Activity</h3>
+              <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">
+                Activity
+              </h3>
               <div className="grid grid-cols-2 gap-2">
                 <div className="border border-[--border-default] rounded-[--radius-md] p-3">
                   <span className="block text-[--ink-3] text-[11px] font-medium tracking-[0.04em] uppercase">
@@ -79,43 +98,33 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
                 </div>
               </div>
             </section>
-            {actorRole === "SUPER_ADMIN" || actorRole === "ADMIN" ? (
+            {(actorRole === "SUPER_ADMIN" || actorRole === "MODERATOR") && (
               <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
-                <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Organizations</h3>
-                <div className="grid gap-2">
-                  <div className="flex items-center justify-between border border-[--border-default] rounded-[--radius-md] p-[10px]">
-                    <span className="text-[--ink-1]">{member.org.name}</span>
-                    <RolePill role={member.role} />
-                  </div>
+                <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">
+                  Actions
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] bg-[--surface-card] text-[--ink-1] font-medium transition-colors hover:bg-[--surface-sunken]"
+                    type="button"
+                  >
+                    Change role
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent bg-transparent text-[--brick-500] px-3 py-[9px] font-medium transition-colors hover:bg-[--brick-50]"
+                    type="button"
+                  >
+                    Remove from org
+                  </button>
                 </div>
               </section>
-            ) : null}
-            <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
-              <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Actions</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-[--border-default] px-3 py-[9px] bg-[--surface-card] text-[--ink-1] font-medium transition-colors hover:bg-[--surface-sunken]"
-                  type="button"
-                >
-                  Change role
-                </button>
-                <button
-                  className="inline-flex items-center justify-center gap-[7px] rounded-[--radius-sm] border border-transparent bg-transparent text-[--brick-500] px-3 py-[9px] font-medium transition-colors hover:bg-[--brick-50]"
-                  type="button"
-                >
-                  Remove from org
-                </button>
-              </div>
-            </section>
+            )}
           </>
         ) : (
           <div className="flex min-h-[120px] flex-col items-center justify-center gap-[6px] text-[--ink-3] text-center">
             Member details will appear when the backend returns this record.
           </div>
         )}
-        <span className="block mt-3 text-[11px] text-[--ink-4]">
-          {selectedMemberOrgId ? orgNameFor(selectedMemberOrgId, orgs) : ""}
-        </span>
       </aside>
     </div>
   );
