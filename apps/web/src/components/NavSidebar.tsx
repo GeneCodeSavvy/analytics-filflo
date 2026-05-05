@@ -22,10 +22,11 @@ import logoMark from "@/assets/blackBgBackground2.png";
 import { Link } from "react-router";
 import { useAuth } from "@clerk/react";
 import { useAuthState } from "@/stores/useAuthStore";
+import { useNotificationCountQuery } from "@/hooks/useNotificationQueries";
 
 const iconClass = "h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200";
 
-const items: NavItem[] = [
+const baseItems: NavItem[] = [
   {
     kind: "link",
     label: "Dashboard",
@@ -44,12 +45,6 @@ const items: NavItem[] = [
     href: "/messages",
     icon: <IconMessage className={iconClass} />,
   },
-  {
-    kind: "link",
-    label: "Notifications",
-    href: "/notifications",
-    icon: <IconBell className={iconClass} />,
-  },
   { kind: "separator" },
   {
     kind: "link",
@@ -62,10 +57,22 @@ const items: NavItem[] = [
 export default function NavSidebar({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const notificationCount = useNotificationCountQuery();
   const { signOut } = useAuth();
   const isAuthenticated = useAuthState((state) => state.isAuthenticated);
   const user = useAuthState((state) => state.user);
   const logout = useAuthState((state) => state.logout);
+  const hasUnreadNotifications = (notificationCount.data?.inbox ?? 0) > 0;
+  const items: NavItem[] = [
+    ...baseItems.slice(0, 3),
+    {
+      kind: "link",
+      label: "Notifications",
+      href: "/notifications",
+      icon: <NotificationBellIcon hasUnread={hasUnreadNotifications} />,
+    },
+    ...baseItems.slice(3),
+  ];
 
   const toggleGroup = (label: string) =>
     setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -174,5 +181,19 @@ export const Logo = () => {
         />
       )}
     </Link>
+  );
+};
+
+const NotificationBellIcon = ({ hasUnread }: { hasUnread: boolean }) => {
+  return (
+    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+      <IconBell className={iconClass} />
+      {hasUnread ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-gray-100 dark:ring-neutral-800"
+        />
+      ) : null}
+    </span>
   );
 };
