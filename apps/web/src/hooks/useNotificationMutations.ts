@@ -56,7 +56,6 @@ function stateForBulkOp(
   op: BulkNotificationPayload["op"],
 ): NotificationState | null {
   if (op === "read") return "read";
-  if (op === "done") return "done";
   if (op === "unread") return "inbox";
   return null;
 }
@@ -64,7 +63,7 @@ function stateForBulkOp(
 export function useMarkReadMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => notificationApi.markRead(id),
+    mutationFn: (id: string) => notificationApi.updateState(id, "read"),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["notifications", "list"] });
       const snapshots = queryClient.getQueriesData<NotificationListResponse>({
@@ -82,16 +81,16 @@ export function useMarkReadMutation() {
   });
 }
 
-export function useMarkDoneMutation() {
+export function useMarkUnreadMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => notificationApi.markDone(id),
+    mutationFn: (id: string) => notificationApi.updateState(id, "inbox"),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["notifications", "list"] });
       const snapshots = queryClient.getQueriesData<NotificationListResponse>({
         queryKey: ["notifications", "list"],
       });
-      patchNotificationState(queryClient, id, { state: "done" });
+      patchNotificationState(queryClient, id, { state: "inbox" });
       return { snapshots };
     },
     onError: (_error, _id, context) => {
@@ -103,19 +102,25 @@ export function useMarkDoneMutation() {
   });
 }
 
-export function useMarkUnreadMutation() {
+export function useUpdateNotificationStateMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => notificationApi.markUnread(id),
-    onMutate: async (id) => {
+    mutationFn: ({
+      id,
+      state,
+    }: {
+      id: string;
+      state: NotificationState;
+    }) => notificationApi.updateState(id, state),
+    onMutate: async ({ id, state }) => {
       await queryClient.cancelQueries({ queryKey: ["notifications", "list"] });
       const snapshots = queryClient.getQueriesData<NotificationListResponse>({
         queryKey: ["notifications", "list"],
       });
-      patchNotificationState(queryClient, id, { state: "inbox" });
+      patchNotificationState(queryClient, id, { state });
       return { snapshots };
     },
-    onError: (_error, _id, context) => {
+    onError: (_error, _vars, context) => {
       if (context) restoreSnapshots(queryClient, context.snapshots);
     },
     onSettled: () => {
@@ -135,7 +140,7 @@ export function useSnoozeMutation() {
         queryKey: ["notifications", "list"],
       });
       patchNotificationState(queryClient, id, {
-        state: "done",
+        state: "read",
       });
       return { snapshots };
     },
@@ -234,7 +239,7 @@ export function useMuteTicketMutation() {
         queryKey: ["notifications", "list"],
       });
       patchNotificationRows(queryClient, (row) =>
-        row.ticket?.id === ticketId ? { ...row, state: "done" } : row,
+        row.ticket?.id === ticketId ? { ...row, state: "read" } : row,
       );
       return { snapshots };
     },

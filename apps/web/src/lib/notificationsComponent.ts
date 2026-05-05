@@ -4,6 +4,7 @@ import type {
   NotificationEmptyStateCopy,
   NotificationGroupedRows,
   NotificationRow,
+  NotificationState,
   NotificationType,
   TabKey,
 } from "../types/notifications";
@@ -18,9 +19,24 @@ export const dateBands: DateBand[] = [
 export const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "inbox", label: "Inbox" },
   { key: "read", label: "Read" },
-  { key: "done", label: "Done" },
   { key: "all", label: "All" },
 ];
+
+export const notificationStates: NotificationState[] = ["inbox", "read"];
+
+export const notificationStateLabels: Record<NotificationState, string> = {
+  inbox: "Inbox",
+  read: "Read",
+};
+
+export function notificationStateActions(currentState: NotificationState) {
+  return notificationStates
+    .filter((state) => state !== currentState)
+    .map((state) => ({
+      state,
+      label: notificationStateLabels[state],
+    }));
+}
 
 export const filterChips: Array<{ label: string; types: NotificationType[] }> =
   [
@@ -127,13 +143,6 @@ export function emptyStateCopy(
     return {
       heading: "Nothing here yet",
       text: "Read notifications appear here.",
-    };
-  }
-
-  if (activeTab === "done") {
-    return {
-      heading: "Cleared notifications appear here",
-      text: "Done items stay available for reference.",
     };
   }
 

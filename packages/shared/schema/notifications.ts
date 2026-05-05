@@ -6,7 +6,7 @@ import {
   UserRefSchema,
 } from "./domain";
 
-export const NotificationStateSchema = z.enum(["inbox", "read", "done"]);
+export const NotificationStateSchema = z.enum(["inbox", "read"]);
 export const NotificationTierSchema = z.enum([
   "action_required",
   "status_update",
@@ -67,7 +67,7 @@ export const NotificationThreadSchema = z.object({
 });
 
 export const NotificationFiltersSchema = z.object({
-  tab: z.enum(["inbox", "read", "done", "all"]).default("inbox"),
+  tab: z.enum(["inbox", "read", "all"]).default("inbox"),
   type: NotificationTypeSchema.array().optional(),
   ticketId: z.string().optional(),
   orgId: z.string().optional(),
@@ -81,12 +81,6 @@ export const NotificationListParamsSchema = NotificationFiltersSchema.extend({
 export const BulkNotificationPayloadSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("read"),
-    scope: z.enum(["ids", "ticket"]),
-    ids: z.string().array().min(1).max(500).optional(),
-    ticketId: z.string().optional(),
-  }),
-  z.object({
-    op: z.literal("done"),
     scope: z.enum(["ids", "ticket"]),
     ids: z.string().array().min(1).max(500).optional(),
     ticketId: z.string().optional(),

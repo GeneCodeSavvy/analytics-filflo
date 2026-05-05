@@ -20,9 +20,7 @@ export function NotificationRowView({
   onToggleSelect,
   onToggleExpand,
   onOpen,
-  onDone,
-  onSnooze,
-  onInvite,
+  onStateChange,
 }: NotificationRowViewProps) {
   const isAction = row.tier === "action_required";
   const isStatus = row.tier === "status_update";
@@ -110,9 +108,7 @@ export function NotificationRowView({
           row={row}
           visible={focused}
           onOpen={onOpen}
-          onDone={onDone}
-          onSnooze={onSnooze}
-          onInvite={onInvite}
+          onStateChange={onStateChange}
         />
       </div>
       <div

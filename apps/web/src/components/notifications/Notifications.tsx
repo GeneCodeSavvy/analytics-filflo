@@ -1,4 +1,4 @@
-import { Bell, CheckCircle } from "lucide-react";
+import { Bell } from "lucide-react";
 import { PageLoader } from "../PageLoader";
 import {
   useEffect,
@@ -23,9 +23,8 @@ import {
 } from "../../hooks/useNotificationQueries";
 import {
   useBulkMutation,
-  useInvitationResponseMutation,
-  useMarkDoneMutation,
   useSnoozeMutation,
+  useUpdateNotificationStateMutation,
 } from "../../hooks/useNotificationMutations";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
@@ -33,7 +32,6 @@ import { EmptyState } from "./EmptyState";
 import { SnoozeMenu } from "./SnoozeMenu";
 import { NotificationRowView } from "./NotificationRowView";
 import {
-  notificationActionButton,
   notificationChip,
   notificationChipActive,
   notificationGhostActionButton,
@@ -77,10 +75,9 @@ export const Notifications = () => {
   );
   const { data, isLoading, isError } = useNotificationsQuery(listParams);
   const countQuery = useNotificationCountQuery();
-  const markDone = useMarkDoneMutation();
+  const updateNotificationState = useUpdateNotificationStateMutation();
   const bulk = useBulkMutation();
   const snooze = useSnoozeMutation();
-  const invitation = useInvitationResponseMutation();
 
   const rows = useMemo(
     () => (data?.rows ?? []).filter((row) => !dismissingIds.has(row.id)),
@@ -141,18 +138,13 @@ export const Notifications = () => {
     }, 250);
   };
 
-  const markRowDone = (row: NotificationRow) => {
-    dismissThen(row.id, () => markDone.mutate(row.id));
-  };
-
-  const snoozeRow = (row: NotificationRow, date: Date, label: string) => {
+  const moveRowToState = (
+    row: NotificationRow,
+    state: NotificationRow["state"],
+  ) => {
     dismissThen(row.id, () =>
-      snooze.mutate({
-        id: row.id,
-        payload: { snoozedUntil: date.toISOString() },
-      }),
+      updateNotificationState.mutate({ id: row.id, state }),
     );
-    setToast(`Snoozed until ${label.toLowerCase()} · Undo`);
   };
 
   const bulkSnooze = (date: Date, label: string) => {
@@ -191,11 +183,6 @@ export const Notifications = () => {
         return next;
       });
     }
-    if (event.key === "e" && focusedId) {
-      event.preventDefault();
-      const row = rows.find((item) => item.id === focusedId);
-      if (row) markRowDone(row);
-    }
     if (event.key === "Enter" && focusedId) {
       event.preventDefault();
       const row = rows.find((item) => item.id === focusedId);
@@ -217,25 +204,6 @@ export const Notifications = () => {
               {unreadCount} unread operator update
               {unreadCount === 1 ? "" : "s"} waiting for action
             </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {rows.length > 0 ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={notificationActionButton}
-                onClick={() =>
-                  bulk.mutate({
-                    op: "done",
-                    scope: "ids",
-                    ids: rows.map((row) => row.id),
-                  })
-                }
-              >
-                <CheckCircle /> Mark all done
-              </Button>
-            ) : null}
           </div>
         </header>
 
@@ -287,22 +255,6 @@ export const Notifications = () => {
                 }
               >
                 Mark read
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={notificationActionButton}
-                onClick={() => {
-                  bulk.mutate({
-                    op: "done",
-                    scope: "ids",
-                    ids: [...selectedIds],
-                  });
-                  setSelectedIds(new Set());
-                }}
-              >
-                Mark done
               </Button>
               <div className="relative">
                 <Button
@@ -431,22 +383,7 @@ export const Notifications = () => {
                         })
                       }
                       onOpen={() => navigate(ticketHref(row))}
-                      onDone={() => markRowDone(row)}
-                      onSnooze={(date, label) => snoozeRow(row, date, label)}
-                      onInvite={(response) => {
-                        if (
-                          row.type !== "TICKET_INVITATION" ||
-                          !row.invitationId
-                        )
-                          return;
-                        const invitationId = row.invitationId;
-                        dismissThen(row.id, () =>
-                          invitation.mutate({
-                            invitationId,
-                            payload: { response },
-                          }),
-                        );
-                      }}
+                      onStateChange={(state) => moveRowToState(row, state)}
                     />
                   ))}
                 </div>

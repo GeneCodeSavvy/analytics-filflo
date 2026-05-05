@@ -1,62 +1,29 @@
-import { useState } from "react";
-import { CheckCircle, Clock, Eye, MessageSquare, X } from "lucide-react";
+import { Inbox, MailOpen, MessageSquare } from "lucide-react";
 import type { NotificationActionsProps } from "../../types/notifications";
+import type { NotificationState } from "../../types/notifications";
+import { notificationStateActions } from "../../lib/notificationsComponent";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
-import { SnoozeMenu } from "./SnoozeMenu";
-import {
-  notificationActionButton,
-  notificationDangerButton,
-  notificationSecondaryButton,
-} from "./styles";
+import { notificationSecondaryButton } from "./styles";
+
+const stateIcons = {
+  inbox: Inbox,
+  read: MailOpen,
+} satisfies Record<NotificationState, typeof Inbox>;
 
 export function NotificationActions({
   row,
   visible,
   onOpen,
-  onDone,
-  onSnooze,
-  onInvite,
+  onStateChange,
 }: NotificationActionsProps) {
-  const [snoozeOpen, setSnoozeOpen] = useState(false);
-  const alwaysVisible = row.type === "TICKET_INVITATION";
-
-  if (row.type === "TICKET_INVITATION") {
-    return (
-      <div className="flex translate-y-0 items-center gap-1.5 pr-2 opacity-100 transition-[opacity,transform] duration-150 max-[720px]:col-start-2 max-[720px]:flex-wrap max-[720px]:justify-start max-[720px]:pt-0.5 max-[720px]:pr-0">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={notificationActionButton}
-          onClick={(event) => {
-            event.stopPropagation();
-            onInvite("ACCEPTED");
-          }}
-        >
-          <CheckCircle /> Accept
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={notificationDangerButton}
-          onClick={(event) => {
-            event.stopPropagation();
-            onInvite("CANCELLED");
-          }}
-        >
-          <X /> Decline
-        </Button>
-      </div>
-    );
-  }
+  const actions = notificationStateActions(row.state);
 
   return (
     <div
       className={cn(
         "flex translate-y-0.5 items-center gap-1.5 pr-2 opacity-0 transition-[opacity,transform] duration-150 group-hover:translate-y-0 group-hover:opacity-100 max-[720px]:col-start-2 max-[720px]:translate-y-0 max-[720px]:flex-wrap max-[720px]:justify-start max-[720px]:pt-0.5 max-[720px]:pr-0 max-[720px]:opacity-100",
-        (visible || alwaysVisible) && "translate-y-0 opacity-100",
+        visible && "translate-y-0 opacity-100",
       )}
     >
       <Button
@@ -69,49 +36,26 @@ export function NotificationActions({
           onOpen();
         }}
       >
-        {row.type === "REVIEW_REQUESTED" ? <Eye /> : <MessageSquare />}
-        {row.type === "REVIEW_REQUESTED"
-          ? "Review"
-          : row.type === "MESSAGE_ACTIVITY"
-            ? "Open thread"
-            : "Open"}
+        <MessageSquare /> Open
       </Button>
-      {row.type === "REVIEW_REQUESTED" ? (
-        <div className="relative">
+      {actions.map((action) => {
+        const Icon = stateIcons[action.state];
+        return (
           <Button
+            key={action.state}
             type="button"
             variant="ghost"
             size="sm"
             className={notificationSecondaryButton}
             onClick={(event) => {
               event.stopPropagation();
-              setSnoozeOpen((value) => !value);
+              onStateChange(action.state);
             }}
           >
-            <Clock /> Snooze
+            <Icon /> {action.label}
           </Button>
-          {snoozeOpen ? (
-            <SnoozeMenu
-              onSelect={(date, label) => {
-                setSnoozeOpen(false);
-                onSnooze(date, label);
-              }}
-            />
-          ) : null}
-        </div>
-      ) : null}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className={notificationActionButton}
-        onClick={(event) => {
-          event.stopPropagation();
-          onDone();
-        }}
-      >
-        <CheckCircle /> Done
-      </Button>
+        );
+      })}
     </div>
   );
 }

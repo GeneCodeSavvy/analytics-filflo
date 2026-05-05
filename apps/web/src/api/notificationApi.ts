@@ -7,6 +7,7 @@ import type {
   SnoozePayload,
   BulkNotificationPayload,
   InvitationResponsePayload,
+  NotificationState,
 } from "../types/notifications";
 
 export const notificationApi = {
@@ -22,14 +23,14 @@ export const notificationApi = {
   getThread: (id: string, signal?: AbortSignal): Promise<NotificationThread> =>
     api.get<NotificationThread>(`/notifications/${id}/thread`, { signal }),
 
-  markRead: (id: string): Promise<void> =>
-    api.patch(`/notifications/${id}`, { state: "read" }),
+  updateState: (id: string, state: NotificationState): Promise<void> =>
+    api.patch(`/notifications/${id}`, { state }),
 
-  markDone: (id: string): Promise<void> =>
-    api.patch(`/notifications/${id}`, { state: "done" }),
+  markRead: (id: string): Promise<void> =>
+    notificationApi.updateState(id, "read"),
 
   markUnread: (id: string): Promise<void> =>
-    api.patch(`/notifications/${id}`, { state: "inbox" }),
+    notificationApi.updateState(id, "inbox"),
 
   snooze: (id: string, payload: SnoozePayload): Promise<void> =>
     api.patch(`/notifications/${id}/snooze`, payload),

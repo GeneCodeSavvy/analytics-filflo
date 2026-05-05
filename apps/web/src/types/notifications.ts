@@ -14,8 +14,8 @@ export {
 export { NotificationTypeSchema } from "@shared/schema/domain";
 
 import type {
-  InvitationResponsePayload,
   NotificationRow,
+  NotificationState,
 } from "@shared/schema/notifications";
 
 export type { NotificationType } from "@shared/schema/domain";
@@ -38,9 +38,8 @@ export type SnoozePayload = {
   snoozedUntil: string;
 };
 
-export type TabKey = "inbox" | "read" | "done" | "all";
+export type TabKey = "inbox" | "read" | "all";
 export type DateBand = "Today" | "Yesterday" | "This Week" | "Older";
-export type InvitationResponse = InvitationResponsePayload["response"];
 
 export type NotificationEmptyStateCopy = {
   heading: string;
@@ -67,9 +66,7 @@ export type NotificationActionsProps = {
   row: NotificationRow;
   visible: boolean;
   onOpen: () => void;
-  onDone: () => void;
-  onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: InvitationResponse) => void;
+  onStateChange: (state: NotificationState) => void;
 };
 
 export type NotificationRowViewProps = {
@@ -82,7 +79,5 @@ export type NotificationRowViewProps = {
   onToggleSelect: () => void;
   onToggleExpand: () => void;
   onOpen: () => void;
-  onDone: () => void;
-  onSnooze: (date: Date, label: string) => void;
-  onInvite: (response: InvitationResponse) => void;
+  onStateChange: (state: NotificationState) => void;
 };
