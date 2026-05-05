@@ -64,7 +64,7 @@ export function Dashboard() {
   return (
     <main className={dashboardPageClass}>
       <div className="app-page-frame-content">
-        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-[--surface-page] py-3">
+        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-background py-3 shadow-sm">
           <h1 className="text-[30px] font-bold leading-none text-[--ink-1]">
             Dashboard
           </h1>
@@ -88,7 +88,9 @@ export function Dashboard() {
             <select
               value={filters.orgIds?.[0] ?? ""}
               onChange={(e) =>
-                setFilters({ orgIds: e.target.value ? [e.target.value] : undefined })
+                setFilters({
+                  orgIds: e.target.value ? [e.target.value] : undefined,
+                })
               }
               className="h-8 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-2 text-[12px] font-medium text-[--ink-1] shadow-[--elev-1] transition-colors hover:border-[--border-strong] focus:outline-none focus:ring-1 focus:ring-[--border-focus]"
             >

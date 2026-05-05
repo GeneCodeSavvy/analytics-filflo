@@ -2,7 +2,7 @@ export const notificationPage =
   "app-page-frame bg-[--surface-page] font-mono text-[--ink-1]";
 
 export const notificationHeader =
-  "sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-[--surface-page] py-3";
+  "sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-background py-3 shadow-sm";
 
 export const notificationTitle =
   "m-0 text-[30px] font-bold leading-none text-[--ink-1]";

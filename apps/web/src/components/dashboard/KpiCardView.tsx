@@ -5,6 +5,7 @@ import {
   parseKpiValue,
 } from "../../lib/dashboardComponent";
 import type { KpiCardViewProps } from "../../types/dashboard";
+import { useDashboardStore } from "../../stores/useDashboardStore";
 import { Sparkline } from "./Sparkline";
 import { useCountUp } from "./useCountUp";
 
@@ -17,6 +18,7 @@ export function KpiCardView({
   positive,
   icon: Icon,
 }: KpiCardViewProps) {
+  const queryRange = useDashboardStore((s) => s.queryRange);
   const parsed = parseKpiValue(card.value);
   const count = useCountUp(parsed.numeric);
   const isGood = card.delta?.direction === positive;
@@ -37,15 +39,20 @@ export function KpiCardView({
             : `${count}${parsed.suffix}`}
         </div>
         {card.label.toLowerCase().includes("resolution") ? (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-2">
             {dashboardResolutionBreakdown.map(({ label, value, color }) => (
-              <span
+              <div
                 key={label}
-                className="rounded-[--radius-pill] border-l-2 bg-[--surface-sunken] px-2 py-0.5 text-[10px] font-medium text-[--ink-2]"
-                style={{ borderLeftColor: color }}
+                className="flex items-center gap-1.5 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-sunken] py-1 pl-2.5 pr-3"
+                style={{ borderLeftColor: color, borderLeftWidth: "3px" }}
               >
-                <span className="text-[--ink-1]">{label}</span> {value}
-              </span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[--ink-2]">
+                  {label}
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-[--ink-1]">
+                  {value}
+                </span>
+              </div>
             ))}
           </div>
         ) : null}
@@ -54,7 +61,9 @@ export function KpiCardView({
             {card.delta?.direction === "up" ? "↑" : "↓"}{" "}
             {card.delta?.percent ?? 0}%
           </span>
-          <span className="text-[10px] text-[--ink-3]">vs last 30d</span>
+          <span className="text-[10px] text-[--ink-3]">
+            vs {queryRange === "all" ? "All" : `last ${queryRange}`}
+          </span>
         </div>
       </div>
       <div className="mt-auto pt-4">

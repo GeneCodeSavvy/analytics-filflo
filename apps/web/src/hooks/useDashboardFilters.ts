@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import type { DashboardFilters, Priority, Range } from "../types/dashboard";
 import { VALID_RANGES, VALID_PRIORITIES } from "../config/dashboard";
+import { useDashboardStore } from "@/stores/useDashboardStore";
 
 function parseRange(val: string | null): Range {
   return VALID_RANGES.includes(val as Range) ? (val as Range) : "30d";
@@ -24,14 +25,23 @@ function parseList(val: string | null): string[] | undefined {
 export function useDashboardFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const filters: DashboardFilters = useMemo(() => ({
-    range: parseRange(searchParams.get("range")),
-    rangeFrom: searchParams.get("rangeFrom") ?? undefined,
-    rangeTo: searchParams.get("rangeTo") ?? undefined,
-    orgIds: parseList(searchParams.get("orgIds")),
-    priority: parsePriority(searchParams.get("priority")),
-    category: parseList(searchParams.get("category")),
-  }), [searchParams]);
+  const filters: DashboardFilters = useMemo(
+    () => ({
+      range: parseRange(searchParams.get("range")),
+      rangeFrom: searchParams.get("rangeFrom") ?? undefined,
+      rangeTo: searchParams.get("rangeTo") ?? undefined,
+      orgIds: parseList(searchParams.get("orgIds")),
+      priority: parsePriority(searchParams.get("priority")),
+      category: parseList(searchParams.get("category")),
+    }),
+    [searchParams],
+  );
+
+  const setRange = useDashboardStore((s) => s.setRange);
+
+  useEffect(() => {
+    setRange(filters.range);
+  }, [filters.range, setRange]);
 
   const setFilters = (partial: Partial<DashboardFilters>) => {
     setSearchParams((prev) => {

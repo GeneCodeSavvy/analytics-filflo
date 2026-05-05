@@ -107,7 +107,7 @@ export function Messages() {
   return (
     <main className={messagePage}>
       <div className="app-page-frame-content flex h-full min-h-[calc(100svh-5rem)] flex-col overflow-hidden">
-        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-[--surface-page] py-3">
+        <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[--border-default] bg-background py-3 shadow-sm">
           <div>
             <h1 className="text-[30px] font-bold leading-none text-[--ink-1]">
               Messages

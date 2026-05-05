@@ -126,17 +126,12 @@ export const Teams = () => {
   return (
     <div className={pageShell}>
       <div className={contentShell}>
-        <header className="sticky top-0 z-[--z-overlay] grid min-h-16 grid-cols-[1fr_auto] items-center gap-4 border-b border-[--border-default] bg-[--surface-page]/95 py-3 backdrop-blur">
+        <header className="sticky top-0 z-[--z-overlay] grid min-h-16 grid-cols-[1fr_auto] items-center gap-4 border-b border-[--border-default] bg-background py-3 shadow-sm">
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="m-0 text-[30px] leading-none font-bold text-[--ink-1]">
                 Teams
               </h1>
-              {!superAdminView && (
-                <span className="rounded-[--radius-pill] border border-[--border-default] bg-[--surface-card] px-2 py-1 text-xs text-[--ink-3]">
-                  {memberQuery.data?.total ?? members.length} members
-                </span>
-              )}
             </div>
             {moderatorView ? (
               <p className="mt-2 mb-0 text-[--ink-3]">

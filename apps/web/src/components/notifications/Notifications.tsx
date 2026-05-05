@@ -249,7 +249,7 @@ export const Notifications = () => {
           </div>
         </header>
 
-        <div className="sticky top-16 z-20 -mx-0.5 bg-[--surface-page] px-0.5">
+        <div className="sticky top-16 z-20 -mx-0.5 bg-background px-0.5">
           <nav
             className="flex gap-[18px] border-b border-[--border-default]"
             aria-label="Notification tabs"
