@@ -6,7 +6,6 @@ import type {
   NotificationListParams,
   NotificationRow,
   NotificationThread,
-  NotificationType,
 } from "@shared/schema/notifications";
 import type { TicketRef, UserRef } from "@shared/schema/domain";
 import type { DbClient } from "../../lib/db";
@@ -14,11 +13,6 @@ import {
   createNotificationAccessWhere,
   type NotificationActor,
 } from "./permissions";
-
-const doneTypes = new Set<NotificationType>([
-  "TICKET_RESOLVED",
-  "TICKET_CLOSED",
-]);
 
 const notificationInclude = {
   actor: true,
@@ -118,13 +112,8 @@ const getNotificationScopeKey = (notification: NotificationRecord) =>
 const getNotificationGroupKey = (notification: NotificationRecord) =>
   `${getNotificationScopeKey(notification)}:${notification.type}`;
 
-const getNotificationState = (notification: NotificationRecord) => {
-  if (doneTypes.has(notification.type)) {
-    return "done" as const;
-  }
-
-  return notification.readAt ? ("read" as const) : ("inbox" as const);
-};
+const getNotificationState = (notification: NotificationRecord) =>
+  notification.readAt ? ("read" as const) : ("inbox" as const);
 
 const toNotificationEvent = (
   notification: NotificationRecord,
@@ -342,7 +331,7 @@ export const getNotificationById = async (
 export const updateNotificationState = async (
   db: DbClient,
   id: string,
-  state: "inbox" | "read" | "done",
+  state: "inbox" | "read",
   actor: NotificationActor,
 ) => {
   const notification = await getNotificationById(db, id, actor);
@@ -385,7 +374,7 @@ export const snoozeNotification = async (
 export const bulkNotifications = async (
   db: DbClient,
   payload: {
-    op: "read" | "done" | "unread";
+    op: "read" | "unread";
     scope: "ids" | "ticket";
     ids?: string[];
     ticketId?: string;

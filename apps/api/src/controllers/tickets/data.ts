@@ -482,6 +482,7 @@ export const assignTicketInDb = async (
       actorId,
       ticketId: id,
       explicitRecipientIds: newAssigneeIds,
+      includeAssignmentWatchers: true,
       body: "You were assigned to this ticket.",
     });
   }
@@ -717,6 +718,7 @@ export const bulkTicketsInDb = async (
           actorId,
           ticketId: id,
           explicitRecipientIds: newAssigneeIds,
+          includeAssignmentWatchers: true,
           body: "You were assigned to this ticket.",
         });
       }

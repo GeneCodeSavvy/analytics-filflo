@@ -61,6 +61,15 @@ const getAssigneeIds = (ticket: NotificationTicket) =>
 
 const uniqueUserIds = (userIds: string[]) => [...new Set(userIds)];
 
+const getRequesterIds = (ticket: NotificationTicket) =>
+  new Set(
+    ticket.participants
+      .filter(
+        (participant) => participant.role === TicketParticipantRole.REQUESTER,
+      )
+      .map((participant) => participant.userId),
+  );
+
 export const getResponsibleTicketUserIds = ({
   users,
   ticket,
@@ -99,6 +108,7 @@ export const buildTicketNotificationRecords = ({
   users,
   ticket,
   explicitRecipientIds,
+  includeAssignmentWatchers = false,
   threadId,
   messageId,
   body,
@@ -108,6 +118,7 @@ export const buildTicketNotificationRecords = ({
   users: ResponsibleUser[];
   ticket: NotificationTicket;
   explicitRecipientIds?: string[];
+  includeAssignmentWatchers?: boolean;
   threadId?: string;
   messageId?: string;
   body?: string;
@@ -115,9 +126,20 @@ export const buildTicketNotificationRecords = ({
   const eligibleIds = new Set(
     getResponsibleTicketUserIds({ users, ticket, actorId }),
   );
+  const requesterIds = getRequesterIds(ticket);
+  const assignmentWatcherIds = includeAssignmentWatchers
+    ? users
+        .filter((user) => user.id !== actorId)
+        .filter(
+          (user) =>
+            (user.role === UserRole.MODERATOR && user.orgId === ticket.orgId) ||
+            requesterIds.has(user.id),
+        )
+        .map((user) => user.id)
+    : [];
 
   const recipientIds = explicitRecipientIds
-    ? uniqueUserIds(explicitRecipientIds).filter(
+    ? uniqueUserIds([...explicitRecipientIds, ...assignmentWatcherIds]).filter(
         (id) => id !== actorId && eligibleIds.has(id),
       )
     : [...eligibleIds];
@@ -141,6 +163,7 @@ export const createTicketNotifications = async (
     actorId: string;
     ticketId: string;
     explicitRecipientIds?: string[];
+    includeAssignmentWatchers?: boolean;
     threadId?: string;
     messageId?: string;
     body?: string;
@@ -170,9 +193,16 @@ export const createTicketNotifications = async (
         { role: UserRole.MODERATOR, orgId: ticket.orgId },
         {
           id: {
-            in:
-              input.explicitRecipientIds ??
-              ticket.participants.map((participant) => participant.userId),
+            in: input.explicitRecipientIds
+              ? [
+                  ...input.explicitRecipientIds,
+                  ...(input.includeAssignmentWatchers
+                    ? ticket.participants.map(
+                        (participant) => participant.userId,
+                      )
+                    : []),
+                ]
+              : ticket.participants.map((participant) => participant.userId),
           },
         },
       ],
@@ -190,6 +220,7 @@ export const createTicketNotifications = async (
     users,
     ticket,
     explicitRecipientIds: input.explicitRecipientIds,
+    includeAssignmentWatchers: input.includeAssignmentWatchers,
     threadId: input.threadId,
     messageId: input.messageId,
     body: input.body,
