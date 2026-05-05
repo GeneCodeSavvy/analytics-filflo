@@ -1,0 +1,116 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: ${{ github.event.before == '0000000000000000000000000000000000000000' && 'HEAD~1' || github.event.before }}
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/ui/**'
+              - 'packages/shared/**'
+              - 'packages/typescript-config/**'
+            api:
+              - 'apps/api/**'
+              - 'packages/shared/**'
+              - 'packages/typescript-config/**'
+
+  deploy-web:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web
+        run: pnpm --filter web build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_WS_BASE_URL: ${{ secrets.VITE_WS_BASE_URL }}
+
+      - name: Deploy dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: apps/web/dist/
+          target: ${{ secrets.WEB_SERVE_PATH }}
+          strip_components: 3
+
+  deploy-api:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy API via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_PATH: ${{ secrets.API_DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DEPLOY_PATH
+          script: |
+            set -e
+            APP_NAME="filflo-api"
+
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            if [ ! -d "$DEPLOY_PATH/.git" ]; then
+              git clone "https://github.com/GeneCodeSavvy/analytics-filflo" "$DEPLOY_PATH"
+            fi
+
+            cd "$DEPLOY_PATH"
+
+            git fetch origin
+            git reset --hard origin/main
+            git clean -df
+
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
+
+            pnpm install --frozen-lockfile
+
+            pnpm db:generate
+            pnpm db:migrate:deploy
+
+            pnpm --filter api build
+
+            if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
+              pm2 reload "$APP_NAME"
+            else
+              pm2 start node --name "$APP_NAME" -- apps/api/dist/index.js
+              pm2 save
+            fi
