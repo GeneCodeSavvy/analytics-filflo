@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { useMutationState, useQueryClient } from "@tanstack/react-query";
 import createLogger from "@shared/logger";
 import {
-  IconChevronDown,
   IconLayoutRows,
   IconList,
   IconPlus,
@@ -10,12 +9,15 @@ import {
 } from "@tabler/icons-react";
 import { useTicketsPageData } from "../../hooks/useTicketsPageData";
 import { useTicketsPageActions } from "../../hooks/useTicketsPageActions";
+import { useTeamMembersQuery } from "../../hooks/useTeamsQueries";
 import {
   useBulkUpdateMutation,
   useCreateTicketMutation,
+  useSaveViewMutation,
   useStatusMutation,
   useUpdateTicketMutation,
 } from "../../hooks/useTicketMutations";
+import { useTicketDraft } from "../../hooks/useTicketDraft";
 import { useAuthState } from "../../stores/useAuthStore";
 import { useTicketStore } from "../../stores/useTicketStore";
 import { cn } from "../../lib/utils";
@@ -23,6 +25,7 @@ import type {
   Density,
   DrawerTab,
   SortField,
+  TicketCategory,
   TicketDraft,
   TicketFilters,
   TicketSort,
@@ -32,6 +35,7 @@ import {
   DEFAULT_VIEWS,
   FILTERS,
   OVERSCAN,
+  PRIORITIES,
   ROW_HEIGHT,
   STATUSES,
   flattenTicketGroups,
@@ -67,11 +71,21 @@ export const Tickets = () => {
   const queryClient = useQueryClient();
   const user = useAuthState((s) => s.user);
   const role = user?.role ?? "MODERATOR";
+  const isSuperAdmin = role === "SUPER_ADMIN";
+  const adminsQuery = useTeamMembersQuery(
+    { role: ["SUPER_ADMIN", "ADMIN"], page: 1, pageSize: 100 },
+    { enabled: isSuperAdmin },
+  );
+  const adminOptions = isSuperAdmin
+    ? (adminsQuery.data?.rows ?? []).map((m) => ({ id: m.id, name: m.name }))
+    : [];
   const density = useTicketStore((s) => s.density);
   const createTicket = useCreateTicketMutation();
   const updateTicket = useUpdateTicketMutation();
   const statusMutation = useStatusMutation();
   const bulkUpdate = useBulkUpdateMutation();
+  const saveViewMutation = useSaveViewMutation();
+  const draftStorage = useTicketDraft();
   const anyMutationPending = useMutationState({
     filters: { status: "pending" },
   }).some(Boolean);
@@ -84,6 +98,7 @@ export const Tickets = () => {
   const [hoveredTime, setHoveredTime] = useState<string | null>(null);
   const [groupByOrg, setGroupByOrg] = useState(false);
   const [toast, setToast] = useState("");
+  const [draftError, setDraftError] = useState("");
   const [draft, setDraft] = useState({
     subject: "",
     description: "",
@@ -178,16 +193,17 @@ export const Tickets = () => {
 
   useEffect(() => {
     if (!url.modalOpen) return;
-    const saved = localStorage.getItem("ticket-create-draft");
+    const saved = draftStorage.load();
     if (saved && !draft.subject && !draft.description && !draft.category) {
-      try {
-        setDraft(JSON.parse(saved) as typeof draft);
-      } catch {
-        localStorage.removeItem("ticket-create-draft");
-      }
+      setDraft({
+        subject: saved.subject ?? "",
+        description: saved.description ?? "",
+        category: saved.category ?? "",
+        priority: saved.priority ?? "MEDIUM",
+      });
     }
     requestAnimationFrame(() => modalSubjectRef.current?.focus());
-  }, [url.modalOpen]);
+  }, [draft, draftStorage, url.modalOpen]);
 
   useEffect(() => {
     if (editSubject) requestAnimationFrame(() => subjectRef.current?.focus());
@@ -256,6 +272,18 @@ export const Tickets = () => {
     startTransition(() => actions.setFilters(patch));
   };
 
+  const toggleArrayFilter = <T extends string>(
+    key: "status" | "priority" | "category",
+    value: T,
+  ) => {
+    const current = (url.filters[key] ?? []) as T[];
+    setFilters({
+      [key]: current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    } as Partial<TicketFilters>);
+  };
+
   const clearFilters = () =>
     setFilters({
       status: [],
@@ -292,15 +320,31 @@ export const Tickets = () => {
 
   const closeModal = () => {
     if (draft.subject || draft.description || draft.category) {
-      localStorage.setItem("ticket-create-draft", JSON.stringify(draft));
+      draftStorage.save({
+        subject: draft.subject,
+        description: draft.description,
+        category: draft.category || undefined,
+        priority: draft.priority,
+        assigneeIds: [],
+      });
       setToast("Draft saved");
       window.setTimeout(() => setToast(""), 2_000);
     }
+    setDraftError("");
     actions.closeModal();
   };
 
   const submitDraft = () => {
-    if (!draft.subject.trim() || !draft.description.trim()) return;
+    if (!draft.subject.trim()) {
+      setDraftError("Add a subject before creating the ticket.");
+      modalSubjectRef.current?.focus();
+      return;
+    }
+    if (!draft.description.trim()) {
+      setDraftError("Add a description so the team knows what to do next.");
+      return;
+    }
+    setDraftError("");
     createTicket.mutate(
       {
         subject: draft.subject,
@@ -311,7 +355,7 @@ export const Tickets = () => {
       },
       {
         onSuccess: () => {
-          localStorage.removeItem("ticket-create-draft");
+          draftStorage.clear();
           setDraft({
             subject: "",
             description: "",
@@ -319,6 +363,27 @@ export const Tickets = () => {
             priority: "MEDIUM",
           });
           actions.closeModal();
+        },
+      },
+    );
+  };
+
+  const saveCurrentView = () => {
+    const name = window.prompt("Name this ticket view");
+    if (!name?.trim()) return;
+    saveViewMutation.mutate(
+      {
+        name: name.trim(),
+        filters: url.filters,
+        sort: url.sort.length
+          ? url.sort
+          : [{ field: "updatedAt", dir: "desc" }],
+        groupBy: groupByOrg ? "org" : undefined,
+      },
+      {
+        onSuccess: () => {
+          setToast("View saved");
+          window.setTimeout(() => setToast(""), 2_000);
         },
       },
     );
@@ -375,12 +440,14 @@ export const Tickets = () => {
             <IconSearch className="h-4 w-4 text-muted-foreground" />
             <input
               ref={searchRef}
+              name="ticket-search"
+              autoComplete="off"
               value={searchValue}
               onChange={(event) => {
                 setSearchValue(event.target.value);
                 setFilters({ q: event.target.value || undefined });
               }}
-              placeholder="Search tickets"
+              placeholder="Search tickets…"
               className="min-w-0 flex-1 border-0 bg-transparent font-sans text-[13px] leading-none text-foreground outline-none"
             />
             <kbd className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border font-mono text-[12px] leading-none text-muted-foreground">
@@ -393,7 +460,7 @@ export const Tickets = () => {
             className={ticketPrimaryButton}
           >
             <IconPlus className="h-4 w-4" />
-            New ticket
+            New Ticket
           </button>
         </header>
 
@@ -427,6 +494,7 @@ export const Tickets = () => {
               <HeaderIconButton
                 label="Save current filters"
                 className="h-full flex-[0_0_28px]"
+                onClick={saveCurrentView}
               >
                 <IconPlus className="h-4 w-4" />
               </HeaderIconButton>
@@ -435,12 +503,78 @@ export const Tickets = () => {
 
           <div className={ticketFiltersRow}>
             <div className={ticketFilterControls}>
-              {FILTERS.map((filter) => (
-                <button key={filter} type="button" className={ticketChip}>
-                  {filter}
-                  <IconChevronDown className="h-3 w-3" />
-                </button>
-              ))}
+              {FILTERS.map((filter) => {
+                if (filter === "Status") {
+                  return STATUSES.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => toggleArrayFilter("status", status)}
+                      className={cn(
+                        ticketChip,
+                        url.filters.status?.includes(status) &&
+                          "border-primary text-primary",
+                      )}
+                    >
+                      {status.replace("_", " ")}
+                    </button>
+                  ));
+                }
+                if (filter === "Priority") {
+                  return PRIORITIES.map((priority) => (
+                    <button
+                      key={priority}
+                      type="button"
+                      onClick={() => toggleArrayFilter("priority", priority)}
+                      className={cn(
+                        ticketChip,
+                        url.filters.priority?.includes(priority) &&
+                          "border-primary text-primary",
+                      )}
+                    >
+                      {priority}
+                    </button>
+                  ));
+                }
+                if (filter === "Category") {
+                  return ["BUG", "FEATURE_REQUEST"].map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() =>
+                        toggleArrayFilter(
+                          "category",
+                          category as TicketCategory,
+                        )
+                      }
+                      className={cn(
+                        ticketChip,
+                        url.filters.category?.includes(
+                          category as TicketCategory,
+                        ) && "border-primary text-primary",
+                      )}
+                    >
+                      {category.replace("_", " ")}
+                    </button>
+                  ));
+                }
+                if (filter === "Date") {
+                  return (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setFilters({ stale: !url.filters.stale })}
+                      className={cn(
+                        ticketChip,
+                        url.filters.stale && "border-primary text-primary",
+                      )}
+                    >
+                      Stale
+                    </button>
+                  );
+                }
+                return null;
+              })}
               {role === "SUPER_ADMIN" && (
                 <button
                   type="button"
@@ -538,6 +672,7 @@ export const Tickets = () => {
           <CreateTicketModal
             closeModal={closeModal}
             draft={draft}
+            error={draftError}
             isPending={createTicket.isPending}
             modalSubjectRef={modalSubjectRef}
             setDraft={setDraft}
@@ -549,9 +684,10 @@ export const Tickets = () => {
           <BulkBar
             clearSelection={actions.clearSelection}
             mutate={bulkUpdate.mutate}
-            role={role}
             selectedCount={selectedCount}
             selectedRowIds={ui.selectedRowIds}
+            isSuperAdmin={isSuperAdmin}
+            admins={adminOptions}
           />
         )}
 

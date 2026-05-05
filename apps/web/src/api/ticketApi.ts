@@ -38,14 +38,10 @@ export interface UpdateTicketPayload {
   status?: TicketStatus;
 }
 
-export interface BulkUpdatePayload {
-  ids: string[];
-  status?: TicketStatus;
-  priority?: TicketPriority;
-  category?: string;
-  addAssignees?: string[];
-  removeAssignees?: string[];
-}
+export type BulkUpdatePayload =
+  | { ids: string[]; action?: "status"; status: TicketStatus; priority?: never; assigneeIds?: never }
+  | { ids: string[]; action?: "priority"; priority: TicketPriority; status?: never; assigneeIds?: never }
+  | { ids: string[]; action: "assign"; assigneeIds: string[]; status?: never; priority?: never };
 
 export interface BulkDeletePayload {
   ids: string[];

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { ticketApi } from "../api/ticketApi";
-import type { UpdateTicketPayload } from "../api/ticketApi";
+import type { UpdateTicketPayload, BulkUpdatePayload } from "../api/ticketApi";
 import type {
   TicketStatus,
   TicketPriority,
@@ -217,16 +217,7 @@ export function useUpdateTicketMutation() {
 export function useBulkUpdateMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    BulkResult,
-    Error,
-    {
-      ids: string[];
-      status?: TicketStatus;
-      priority?: TicketPriority;
-      category?: string;
-    }
-  >({
+  return useMutation<BulkResult, Error, BulkUpdatePayload>({
     mutationFn: (payload) => ticketApi.bulkUpdate(payload),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ["tickets", "list"] });
@@ -293,6 +284,7 @@ export function useSaveViewMutation() {
       name: string;
       filters?: Record<string, unknown>;
       sort?: { field: string; dir: string }[];
+      groupBy?: string;
     }) => ticketApi.createView(data),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets", "views"] });

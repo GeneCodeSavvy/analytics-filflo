@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type { NewTicketDraft } from "../types/tickets";
 
 const DRAFT_VERSION = 1;
-const STORAGE_KEY = "ticket-draft";
+const STORAGE_KEY = "ticket-create-draft";
 
 export function useTicketDraft() {
   const save = useCallback((draft: NewTicketDraft) => {
@@ -18,7 +18,11 @@ export function useTicketDraft() {
       if (!raw) return null;
 
       const parsed = JSON.parse(raw);
-      if (parsed?.v !== DRAFT_VERSION) {
+      if (!parsed?.v) {
+        return parsed as NewTicketDraft;
+      }
+
+      if (parsed.v !== DRAFT_VERSION) {
         localStorage.removeItem(STORAGE_KEY);
         return null;
       }

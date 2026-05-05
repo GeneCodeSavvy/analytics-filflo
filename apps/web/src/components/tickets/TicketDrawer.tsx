@@ -1,10 +1,5 @@
 import type { RefObject } from "react";
-import {
-  IconChevronRight,
-  IconDots,
-  IconMaximize,
-  IconX,
-} from "@tabler/icons-react";
+import { IconChevronRight, IconX } from "@tabler/icons-react";
 import type {
   DrawerTab,
   TicketDetail,
@@ -55,7 +50,12 @@ export function TicketDrawer({
   return (
     <aside className="absolute bottom-0 right-0 top-[88px] z-30 flex w-[min(560px,calc(100%_-_382px))] min-w-[360px] animate-in slide-in-from-right duration-200 flex-col border-l border-border bg-background shadow-xl motion-reduce:animate-none max-[760px]:w-full max-[760px]:min-w-0">
       <div className="flex h-[52px] shrink-0 items-center gap-2 border-b border-border px-3 text-[13px]">
-        <button type="button" title="Close" onClick={closeDrawer}>
+        <button
+          type="button"
+          aria-label="Close Ticket Drawer"
+          title="Close"
+          onClick={closeDrawer}
+        >
           <IconX className="h-4 w-4" />
         </button>
         <span className="font-mono text-muted-foreground">
@@ -63,14 +63,7 @@ export function TicketDrawer({
         </span>
         <IconChevronRight className="h-4 w-4 text-muted-foreground" />
         <span className="truncate">{detail.subject}</span>
-        <div className="ml-auto flex items-center gap-1">
-          <button type="button" title="Open full page">
-            <IconMaximize className="h-4 w-4" />
-          </button>
-          <button type="button" title="More">
-            <IconDots className="h-4 w-4" />
-          </button>
-        </div>
+        <div className="ml-auto" />
       </div>
       <div className="flex-1 overflow-auto p-5">
         {editSubject ? (
@@ -85,12 +78,13 @@ export function TicketDrawer({
             className="mb-3.5 w-full border-0 bg-transparent font-sans text-2xl font-medium leading-tight text-foreground outline-none"
           />
         ) : (
-          <h2
+          <button
+            type="button"
             onClick={() => setEditSubject(true)}
-            className="mb-3.5 w-full font-sans text-2xl font-medium leading-tight text-foreground"
+            className="mb-3.5 w-full text-left font-sans text-2xl font-medium leading-tight text-foreground"
           >
             {detail.subject}
-          </h2>
+          </button>
         )}
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3.5">
           <button
@@ -154,12 +148,13 @@ export function TicketDrawer({
                 className={ticketEditable}
               />
             ) : (
-              <div
+              <button
+                type="button"
                 onClick={() => setEditDescription(true)}
-                className={ticketEditable}
+                className={`${ticketEditable} block text-left`}
               >
                 {detail.description || detail.descriptionPreview}
-              </div>
+              </button>
             )}
             <div
               className={cn(ticketEditable, "text-sm text-muted-foreground")}

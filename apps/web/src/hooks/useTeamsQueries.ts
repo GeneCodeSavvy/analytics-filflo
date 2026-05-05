@@ -17,7 +17,10 @@ import type {
   TeamMemberListResponse,
 } from "../types/teams";
 
-export function useTeamMembersQuery(params: TeamMemberListParams) {
+export function useTeamMembersQuery(
+  params: TeamMemberListParams,
+  options?: { enabled?: boolean },
+) {
   const validated = TeamMemberListParamsSchema.parse(params);
 
   return useQuery<TeamMemberListResponse>({
@@ -26,6 +29,7 @@ export function useTeamMembersQuery(params: TeamMemberListParams) {
     staleTime: 25_000,
     placeholderData: (previousData) => previousData,
     retry: 1,
+    enabled: options?.enabled ?? true,
   });
 }
 
