@@ -12,6 +12,7 @@ import { SignUpPage } from "./components/SignUpPage";
 import { SignInPage } from "./components/SignInPage";
 import { AuthRequired } from "./components/AuthRequired";
 import { AuthStoreBridge } from "./components/AuthStoreBridge";
+import { NotificationQueryPoller } from "./components/NotificationQueryPoller";
 
 const NotFound = () => (
   <>
@@ -36,6 +37,7 @@ const App = () => (
         path="/*"
         element={
           <AuthRequired>
+            <NotificationQueryPoller />
             <NavSidebar>
               <Routes>
                 <Route path="/" Component={Dashboard} />
