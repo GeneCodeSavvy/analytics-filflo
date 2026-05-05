@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { useMutationState, useQueryClient } from "@tanstack/react-query";
+import createLogger from "@shared/logger";
 import {
   IconChevronDown,
   IconLayoutRows,
@@ -58,6 +59,8 @@ import {
   ticketViewTabsRow,
 } from "./styles";
 
+const logger = createLogger("Tickets");
+
 export const Tickets = () => {
   const { data, status, url, ui } = useTicketsPageData();
   const actions = useTicketsPageActions();
@@ -106,6 +109,12 @@ export const Tickets = () => {
   const selectedCount = ui.selectedRowIds.length;
   const visibleColumns = role === "SUPER_ADMIN" ? 11 : 10;
   const drawerOpen = Boolean(url.drawerTicketId && data.detail);
+
+  useEffect(() => {
+    if (url.drawerTicketId) {
+      logger.info(`Ticket drawer requested for ${url.drawerTicketId}`);
+    }
+  }, [url.drawerTicketId]);
 
   const activeViews = useMemo(() => {
     const serverViews = data.views.map((view) => ({

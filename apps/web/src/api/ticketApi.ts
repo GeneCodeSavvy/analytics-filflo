@@ -1,4 +1,5 @@
 import { api } from ".";
+import createLogger from "@shared/logger";
 
 import type {
   TicketListParams,
@@ -50,6 +51,8 @@ export interface BulkDeletePayload {
   ids: string[];
 }
 
+const logger = createLogger("ticketApi");
+
 /**
  * Ticket API client.
  *
@@ -80,8 +83,19 @@ export const ticketApi = {
   /** Get a ticket by id. Returns 404 when missing and 403 when the ticket is in
    * an org the current actor cannot read.
    */
-  getById: (id: string, signal?: AbortSignal): Promise<TicketDetail> =>
-    api.get<TicketDetail>(`/tickets/${id}`, { signal }),
+  getById: async (id: string, signal?: AbortSignal): Promise<TicketDetail> => {
+    logger.info(`GET /tickets/${id}`);
+    try {
+      const ticket = await api.get<TicketDetail>(`/tickets/${id}`, { signal });
+      logger.info(`GET /tickets/${id} succeeded`);
+      return ticket;
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response
+        ?.status;
+      logger.error(`GET /tickets/${id} failed${status ? ` (${status})` : ""}`);
+      throw error;
+    }
+  },
 
   /** Return built-in, role-visible, and current-user-owned ticket views. */
   getViews: (signal?: AbortSignal): Promise<View[]> =>

@@ -48,6 +48,16 @@ const toActivityType = (type: string): ActivityEntry["type"] => {
     : "updated";
 };
 
+const toActivityChanges = (
+  changes: Prisma.JsonValue,
+): ActivityEntry["changes"] | undefined => {
+  if (!changes || typeof changes !== "object" || Array.isArray(changes)) {
+    return undefined;
+  }
+
+  return changes as ActivityEntry["changes"];
+};
+
 type UserRow = {
   id: string;
   displayName: string;
@@ -113,18 +123,22 @@ const toTicketDetail = (ticket: TicketWithRelations): TicketDetail => {
     updatedAt: ticket.updatedAt.toISOString(),
     isStale,
     unread: false, // TODO: derive from MessageReadState once auth context is available
-    activity: ticket.activities.map((act) => ({
-      id: act.id,
-      type: toActivityType(act.type),
-      actor: {
-        id: act.actor.id,
-        name: act.actor.displayName,
-        ...(act.actor.avatarUrl ? { avatarUrl: act.actor.avatarUrl } : {}),
-      },
-      changes: act.changes as ActivityEntry["changes"],
-      ...(act.comment ? { comment: act.comment } : {}),
-      createdAt: act.createdAt.toISOString(),
-    })),
+    activity: ticket.activities.map((act) => {
+      const changes = toActivityChanges(act.changes);
+
+      return {
+        id: act.id,
+        type: toActivityType(act.type),
+        actor: {
+          id: act.actor.id,
+          name: act.actor.displayName,
+          ...(act.actor.avatarUrl ? { avatarUrl: act.actor.avatarUrl } : {}),
+        },
+        ...(changes ? { changes } : {}),
+        ...(act.comment ? { comment: act.comment } : {}),
+        createdAt: act.createdAt.toISOString(),
+      };
+    }),
   };
 };
 

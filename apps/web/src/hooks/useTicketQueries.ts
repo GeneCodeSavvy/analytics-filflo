@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useEffect } from "react";
+import createLogger from "@shared/logger";
 import { ticketApi } from "../api/ticketApi";
 import { userApi } from "../api/userApi";
 import type {
@@ -16,6 +17,8 @@ import {
   TicketFilterParamsSchema,
 } from "../types/tickets";
 import { buildListKey } from "../lib/ticketParams";
+
+const logger = createLogger("useTicketQueries");
 
 export function useTicketListQuery(params: TicketListParams) {
   const validated = TicketListParamsSchema.parse(params);
@@ -40,7 +43,10 @@ export function useViewsQuery() {
 export function useTicketDetailQuery(ticketId: string | null) {
   return useQuery<TicketDetail>({
     queryKey: ["tickets", "detail", ticketId],
-    queryFn: ({ signal }) => ticketApi.getById(ticketId!, signal),
+    queryFn: ({ signal }) => {
+      logger.info(`Fetching detail for ticket ${ticketId}`);
+      return ticketApi.getById(ticketId!, signal);
+    },
     enabled: !!ticketId,
     retry: (failureCount, error) =>
       (error as unknown as { response?: { status: number } })?.response

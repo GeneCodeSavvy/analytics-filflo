@@ -1,4 +1,7 @@
 import type { Response } from "express";
+import createLogger from "@shared/logger";
+
+const logger = createLogger("controllers");
 
 export type ValidationIssue = {
   code: string;
@@ -90,6 +93,9 @@ export const sendValidatedData = <Output>(
   const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
+    logger.error(
+      `${label} failed response validation: ${JSON.stringify(parsed.error.issues)}`,
+    );
     return sendError(res, 500, `${label} failed response validation`, {
       issues: parsed.error.issues,
     });

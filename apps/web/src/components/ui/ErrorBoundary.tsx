@@ -1,6 +1,6 @@
 import { Component } from "react";
 import type { ReactNode } from "react";
-import createLogger from "@/lib/logger";
+import createLogger from "@shared/logger";
 
 const logger = createLogger("ErrorBoundary");
 

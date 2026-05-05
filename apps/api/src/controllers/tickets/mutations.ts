@@ -11,6 +11,7 @@ import {
   TicketPrioritySchema,
   TicketStatusSchema,
 } from "@shared/schema/domain";
+import createLogger from "@shared/logger";
 import { TicketPriority, TicketStatus } from "@prisma/client";
 import type { RequestHandler } from "express";
 import {
@@ -36,6 +37,38 @@ import {
   scopeTicketFilters,
 } from "./permissions";
 import { IdParamsSchema } from "./utils";
+
+const logger = createLogger("ticketMutationsController");
+
+const normalizeBulkTicketPayload = (body: unknown) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return body;
+  }
+
+  const payload = body as {
+    action?: unknown;
+    status?: unknown;
+    priority?: unknown;
+  };
+
+  if (payload.action) {
+    return body;
+  }
+
+  if (payload.status === TicketStatus.CLOSED) {
+    return { ...payload, action: "close" };
+  }
+
+  if (payload.status) {
+    return { ...payload, action: "status" };
+  }
+
+  if (payload.priority) {
+    return { ...payload, action: "priority" };
+  }
+
+  return body;
+};
 
 export const createTicket: RequestHandler = async (req, res) => {
   const body = NewTicketDraftSchema.safeParse(req.body);
@@ -112,19 +145,31 @@ export const deleteTicket: RequestHandler = async (req, res) => {
 };
 
 export const bulkTickets: RequestHandler = async (req, res) => {
-  const body = BulkTicketPayloadSchema.safeParse(req.body);
+  logger.info(`Bulk ticket request ${req.method} ${req.originalUrl}`);
+  const body = BulkTicketPayloadSchema.safeParse(
+    normalizeBulkTicketPayload(req.body),
+  );
 
   if (!body.success) {
+    logger.error(
+      `Invalid bulk ticket payload: ${JSON.stringify(body.error.issues)}`,
+    );
     return sendInvalidRequest(res, "bulk ticket payload", body.error.issues);
   }
 
   const db = req.app.locals.db as DbClient;
   if (!ensureBulkTicketActionAllowed(res, req.dbUser, body.data.action)) {
+    logger.error(
+      `Bulk ticket action ${body.data.action} forbidden for user ${req.dbUser.id}`,
+    );
     return;
   }
 
   const actorId = req.dbUser.id;
   const scoped = scopeTicketFilters(req.dbUser, {});
+  logger.info(
+    `Applying bulk ticket action ${body.data.action} to ${body.data.ids.length} ticket(s)`,
+  );
   const result = await bulkTicketsInDb(
     db,
     body.data.ids,
@@ -138,6 +183,9 @@ export const bulkTickets: RequestHandler = async (req, res) => {
     },
   );
 
+  logger.info(
+    `Bulk ticket action ${body.data.action} completed: ${result.succeeded.length} succeeded, ${result.failed.length} failed`,
+  );
   return sendValidatedData(res, BulkResultSchema, result);
 };
 

@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router";
+import createLogger from "@shared/logger";
 import { useTicketsPageActions } from "./useTicketsPageActions";
 import {
   useTicketListQuery,
@@ -21,6 +22,8 @@ import {
   serializeSort,
   buildListKey,
 } from "../lib/ticketParams";
+
+const logger = createLogger("useTicketsPageData");
 
 export function useTicketsPageData() {
   const { ticketId } = useParams();
@@ -71,6 +74,7 @@ export function useTicketsPageData() {
       (detail.error as any)?.response?.status === 404 &&
       ticketId !== handled404Ref.current
     ) {
+      logger.error(`Ticket ${ticketId} returned 404; closing drawer`);
       handled404Ref.current = ticketId ?? null;
       closeDrawer();
     }
