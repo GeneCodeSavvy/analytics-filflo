@@ -174,7 +174,7 @@ export const getDashboardKpis = async (
       ...buildTicketWhere(filters, "resolvedAt"),
       resolvedAt: { not: null, ...getRangeWindow(filters) },
     },
-    select: { createdAt: true, resolvedAt: true },
+    select: { createdAt: true, resolvedAt: true, priority: true },
   });
   const avgResolutionMs =
     resolvedTickets.reduce(
@@ -184,6 +184,17 @@ export const getDashboardKpis = async (
           ticket.createdAt.getTime()),
       0,
     ) / (resolvedTickets.length || 1);
+
+  const byPriority = { HIGH: [] as number[], MEDIUM: [] as number[], LOW: [] as number[] };
+  for (const ticket of resolvedTickets) {
+    const ms = (ticket.resolvedAt?.getTime() ?? ticket.createdAt.getTime()) - ticket.createdAt.getTime();
+    byPriority[ticket.priority as keyof typeof byPriority]?.push(ms);
+  }
+  const resolutionByPriority = {
+    HIGH: formatDuration(byPriority.HIGH.reduce((s, v) => s + v, 0) / (byPriority.HIGH.length || 1)),
+    MEDIUM: formatDuration(byPriority.MEDIUM.reduce((s, v) => s + v, 0) / (byPriority.MEDIUM.length || 1)),
+    LOW: formatDuration(byPriority.LOW.reduce((s, v) => s + v, 0) / (byPriority.LOW.length || 1)),
+  };
 
   return {
     totalTickets: {
@@ -216,6 +227,7 @@ export const getDashboardKpis = async (
       value: formatDuration(avgResolutionMs),
       sparkline: [],
       subline: "Resolved tickets in range",
+      resolutionByPriority,
     },
     personalVsTeamAvgResolution: {
       personal: formatDuration(avgResolutionMs),

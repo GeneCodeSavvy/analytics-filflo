@@ -7,7 +7,6 @@ import {
 } from "@tabler/icons-react";
 import type {
   DashboardKpiMeta,
-  DashboardResolutionBreakdown,
   DashboardTrendChartPoint,
   KpiCard,
   ParsedKpiValue,
@@ -76,11 +75,6 @@ export const dashboardKpiMeta = [
   },
 ] satisfies DashboardKpiMeta[];
 
-export const dashboardResolutionBreakdown: DashboardResolutionBreakdown[] = [
-  { label: "HIGH", value: "4h", color: dashboardPriorityColor.HIGH },
-  { label: "MED", value: "1.2d", color: dashboardPriorityColor.MEDIUM },
-  { label: "LOW", value: "3.5d", color: dashboardPriorityColor.LOW },
-];
 
 export function formatDashboardNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);

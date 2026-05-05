@@ -25,6 +25,12 @@ export const SparklinePoint = z.object({
   value: z.number(),
 });
 
+export const ResolutionByPriority = z.object({
+  HIGH: z.string(),
+  MEDIUM: z.string(),
+  LOW: z.string(),
+});
+
 export const KpiCard = z.object({
   label: z.string(),
   value: z.union([z.number(), z.string()]),
@@ -36,6 +42,7 @@ export const KpiCard = z.object({
     .optional(),
   sparkline: z.array(SparklinePoint),
   subline: z.string().optional(),
+  resolutionByPriority: ResolutionByPriority.optional(),
 });
 
 export const DashboardKpis = z.object({
@@ -159,6 +166,7 @@ export type SparklinePoint = z.infer<typeof SparklinePoint>;
 export type TrendPoint = z.infer<typeof TrendPoint>;
 
 // KPI + dashboard
+export type ResolutionByPriority = z.infer<typeof ResolutionByPriority>;
 export type KpiCard = z.infer<typeof KpiCard>;
 export type DashboardKpis = z.infer<typeof DashboardKpis>;
 

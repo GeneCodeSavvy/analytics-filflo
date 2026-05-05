@@ -1,6 +1,6 @@
 import {
-  dashboardResolutionBreakdown,
   dashboardDanger,
+  dashboardPriorityColor,
   formatDashboardNumber,
   parseKpiValue,
 } from "../../lib/dashboardComponent";
@@ -38,19 +38,19 @@ export function KpiCardView({
             ? formatDashboardNumber(count)
             : `${count}${parsed.suffix}`}
         </div>
-        {card.label.toLowerCase().includes("resolution") ? (
+        {card.resolutionByPriority ? (
           <div className="mt-3 flex flex-wrap gap-2">
-            {dashboardResolutionBreakdown.map(({ label, value, color }) => (
+            {(["HIGH", "MEDIUM", "LOW"] as const).map((priority) => (
               <div
-                key={label}
+                key={priority}
                 className="flex items-center gap-1.5 rounded-[--radius-sm] border border-[--border-default] bg-[--surface-sunken] py-1 pl-2.5 pr-3"
-                style={{ borderLeftColor: color, borderLeftWidth: "3px" }}
+                style={{ borderLeftColor: dashboardPriorityColor[priority], borderLeftWidth: "3px" }}
               >
                 <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[--ink-2]">
-                  {label}
+                  {priority === "MEDIUM" ? "MED" : priority}
                 </span>
                 <span className="font-mono text-[10px] font-semibold text-[--ink-1]">
-                  {value}
+                  {card.resolutionByPriority[priority]}
                 </span>
               </div>
             ))}
