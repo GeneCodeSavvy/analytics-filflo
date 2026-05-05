@@ -20,15 +20,9 @@ import {
 } from "./data";
 import { IdParamsSchema } from "./utils";
 
-// TODO: replace with authenticated user id from session middleware
-const getActorId = async (db: DbClient): Promise<string> => {
-  const user = await db.user.findFirst({ orderBy: { createdAt: "asc" } });
-  return user!.id;
-};
-
-export const getViews: RequestHandler = async (_req, res) => {
-  const db = _req.app.locals.db as DbClient;
-  const views = await getViewsFromDb(db);
+export const getViews: RequestHandler = async (req, res) => {
+  const db = req.app.locals.db as DbClient;
+  const views = await getViewsFromDb(db, req.dbUser);
 
   return sendValidatedData(res, ViewListSchema, views);
 };
@@ -41,7 +35,7 @@ export const createView: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const ownerId = await getActorId(db);
+  const ownerId = req.dbUser.id;
   const view = await createViewInDb(db, body.data, ownerId);
 
   return sendValidatedData(res, ViewSchema, view);
@@ -60,7 +54,12 @@ export const updateView: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const view = await updateViewInDb(db, params.data.id, body.data);
+  const view = await updateViewInDb(
+    db,
+    params.data.id,
+    body.data,
+    req.dbUser.id,
+  );
 
   if (!view) {
     return sendNotFound(res, "View");
@@ -77,7 +76,7 @@ export const deleteView: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const deleted = await deleteViewInDb(db, params.data.id);
+  const deleted = await deleteViewInDb(db, params.data.id, req.dbUser.id);
 
   if (!deleted) {
     return sendNotFound(res, "View");

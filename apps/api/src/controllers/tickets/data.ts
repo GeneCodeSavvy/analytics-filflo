@@ -3,6 +3,7 @@ import {
   TicketCategory,
   TicketPriority,
   TicketStatus,
+  UserRole,
   ViewScope,
 } from "@prisma/client";
 import type {
@@ -101,7 +102,9 @@ const toTicketDetail = (ticket: TicketWithRelations): TicketDetail => {
     requester: primaryRequester
       ? toUserRef(primaryRequester.user)
       : { id: "unknown", name: "Unknown", role: "USER", orgId: ticket.orgId },
-    primaryAssignee: primaryAssignee ? toUserRef(primaryAssignee.user) : undefined,
+    primaryAssignee: primaryAssignee
+      ? toUserRef(primaryAssignee.user)
+      : undefined,
     assigneeCount: assignees.length,
     assigneesPreview: assignees.slice(0, 3).map((p) => toUserRef(p.user)),
     createdAt: ticket.createdAt.toISOString(),
@@ -175,7 +178,9 @@ const buildTicketWhere = (filters: TicketFilters): Prisma.TicketWhereInput => {
     ...(filters.createdFrom || filters.createdTo
       ? {
           createdAt: {
-            ...(filters.createdFrom ? { gte: new Date(filters.createdFrom) } : {}),
+            ...(filters.createdFrom
+              ? { gte: new Date(filters.createdFrom) }
+              : {}),
             ...(filters.createdTo ? { lte: new Date(filters.createdTo) } : {}),
           },
         }
@@ -245,6 +250,16 @@ export const getTicketDetail = async (
   return ticket ? toTicketDetail(ticket) : null;
 };
 
+export const getTicketOrg = async (
+  db: DbClient,
+  id: string,
+): Promise<{ orgId: string } | null> => {
+  return db.ticket.findUnique({
+    where: { id },
+    select: { orgId: true },
+  });
+};
+
 export const searchTicketList = async (
   db: DbClient,
   filters: TicketFilters & { limit?: number },
@@ -311,9 +326,13 @@ export const updateTicketInDb = async (
     data: {
       ...(payload.subject ? { subject: payload.subject } : {}),
       ...(payload.description ? { description: payload.description } : {}),
-      ...(payload.category ? { category: payload.category as TicketCategory } : {}),
+      ...(payload.category
+        ? { category: payload.category as TicketCategory }
+        : {}),
       ...(payload.status ? { status: payload.status as TicketStatus } : {}),
-      ...(payload.priority ? { priority: payload.priority as TicketPriority } : {}),
+      ...(payload.priority
+        ? { priority: payload.priority as TicketPriority }
+        : {}),
       activities: {
         create: {
           actorId,
@@ -473,8 +492,12 @@ export const bulkTicketsInDb = async (
     status?: TicketStatus;
     priority?: TicketPriority;
     assigneeIds?: string[];
+    readableOrgIds?: string[];
   },
-): Promise<{ succeeded: string[]; failed: { id: string; reason: string }[] }> => {
+): Promise<{
+  succeeded: string[];
+  failed: { id: string; reason: string }[];
+}> => {
   const succeeded: string[] = [];
   const failed: { id: string; reason: string }[] = [];
 
@@ -486,15 +509,28 @@ export const bulkTicketsInDb = async (
       continue;
     }
 
+    if (opts.readableOrgIds && !opts.readableOrgIds.includes(existing.orgId)) {
+      failed.push({ id, reason: "Forbidden" });
+      continue;
+    }
+
     if (action === "status" && opts.status) {
       await db.ticket.update({
         where: { id },
         data: {
           status: opts.status,
-          ...(opts.status === TicketStatus.RESOLVED ? { resolvedAt: new Date() } : {}),
-          ...(opts.status === TicketStatus.CLOSED ? { closedAt: new Date() } : {}),
+          ...(opts.status === TicketStatus.RESOLVED
+            ? { resolvedAt: new Date() }
+            : {}),
+          ...(opts.status === TicketStatus.CLOSED
+            ? { closedAt: new Date() }
+            : {}),
           activities: {
-            create: { actorId, type: "status_change", changes: { status: { from: existing.status, to: opts.status } } },
+            create: {
+              actorId,
+              type: "status_change",
+              changes: { status: { from: existing.status, to: opts.status } },
+            },
           },
         },
       });
@@ -504,7 +540,13 @@ export const bulkTicketsInDb = async (
         data: {
           priority: opts.priority,
           activities: {
-            create: { actorId, type: "priority_change", changes: { priority: { from: existing.priority, to: opts.priority } } },
+            create: {
+              actorId,
+              type: "priority_change",
+              changes: {
+                priority: { from: existing.priority, to: opts.priority },
+              },
+            },
           },
         },
       });
@@ -515,7 +557,13 @@ export const bulkTicketsInDb = async (
           status: TicketStatus.CLOSED,
           closedAt: new Date(),
           activities: {
-            create: { actorId, type: "status_change", changes: { status: { from: existing.status, to: TicketStatus.CLOSED } } },
+            create: {
+              actorId,
+              type: "status_change",
+              changes: {
+                status: { from: existing.status, to: TicketStatus.CLOSED },
+              },
+            },
           },
         },
       });
@@ -565,8 +613,18 @@ const toView = (v: {
   ...(v.columns.length ? { columns: v.columns } : {}),
 });
 
-export const getViewsFromDb = async (db: DbClient): Promise<View[]> => {
+export const getViewsFromDb = async (
+  db: DbClient,
+  actor: { id: string; role: string },
+): Promise<View[]> => {
   const views = await db.ticketView.findMany({
+    where: {
+      OR: [
+        { scope: ViewScope.BUILTIN },
+        { ownerId: actor.id },
+        { role: actor.role as UserRole },
+      ],
+    },
     orderBy: { createdAt: "asc" },
   });
 
@@ -597,18 +655,25 @@ export const updateViewInDb = async (
   db: DbClient,
   id: string,
   payload: UpdateViewPayload,
+  ownerId: string,
 ): Promise<View | null> => {
-  const existing = await db.ticketView.findUnique({ where: { id } });
+  const existing = await db.ticketView.findFirst({ where: { id, ownerId } });
   if (!existing) return null;
 
   const view = await db.ticketView.update({
     where: { id },
     data: {
       ...(payload.name ? { name: payload.name } : {}),
-      ...(payload.filters ? { filters: payload.filters as Prisma.InputJsonValue } : {}),
+      ...(payload.filters
+        ? { filters: payload.filters as Prisma.InputJsonValue }
+        : {}),
       ...(payload.sort ? { sort: payload.sort as Prisma.InputJsonValue } : {}),
-      ...(payload.groupBy !== undefined ? { groupBy: payload.groupBy ?? null } : {}),
-      ...(payload.columns !== undefined ? { columns: payload.columns ?? [] } : {}),
+      ...(payload.groupBy !== undefined
+        ? { groupBy: payload.groupBy ?? null }
+        : {}),
+      ...(payload.columns !== undefined
+        ? { columns: payload.columns ?? [] }
+        : {}),
     },
   });
 
@@ -618,8 +683,9 @@ export const updateViewInDb = async (
 export const deleteViewInDb = async (
   db: DbClient,
   id: string,
+  ownerId: string,
 ): Promise<boolean> => {
-  const existing = await db.ticketView.findUnique({ where: { id } });
+  const existing = await db.ticketView.findFirst({ where: { id, ownerId } });
   if (!existing) return false;
 
   await db.ticketView.delete({ where: { id } });

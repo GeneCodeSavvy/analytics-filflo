@@ -1,7 +1,15 @@
 import { UserRole } from "@prisma/client";
 import type { Response } from "express";
 import type { DbUser } from "../../lib/auth";
-import { sendError } from "../../lib/controllers";
+import {
+  canReadAcrossOrgs,
+  ensureOrgReadable,
+  ensureSuperAdmin,
+  ensureTargetOrgReadable,
+  ensureAllowed,
+  sendForbidden,
+  scopeOrgIds,
+} from "../../lib/permissions";
 
 type TeamActor = Pick<DbUser, "id" | "role" | "orgId">;
 type TeamTarget = {
@@ -10,49 +18,21 @@ type TeamTarget = {
   orgId: string;
 };
 
-export const canReadAcrossOrgs = (actor: TeamActor) =>
-  actor.role === UserRole.SUPER_ADMIN || actor.role === UserRole.ADMIN;
-
 export const canManageTeams = (actor: TeamActor) =>
   actor.role === UserRole.SUPER_ADMIN || actor.role === UserRole.MODERATOR;
 
-export const ensureSuperAdmin = (res: Response, actor: TeamActor) => {
-  if (actor.role === UserRole.SUPER_ADMIN) return true;
-
-  sendForbidden(res);
-  return false;
-};
-
-export const sendForbidden = (res: Response, error = "Forbidden") =>
-  sendError(res, 403, error);
-
 export const scopedOrgId = (actor: TeamActor, requestedOrgId?: string) => {
-  if (canReadAcrossOrgs(actor)) return requestedOrgId;
-  return actor.orgId;
+  return scopeOrgIds(actor, requestedOrgId ? [requestedOrgId] : undefined)?.[0];
 };
 
-export const ensureOrgReadable = (
-  res: Response,
-  actor: TeamActor,
-  requestedOrgId?: string,
-) => {
-  if (canReadAcrossOrgs(actor)) return true;
-  if (!requestedOrgId || requestedOrgId === actor.orgId) return true;
-
-  sendForbidden(res);
-  return false;
+export {
+  canReadAcrossOrgs,
+  ensureOrgReadable,
+  ensureSuperAdmin,
+  sendForbidden,
 };
 
-export const ensureTargetReadable = (
-  res: Response,
-  actor: TeamActor,
-  target: Pick<TeamTarget, "orgId">,
-) => {
-  if (canReadAcrossOrgs(actor) || target.orgId === actor.orgId) return true;
-
-  sendForbidden(res);
-  return false;
-};
+export const ensureTargetReadable = ensureTargetOrgReadable;
 
 export const ensureTargetManageable = (
   res: Response,
@@ -64,10 +44,7 @@ export const ensureTargetManageable = (
     return false;
   }
 
-  if (!canManageTeams(actor)) {
-    sendForbidden(res);
-    return false;
-  }
+  if (!ensureAllowed(res, canManageTeams(actor))) return false;
 
   if (actor.role === UserRole.SUPER_ADMIN) return true;
 

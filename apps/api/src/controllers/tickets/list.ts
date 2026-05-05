@@ -2,7 +2,9 @@ import { ListResponseSchema } from "@shared/schema/tickets";
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
+import { sendForbidden } from "../../lib/permissions";
 import { getTicketList } from "./data";
+import { scopeTicketParams } from "./permissions";
 import { parseTicketListParams } from "./utils";
 
 export const getTickets: RequestHandler = async (req, res) => {
@@ -13,7 +15,13 @@ export const getTickets: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const { rows, total } = await getTicketList(db, params.data);
+  const scoped = scopeTicketParams(req.dbUser, params.data);
+
+  if (!scoped.allowed) {
+    return sendForbidden(res);
+  }
+
+  const { rows, total } = await getTicketList(db, scoped.params);
 
   return sendValidatedData(res, ListResponseSchema, {
     rows,

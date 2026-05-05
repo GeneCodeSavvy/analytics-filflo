@@ -20,6 +20,7 @@ import {
 } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
 import {
+  getTicketOrg,
   assignTicketInDb,
   bulkTicketsInDb,
   createTicketInDb,
@@ -28,13 +29,13 @@ import {
   updateTicketPriorityInDb,
   updateTicketStatusInDb,
 } from "./data";
+import {
+  ensureBulkTicketActionAllowed,
+  ensureTicketAssignable,
+  ensureTicketOrgReadable,
+  scopeTicketFilters,
+} from "./permissions";
 import { IdParamsSchema } from "./utils";
-
-// TODO: replace with authenticated user id from session middleware
-const getActorId = async (db: DbClient): Promise<string> => {
-  const user = await db.user.findFirst({ orderBy: { createdAt: "asc" } });
-  return user!.id;
-};
 
 export const createTicket: RequestHandler = async (req, res) => {
   const body = NewTicketDraftSchema.safeParse(req.body);
@@ -44,7 +45,7 @@ export const createTicket: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const actorId = await getActorId(db);
+  const actorId = req.dbUser.id;
   const ticket = await createTicketInDb(db, body.data, actorId);
 
   return sendValidatedData(res, TicketDetailSchema, ticket);
@@ -63,7 +64,17 @@ export const updateTicket: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const actorId = await getActorId(db);
+  const target = await getTicketOrg(db, params.data.id);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketOrgReadable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const actorId = req.dbUser.id;
   const ticket = await updateTicketInDb(db, params.data.id, body.data, actorId);
 
   if (!ticket) {
@@ -81,6 +92,16 @@ export const deleteTicket: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
+  const target = await getTicketOrg(db, params.data.id);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketOrgReadable(res, req.dbUser, target)) {
+    return;
+  }
+
   const deleted = await deleteTicketInDb(db, params.data.id);
 
   if (!deleted) {
@@ -98,12 +119,24 @@ export const bulkTickets: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const actorId = await getActorId(db);
-  const result = await bulkTicketsInDb(db, body.data.ids, body.data.action, actorId, {
-    status: body.data.status as TicketStatus | undefined,
-    priority: body.data.priority as TicketPriority | undefined,
-    assigneeIds: body.data.assigneeIds,
-  });
+  if (!ensureBulkTicketActionAllowed(res, req.dbUser, body.data.action)) {
+    return;
+  }
+
+  const actorId = req.dbUser.id;
+  const scoped = scopeTicketFilters(req.dbUser, {});
+  const result = await bulkTicketsInDb(
+    db,
+    body.data.ids,
+    body.data.action,
+    actorId,
+    {
+      status: body.data.status as TicketStatus | undefined,
+      priority: body.data.priority as TicketPriority | undefined,
+      assigneeIds: body.data.assigneeIds,
+      readableOrgIds: scoped.filters.orgIds,
+    },
+  );
 
   return sendValidatedData(res, BulkResultSchema, result);
 };
@@ -121,7 +154,21 @@ export const assignTicket: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const actorId = await getActorId(db);
+  if (!ensureTicketAssignable(res, req.dbUser)) {
+    return;
+  }
+
+  const target = await getTicketOrg(db, params.data.id);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketOrgReadable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const actorId = req.dbUser.id;
   const ticket = await assignTicketInDb(
     db,
     params.data.id,
@@ -150,7 +197,17 @@ export const updateTicketStatus: RequestHandler = async (req, res) => {
   }
 
   const db = req.app.locals.db as DbClient;
-  const actorId = await getActorId(db);
+  const target = await getTicketOrg(db, params.data.id);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketOrgReadable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const actorId = req.dbUser.id;
   const ticket = await updateTicketStatusInDb(
     db,
     params.data.id,
@@ -174,11 +231,25 @@ export const updateTicketPriority: RequestHandler = async (req, res) => {
   }
 
   if (!body.success) {
-    return sendInvalidRequest(res, "ticket priority payload", body.error.issues);
+    return sendInvalidRequest(
+      res,
+      "ticket priority payload",
+      body.error.issues,
+    );
   }
 
   const db = req.app.locals.db as DbClient;
-  const actorId = await getActorId(db);
+  const target = await getTicketOrg(db, params.data.id);
+
+  if (!target) {
+    return sendNotFound(res, "Ticket");
+  }
+
+  if (!ensureTicketOrgReadable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const actorId = req.dbUser.id;
   const ticket = await updateTicketPriorityInDb(
     db,
     params.data.id,
