@@ -389,10 +389,7 @@ export const Tickets = () => {
           </button>
         </header>
 
-        {role === "USER" ? (
-          <UserTicketList rows={sortedRows} onOpen={actions.openDrawer} />
-        ) : (
-          <>
+        <>
             <div className={ticketViewTabsRow}>
               <div className={ticketViewTabsList}>
                 {activeViews.map((view, index) => {
@@ -510,7 +507,6 @@ export const Tickets = () => {
               visibleColumns={visibleColumns}
             />
           </>
-        )}
 
         {drawerOpen && data.detail && (
           <TicketDrawer
