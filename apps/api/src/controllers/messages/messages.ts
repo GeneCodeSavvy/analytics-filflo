@@ -10,9 +10,11 @@ import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
 import {
   createThreadMessage,
+  getThreadAccessTarget,
   getThreadMessages,
   markMessageRead as markMessageReadState,
 } from "./data";
+import { ensureThreadReadable, ensureThreadWritable } from "./permissions";
 import { parseMessagePageParams } from "./utils";
 
 export const getMessages: RequestHandler = async (req, res) => {
@@ -26,6 +28,19 @@ export const getMessages: RequestHandler = async (req, res) => {
 
   if (!page.success) {
     return sendInvalidRequest(res, "message page params", page.error.issues);
+  }
+
+  const target = await getThreadAccessTarget(db, params.data.threadId);
+
+  if (!target) {
+    return res.status(404).json({
+      success: false,
+      error: "Thread not found",
+    });
+  }
+
+  if (!ensureThreadReadable(res, req.dbUser, target)) {
+    return;
   }
 
   const pageData = await getThreadMessages(db, params.data.threadId, page.data);
@@ -58,7 +73,25 @@ export const sendMessage: RequestHandler = async (req, res) => {
     return sendInvalidRequest(res, "send message payload", body.error.issues);
   }
 
-  const message = await createThreadMessage(db, params.data.threadId, body.data);
+  const target = await getThreadAccessTarget(db, params.data.threadId);
+
+  if (!target) {
+    return res.status(404).json({
+      success: false,
+      error: "Thread not found",
+    });
+  }
+
+  if (!ensureThreadWritable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const message = await createThreadMessage(
+    db,
+    params.data.threadId,
+    body.data,
+    req.dbUser.id,
+  );
 
   if (!message) {
     return res.status(404).json({
@@ -67,12 +100,7 @@ export const sendMessage: RequestHandler = async (req, res) => {
     });
   }
 
-  return sendValidatedData(
-    res,
-    MessageSchema,
-    message,
-    "Sent message data",
-  );
+  return sendValidatedData(res, MessageSchema, message, "Sent message data");
 };
 
 export const markMessageRead: RequestHandler = async (req, res) => {
@@ -83,9 +111,23 @@ export const markMessageRead: RequestHandler = async (req, res) => {
     return sendInvalidRequest(res, "message read params", params.error.issues);
   }
 
+  const target = await getThreadAccessTarget(db, params.data.threadId);
+
+  if (!target) {
+    return res.status(404).json({
+      success: false,
+      error: "Thread not found",
+    });
+  }
+
+  if (!ensureThreadReadable(res, req.dbUser, target)) {
+    return;
+  }
+
   const marked = await markMessageReadState(
     db,
     params.data.threadId,
+    req.dbUser.id,
     params.data.messageId,
   );
 
@@ -112,7 +154,24 @@ export const markThreadRead: RequestHandler = async (req, res) => {
     return sendInvalidRequest(res, "thread id", params.error.issues);
   }
 
-  const marked = await markMessageReadState(db, params.data.threadId);
+  const target = await getThreadAccessTarget(db, params.data.threadId);
+
+  if (!target) {
+    return res.status(404).json({
+      success: false,
+      error: "Thread not found",
+    });
+  }
+
+  if (!ensureThreadReadable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const marked = await markMessageReadState(
+    db,
+    params.data.threadId,
+    req.dbUser.id,
+  );
 
   if (!marked) {
     return res.status(404).json({

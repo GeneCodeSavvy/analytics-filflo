@@ -16,13 +16,8 @@ import type {
 } from "@shared/schema/messages";
 import type { UserRef } from "@shared/schema/domain";
 import type { DbClient } from "../../lib/db";
+import type { DbUser } from "../../lib/auth";
 import { buildThreadWhere } from "./utils";
-
-const currentUserRoles: UserRole[] = [
-  UserRole.SUPER_ADMIN,
-  UserRole.ADMIN,
-  UserRole.MODERATOR,
-];
 
 const threadInclude = {
   ticket: {
@@ -127,13 +122,6 @@ const toMessage = (message: MessageWithRelations): Message => {
   };
 };
 
-const getCurrentUser = async (db: DbClient) => {
-  return db.user.findFirst({
-    where: { role: { in: currentUserRoles } },
-    orderBy: { createdAt: "asc" },
-  });
-};
-
 const getUnreadCount = async (
   db: DbClient,
   threadId: string,
@@ -215,16 +203,16 @@ export const getThreadById = async (
 export const getThreadList = async (
   db: DbClient,
   filters: MessageFilters,
+  actor: Pick<DbUser, "id" | "role" | "orgId">,
 ): Promise<ThreadList> => {
-  const currentUser = await getCurrentUser(db);
   const threads = await db.thread.findMany({
-    where: buildThreadWhere(filters, currentUser?.id),
+    where: buildThreadWhere(filters, actor),
     include: threadInclude,
     orderBy: [{ lastMessageAt: "desc" }, { updatedAt: "desc" }],
   });
 
   const rows = await Promise.all(
-    threads.map((thread) => getThreadRow(db, thread, currentUser?.id)),
+    threads.map((thread) => getThreadRow(db, thread, actor.id)),
   );
 
   if (filters.tab !== "unread") {
@@ -234,13 +222,33 @@ export const getThreadList = async (
   return rows.filter((row) => row.unreadCount > 0);
 };
 
-export const getThreadParticipants = async (
-  db: DbClient,
-  threadId: string,
-) => {
+export const getThreadParticipants = async (db: DbClient, threadId: string) => {
   const thread = await getThreadById(db, threadId);
 
   return thread?.participants ?? null;
+};
+
+export const getThreadAccessTarget = async (db: DbClient, threadId: string) => {
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    select: {
+      ticket: {
+        select: {
+          orgId: true,
+          participants: {
+            select: { userId: true, role: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!thread) return null;
+
+  return {
+    orgId: thread.ticket.orgId,
+    participants: thread.ticket.participants,
+  };
 };
 
 export const getThreadMessages = async (
@@ -280,16 +288,14 @@ export const createThreadMessage = async (
   db: DbClient,
   threadId: string,
   payload: SendMessagePayload,
+  actorId: string,
 ): Promise<Message | null> => {
-  const [thread, currentUser] = await Promise.all([
-    db.thread.findUnique({
-      where: { id: threadId },
-      include: { ticket: true },
-    }),
-    getCurrentUser(db),
-  ]);
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    include: { ticket: true },
+  });
 
-  if (!thread || !currentUser) {
+  if (!thread) {
     return null;
   }
 
@@ -297,7 +303,7 @@ export const createThreadMessage = async (
     const created = await tx.message.create({
       data: {
         threadId,
-        senderId: currentUser.id,
+        senderId: actorId,
         kind: payload.fileIds?.length
           ? MessageKind.FILE_ATTACHMENT
           : MessageKind.USER_MESSAGE,
@@ -335,11 +341,11 @@ export const createThreadMessage = async (
 export const markMessageRead = async (
   db: DbClient,
   threadId: string,
+  actorId: string,
   messageId?: string,
 ) => {
-  const [thread, currentUser, message] = await Promise.all([
+  const [thread, message] = await Promise.all([
     db.thread.findUnique({ where: { id: threadId }, select: { id: true } }),
-    getCurrentUser(db),
     messageId
       ? db.message.findUnique({
           where: { id: messageId },
@@ -348,7 +354,7 @@ export const markMessageRead = async (
       : null,
   ]);
 
-  if (!thread || !currentUser) {
+  if (!thread) {
     return false;
   }
 
@@ -358,12 +364,12 @@ export const markMessageRead = async (
     where: {
       threadId_userId: {
         threadId,
-        userId: currentUser.id,
+        userId: actorId,
       },
     },
     create: {
       threadId,
-      userId: currentUser.id,
+      userId: actorId,
       lastReadAt: readAt,
       lastReadMessageId: message?.id,
     },
@@ -376,32 +382,33 @@ export const markMessageRead = async (
   return true;
 };
 
-export const joinThread = async (db: DbClient, threadId: string) => {
-  const [thread, currentUser] = await Promise.all([
-    db.thread.findUnique({
-      where: { id: threadId },
-      include: {
-        ticket: {
-          select: {
-            id: true,
-            participants: {
-              where: { role: TicketParticipantRole.ASSIGNEE },
-              select: { userId: true },
-            },
+export const joinThread = async (
+  db: DbClient,
+  threadId: string,
+  actorId: string,
+) => {
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    include: {
+      ticket: {
+        select: {
+          id: true,
+          participants: {
+            where: { role: TicketParticipantRole.ASSIGNEE },
+            select: { userId: true },
           },
         },
       },
-    }),
-    getCurrentUser(db),
-  ]);
+    },
+  });
 
-  if (!thread || !currentUser) {
+  if (!thread) {
     return false;
   }
 
   if (
     thread.ticket.participants.some(
-      (participant) => participant.userId === currentUser.id,
+      (participant) => participant.userId === actorId,
     )
   ) {
     return true;
@@ -410,7 +417,7 @@ export const joinThread = async (db: DbClient, threadId: string) => {
   await db.ticketParticipant.create({
     data: {
       ticketId: thread.ticket.id,
-      userId: currentUser.id,
+      userId: actorId,
       role: TicketParticipantRole.ASSIGNEE,
     },
   });
@@ -421,23 +428,21 @@ export const joinThread = async (db: DbClient, threadId: string) => {
 export const createFileUploadResponse = async (
   db: DbClient,
   threadId: string,
+  actorId: string,
 ) => {
-  const [thread, currentUser] = await Promise.all([
-    db.thread.findUnique({
-      where: { id: threadId },
-      include: { ticket: true },
-    }),
-    getCurrentUser(db),
-  ]);
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    include: { ticket: true },
+  });
 
-  if (!thread || !currentUser) {
+  if (!thread) {
     return null;
   }
 
   const file = await db.fileAsset.create({
     data: {
       orgId: thread.ticket.orgId,
-      uploadedById: currentUser.id,
+      uploadedById: actorId,
       name: "uploaded-file",
       size: 0,
       mimeType: "application/octet-stream",

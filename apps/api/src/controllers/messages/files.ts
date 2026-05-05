@@ -6,7 +6,12 @@ import {
 import type { RequestHandler } from "express";
 import { sendInvalidRequest, sendValidatedData } from "../../lib/controllers";
 import type { DbClient } from "../../lib/db";
-import { createFileUploadResponse, deleteThreadFile } from "./data";
+import {
+  createFileUploadResponse,
+  deleteThreadFile,
+  getThreadAccessTarget,
+} from "./data";
+import { ensureThreadWritable } from "./permissions";
 
 export const uploadFile: RequestHandler = async (req, res) => {
   const db = req.app.locals.db as DbClient;
@@ -16,7 +21,24 @@ export const uploadFile: RequestHandler = async (req, res) => {
     return sendInvalidRequest(res, "file upload params", params.error.issues);
   }
 
-  const file = await createFileUploadResponse(db, params.data.threadId);
+  const target = await getThreadAccessTarget(db, params.data.threadId);
+
+  if (!target) {
+    return res.status(404).json({
+      success: false,
+      error: "Thread not found",
+    });
+  }
+
+  if (!ensureThreadWritable(res, req.dbUser, target)) {
+    return;
+  }
+
+  const file = await createFileUploadResponse(
+    db,
+    params.data.threadId,
+    req.dbUser.id,
+  );
 
   if (!file) {
     return res.status(404).json({
@@ -39,6 +61,19 @@ export const deleteFile: RequestHandler = async (req, res) => {
 
   if (!params.success) {
     return sendInvalidRequest(res, "file delete params", params.error.issues);
+  }
+
+  const target = await getThreadAccessTarget(db, params.data.threadId);
+
+  if (!target) {
+    return res.status(404).json({
+      success: false,
+      error: "Thread not found",
+    });
+  }
+
+  if (!ensureThreadWritable(res, req.dbUser, target)) {
+    return;
   }
 
   const deleted = await deleteThreadFile(
