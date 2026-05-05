@@ -389,123 +389,123 @@ export const Tickets = () => {
         </header>
 
         <>
-            <div className={ticketViewTabsRow}>
-              <div className={ticketViewTabsList}>
-                {activeViews.map((view, index) => {
-                  const active =
-                    url.viewId === view.id || (!url.viewId && view.id === null);
-                  return (
-                    <button
-                      key={view.id ?? "all"}
-                      type="button"
-                      onClick={() => {
-                        setTabIndex(index);
-                        actions.setView(view.id);
-                      }}
-                      className={cn(
-                        ticketViewTab,
-                        active ? "text-foreground" : "text-muted-foreground",
-                      )}
-                    >
-                      {view.name}
-                    </button>
-                  );
-                })}
-                <span
-                  className={ticketViewTabIndicator}
-                  style={{ transform: `translateX(${tabIndex * 100}%)` }}
-                />
-                <HeaderIconButton
-                  label="Save current filters"
-                  className="h-full flex-[0_0_28px]"
-                >
-                  <IconPlus className="h-4 w-4" />
-                </HeaderIconButton>
-              </div>
-            </div>
-
-            <div className={ticketFiltersRow}>
-              <div className={ticketFilterControls}>
-                {FILTERS.map((filter) => (
-                  <button key={filter} type="button" className={ticketChip}>
-                    {filter}
-                    <IconChevronDown className="h-3 w-3" />
-                  </button>
-                ))}
-                {role === "SUPER_ADMIN" && (
+          <div className={ticketViewTabsRow}>
+            <div className={ticketViewTabsList}>
+              {activeViews.map((view, index) => {
+                const active =
+                  url.viewId === view.id || (!url.viewId && view.id === null);
+                return (
                   <button
+                    key={view.id ?? "all"}
                     type="button"
-                    onClick={() => setGroupByOrg((value) => !value)}
+                    onClick={() => {
+                      setTabIndex(index);
+                      actions.setView(view.id);
+                    }}
                     className={cn(
-                      ticketChip,
-                      groupByOrg && "border-primary text-primary",
+                      ticketViewTab,
+                      active ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    Group by Org
+                    {view.name}
                   </button>
-                )}
-              </div>
-              <div className={ticketDensityToggle}>
-                  <HeaderIconButton
-                    label="Compact rows"
-                    active={density === "compact"}
-                    onClick={() => actions.setDensity("compact")}
-                  >
-                    <IconList className="h-4 w-4" />
-                  </HeaderIconButton>
-                  <HeaderIconButton
-                    label="Comfortable rows"
-                    active={density === "comfortable"}
-                    onClick={() => actions.setDensity("comfortable")}
-                  >
-                    <IconLayoutRows className="h-4 w-4" />
-                  </HeaderIconButton>
-              </div>
+                );
+              })}
+              <span
+                className={ticketViewTabIndicator}
+                style={{ transform: `translateX(${tabIndex * 100}%)` }}
+              />
+              <HeaderIconButton
+                label="Save current filters"
+                className="h-full flex-[0_0_28px]"
+              >
+                <IconPlus className="h-4 w-4" />
+              </HeaderIconButton>
             </div>
+          </div>
 
-            <TicketsTable
-              activeSort={activeSort}
-              clearFilters={clearFilters}
-              clearSelection={actions.clearSelection}
-              copiedId={copiedId}
-              copyId={copyId}
-              drawerOpen={drawerOpen}
-              emptyMessage={emptyMessage}
-              hasActiveFilters={hasActiveFilters}
-              hoveredStatusId={hoveredStatusId}
-              hoveredTime={hoveredTime}
-              newTicketsBannerCount={ui.newTicketsBannerCount}
-              onOpenModal={actions.openModal}
-              onRetry={() =>
-                queryClient.invalidateQueries({
-                  queryKey: ["tickets", "list"],
-                  refetchType: "active",
-                })
-              }
-              onScroll={setVirtualScrollTop}
-              openDrawer={actions.openDrawer}
-              refreshNewTickets={refreshNewTickets}
-              role={role}
-              rowHeight={rowHeight}
-              density={density as Density}
-              secondarySort={secondarySort}
-              selectedCount={selectedCount}
-              selectedRowIds={ui.selectedRowIds}
-              setHoveredStatusId={setHoveredStatusId}
-              setHoveredTime={setHoveredTime}
-              setSelectedRows={actions.setSelectedRows}
-              setSort={setSort}
-              sortedRows={sortedRows}
-              status={status}
-              tableRef={tableRef}
-              toggleRowSelected={actions.toggleRowSelected}
-              total={data.total}
-              totalHeight={totalHeight}
-              virtualRows={virtualRows}
-              startIndex={startIndex}
-              visibleColumns={visibleColumns}
-            />
-          </>
+          <div className={ticketFiltersRow}>
+            <div className={ticketFilterControls}>
+              {FILTERS.map((filter) => (
+                <button key={filter} type="button" className={ticketChip}>
+                  {filter}
+                  <IconChevronDown className="h-3 w-3" />
+                </button>
+              ))}
+              {role === "SUPER_ADMIN" && (
+                <button
+                  type="button"
+                  onClick={() => setGroupByOrg((value) => !value)}
+                  className={cn(
+                    ticketChip,
+                    groupByOrg && "border-primary text-primary",
+                  )}
+                >
+                  Group by Org
+                </button>
+              )}
+            </div>
+            <div className={ticketDensityToggle}>
+              <HeaderIconButton
+                label="Compact rows"
+                active={density === "compact"}
+                onClick={() => actions.setDensity("compact")}
+              >
+                <IconList className="h-4 w-4" />
+              </HeaderIconButton>
+              <HeaderIconButton
+                label="Comfortable rows"
+                active={density === "comfortable"}
+                onClick={() => actions.setDensity("comfortable")}
+              >
+                <IconLayoutRows className="h-4 w-4" />
+              </HeaderIconButton>
+            </div>
+          </div>
+
+          <TicketsTable
+            activeSort={activeSort}
+            clearFilters={clearFilters}
+            clearSelection={actions.clearSelection}
+            copiedId={copiedId}
+            copyId={copyId}
+            drawerOpen={drawerOpen}
+            emptyMessage={emptyMessage}
+            hasActiveFilters={hasActiveFilters}
+            hoveredStatusId={hoveredStatusId}
+            hoveredTime={hoveredTime}
+            newTicketsBannerCount={ui.newTicketsBannerCount}
+            onOpenModal={actions.openModal}
+            onRetry={() =>
+              queryClient.invalidateQueries({
+                queryKey: ["tickets", "list"],
+                refetchType: "active",
+              })
+            }
+            onScroll={setVirtualScrollTop}
+            openDrawer={actions.openDrawer}
+            refreshNewTickets={refreshNewTickets}
+            role={role}
+            rowHeight={rowHeight}
+            density={density as Density}
+            secondarySort={secondarySort}
+            selectedCount={selectedCount}
+            selectedRowIds={ui.selectedRowIds}
+            setHoveredStatusId={setHoveredStatusId}
+            setHoveredTime={setHoveredTime}
+            setSelectedRows={actions.setSelectedRows}
+            setSort={setSort}
+            sortedRows={sortedRows}
+            status={status}
+            tableRef={tableRef}
+            toggleRowSelected={actions.toggleRowSelected}
+            total={data.total}
+            totalHeight={totalHeight}
+            virtualRows={virtualRows}
+            startIndex={startIndex}
+            visibleColumns={visibleColumns}
+          />
+        </>
 
         {drawerOpen && data.detail && (
           <TicketDrawer

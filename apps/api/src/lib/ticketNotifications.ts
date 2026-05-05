@@ -112,9 +112,15 @@ export const buildTicketNotificationRecords = ({
   messageId?: string;
   body?: string;
 }): TicketNotificationRecord[] => {
+  const eligibleIds = new Set(
+    getResponsibleTicketUserIds({ users, ticket, actorId }),
+  );
+
   const recipientIds = explicitRecipientIds
-    ? uniqueUserIds(explicitRecipientIds).filter((id) => id !== actorId)
-    : getResponsibleTicketUserIds({ users, ticket, actorId });
+    ? uniqueUserIds(explicitRecipientIds).filter(
+        (id) => id !== actorId && eligibleIds.has(id),
+      )
+    : [...eligibleIds];
 
   return recipientIds.map((recipientId) => ({
     recipientId,

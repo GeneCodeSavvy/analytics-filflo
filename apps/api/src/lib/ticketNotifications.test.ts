@@ -82,6 +82,7 @@ assert.deepEqual(
   ],
 );
 
+// actor excluded; admin_unassigned is ADMIN but not an assignee so ineligible
 assert.deepEqual(
   buildTicketNotificationRecords({
     type: NotificationType.TICKET_ASSIGNED,
@@ -90,5 +91,18 @@ assert.deepEqual(
     ticket,
     explicitRecipientIds: ["admin_assigned", "admin_unassigned", "super"],
   }).map((record) => record.recipientId),
-  ["admin_assigned", "admin_unassigned"],
+  ["admin_assigned"],
+);
+
+// cross-org user not in eligible set — must be excluded even when explicitly listed
+const crossOrgUser = { id: "outsider", role: UserRole.USER, orgId: "org_c" };
+assert.deepEqual(
+  buildTicketNotificationRecords({
+    type: NotificationType.TICKET_ASSIGNED,
+    actorId: "super",
+    users: [...users, crossOrgUser],
+    ticket,
+    explicitRecipientIds: ["admin_assigned", "outsider"],
+  }).map((record) => record.recipientId),
+  ["admin_assigned"],
 );
