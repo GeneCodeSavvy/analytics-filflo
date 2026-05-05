@@ -50,7 +50,7 @@ export function KpiCardView({
                   {priority === "MEDIUM" ? "MED" : priority}
                 </span>
                 <span className="font-mono text-[10px] font-semibold text-[--ink-1]">
-                  {card.resolutionByPriority[priority]}
+                  {card.resolutionByPriority?.[priority]}
                 </span>
               </div>
             ))}

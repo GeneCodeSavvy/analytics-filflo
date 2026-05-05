@@ -251,7 +251,7 @@ export const Teams = () => {
                     )}
                     <strong>{org.org.name}</strong>
                     <span className="text-[--ink-4]">{orgStats(rows)}</span>
-                    {actorRole !== "ADMIN" && actorRole !== "USER" ? (
+                    {superAdminView ? (
                       <a
                         className="text-[--ink-3] no-underline"
                         onClick={(event) => event.stopPropagation()}
@@ -269,9 +269,7 @@ export const Teams = () => {
                         query={deferredSearch}
                         rows={rows}
                         showCheckboxes
-                        showActions={
-                          actorRole !== "ADMIN" && actorRole !== "USER"
-                        }
+                        showActions={superAdminView}
                         sortDirection={sortDirection}
                         sortKey={sortKey}
                         onRemove={(member) =>
@@ -335,7 +333,7 @@ export const Teams = () => {
           open={createOrgOpen}
         />
         <ConfirmationModal modal={modal} onClose={() => setModal(null)} />
-        <DetailDrawer orgs={orgs} />
+        <DetailDrawer />
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import { useAuthState } from "@/stores/useAuthStore";
 export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
   const actorRole = useAuthState((state) => state.user?.role);
   if (!actorRole) throw new Error("Authentication not completed");
-  const { inviteModalOpen, closeInviteModal, inviteDraft, saveInviteDraft, clearInviteDraft } =
+  const { inviteModalOpen, closeInviteModal, inviteDraft, clearInviteDraft } =
     useTeamsStore();
   const inviteMutation = useInviteTeamMemberMutation();
   const [email, setEmail] = useState(inviteDraft?.email ?? "");

@@ -1,13 +1,12 @@
 import { X } from "lucide-react";
-import type { OrgSummary } from "../../types/teams";
-import { formatMonth, orgNameFor } from "../../lib/teamsComponent";
+import { formatMonth } from "../../lib/teamsComponent";
 import { useTeamsStore } from "../../stores/useTeamsStore";
 import { useTeamMemberQuery } from "../../hooks/useTeamsQueries";
 import { Avatar } from "./Avatar";
 import { RolePill } from "./RolePill";
 import { useAuthState } from "@/stores/useAuthStore";
 
-export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
+export function DetailDrawer() {
   const actorRole = useAuthState((state) => state.user?.role);
   if (!actorRole) throw new Error("Authentication not complete");
   const {
