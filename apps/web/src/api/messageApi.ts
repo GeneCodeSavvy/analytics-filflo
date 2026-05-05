@@ -9,6 +9,11 @@ import type {
   FileUploadResponse,
 } from "../types/messages";
 
+/** SuperAdmins can access all messages of all orgs
+ *  Admins can access threads for only assigned tickets
+ *  Moderators can access all messages in their org
+ *  User can access threads that they created or are assigned to
+ */
 export const messageApi = {
   getThreads: (
     filters: MessageFilters,

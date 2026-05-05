@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
-import type { RequestHandler } from "express";
+import type { RequestHandler, Response } from "express";
 import type { DbClient } from "../../lib/db";
+import { getInvitationVerificationDecision } from "./permissions";
+
+const invalidInvitationError = "Invalid or expired invitation";
+
+const sendInvalidInvitation = (res: Response) => {
+  res.status(400).json({ success: false, error: invalidInvitationError });
+};
 
 export const verifyInvitation: RequestHandler = async (req, res) => {
   const { token } = req.params;
@@ -13,29 +20,30 @@ export const verifyInvitation: RequestHandler = async (req, res) => {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const db = req.app.locals.db as DbClient;
 
-  let invitation: Awaited<ReturnType<typeof db.invitation.findUnique>> & { org: { displayName: string } } | null;
+  let invitation:
+    | (Awaited<ReturnType<typeof db.invitation.findUnique>> & {
+        org: { displayName: string };
+      })
+    | null;
 
   try {
-    invitation = await db.invitation.findUnique({
+    invitation = (await db.invitation.findUnique({
       where: { tokenHash },
       include: { org: true },
-    }) as typeof invitation;
+    })) as typeof invitation;
   } catch {
     res.status(500).json({ success: false, error: "Internal error" });
     return;
   }
 
   if (!invitation) {
-    res.status(400).json({ success: false, error: "Invalid or expired invitation" });
+    sendInvalidInvitation(res);
     return;
   }
 
-  if (invitation.status !== "PENDING") {
-    res.status(400).json({ success: false, error: "Invalid or expired invitation" });
-    return;
-  }
+  const decision = getInvitationVerificationDecision(invitation);
 
-  if (invitation.expiresAt < new Date()) {
+  if (!decision.allowed && decision.shouldMarkExpired) {
     try {
       await db.invitation.update({
         where: { id: invitation.id },
@@ -44,7 +52,10 @@ export const verifyInvitation: RequestHandler = async (req, res) => {
     } catch {
       // Best-effort expiry update — don't block the response
     }
-    res.status(400).json({ success: false, error: "Invalid or expired invitation" });
+  }
+
+  if (!decision.allowed) {
+    sendInvalidInvitation(res);
     return;
   }
 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import {
   getInvitationErrorMessage,
   invitationsApi,
-} from "../api/invitations";
+} from "../api/invitationsApi";
 
 export function InvitationAccept() {
   const { token } = useParams<{ token: string }>();
