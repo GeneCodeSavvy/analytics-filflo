@@ -122,7 +122,13 @@ export default function NavSidebar({ children }: { children: ReactNode }) {
                   link={{
                     label: user?.displayName ?? "Account",
                     href: "/teams",
-                    icon: (
+                    icon: user?.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.displayName}
+                        className="h-7 w-7 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
                       <IconUser
                         className="h-7 w-7 shrink-0 rounded-full"
                         width={50}

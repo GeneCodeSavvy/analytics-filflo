@@ -306,7 +306,7 @@ export const Tickets = () => {
       assigneeIds: [],
       orgIds: [],
       q: undefined,
-      stale: undefined,
+      stale: false,
     });
 
   const setSort = (field: SortField, shiftKey: boolean) => {

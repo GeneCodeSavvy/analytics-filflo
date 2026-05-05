@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -97,10 +97,13 @@ export const Teams = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (!expandedOrgIds.length && orgs.length)
+    if (!initializedRef.current && orgs.length) {
+      initializedRef.current = true;
       expandAllOrgs(orgs.map((org) => org.org.id));
-  }, [expandedOrgIds.length, expandAllOrgs, orgs]);
+    }
+  }, [orgs, expandAllOrgs]);
 
   const visibleRows: TeamMemberListItem[] = useMemo(() => {
     const filtered = filterTeamRows(members, deferredSearch, roleFilter);
