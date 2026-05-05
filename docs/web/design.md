@@ -34,6 +34,7 @@ The current target pages apply these specific corrections:
 - **Dashboard:** card/chart surfaces must read at normal contrast. Metrics may use `font-[--font-sans]`; everything else stays mono. Trend and donut charts use the shared chart/status tokens instead of pale ad-hoc lines.
 - **Tickets:** view tabs and filters are two rows. Table header and cells share the same column template. Priority/status strips are at least 4px wide and use status tokens.
 - **Messages:** treat as a ticket-context work queue, not a consumer chat app. It uses the same page header and table/inbox density as tickets.
+- **Messages v1:** keep ticket/thread IDs out of the primary scan path. The queue should lead with subject, urgency, status, customer/org context, last reply, unread count, and recency. Use semantic status strips and pills for priority/status; keep the composer action focused on one ember `Send` button.
 - **Notifications:** no raw `oklch()` utilities. Use tokenized warm stone and ember states.
 - **Notifications v1:** treat the list as the product. Keep interactions simple: Inbox/Read/All tabs, chips, row focus, selection, bulk read/unread actions, and snooze. The API contract mirrors DB persistence with only unread/read state via `readAt`; do not expose a separate done state.
 - **Teams:** one page background only. Org/member cards are card surfaces on that page background, with reduced top whitespace.

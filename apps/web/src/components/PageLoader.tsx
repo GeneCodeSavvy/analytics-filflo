@@ -4,20 +4,30 @@ import { cn } from "@/lib/utils";
 interface PageLoaderProps {
   inline?: boolean;
   className?: string;
+  size?: number;
+  dotSize?: number;
 }
 
-export function PageLoader({ inline = false, className }: PageLoaderProps) {
+export function PageLoader({
+  inline = false,
+  className,
+  size,
+  dotSize,
+}: PageLoaderProps) {
+  const loaderSize = size ?? (inline ? 32 : 56);
+  const loaderDotSize = dotSize ?? (inline ? 5 : 8);
+
   return (
     <div
       className={cn(
         "flex w-full items-center justify-center bg-[--surface-page]",
         inline ? "h-40" : "min-h-svh",
-        className
+        className,
       )}
     >
       <DotmTriangle6
-        size={inline ? 32 : 56}
-        dotSize={inline ? 5 : 8}
+        size={loaderSize}
+        dotSize={loaderDotSize}
         color="var(--ember-500)"
         bloom
         ariaLabel="Loading"

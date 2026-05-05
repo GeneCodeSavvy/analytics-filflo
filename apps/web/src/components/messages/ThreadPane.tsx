@@ -1,4 +1,4 @@
-import { Inbox, LoaderCircle } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { PageLoader } from "../PageLoader";
 import type { RefObject } from "react";
@@ -83,9 +83,12 @@ export function ThreadPane({
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
           <div ref={topSentinelRef} />
           {isFetchingMore && (
-            <div className="flex justify-center py-2">
-              <LoaderCircle className="size-4 animate-spin text-[--ink-3]" />
-            </div>
+            <PageLoader
+              inline
+              size={20}
+              dotSize={3}
+              className="h-10 bg-transparent py-2"
+            />
           )}
           {messagesLoading ? (
             <PageLoader inline />

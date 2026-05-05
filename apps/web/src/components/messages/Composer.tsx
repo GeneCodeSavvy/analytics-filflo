@@ -1,6 +1,7 @@
-import { LoaderCircle, Paperclip, Send } from "lucide-react";
+import { Paperclip, Send } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef } from "react";
 import type { MessageComposerProps } from "../../types/messages";
+import { PageLoader } from "../PageLoader";
 import {
   messageIconButton,
   messageInput,
@@ -66,7 +67,12 @@ export function Composer({
               className={messagePrimaryButton}
             >
               {sending ? (
-                <LoaderCircle className="size-3.5 animate-spin" />
+                <PageLoader
+                  inline
+                  size={14}
+                  dotSize={2}
+                  className="h-3.5 w-3.5 bg-transparent"
+                />
               ) : (
                 <Send className="size-3.5" />
               )}

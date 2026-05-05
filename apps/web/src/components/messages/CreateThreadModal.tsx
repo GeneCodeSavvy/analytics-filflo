@@ -1,4 +1,4 @@
-import { LoaderCircle, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAuthState } from "../../stores/useAuthStore";
 import { useTicketListQuery } from "../../hooks/useTicketQueries";
@@ -163,7 +163,12 @@ export function CreateThreadModal({
             className={messagePrimaryButton}
           >
             {createThread.isPending ? (
-              <LoaderCircle className="size-3.5 animate-spin" />
+              <PageLoader
+                inline
+                size={14}
+                dotSize={2}
+                className="h-3.5 w-3.5 bg-transparent"
+              />
             ) : null}
             Create Thread
           </button>

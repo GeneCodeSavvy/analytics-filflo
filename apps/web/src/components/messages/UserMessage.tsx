@@ -5,41 +5,41 @@ import { useAuthState } from "../../stores/useAuthStore";
 import { FileAttachment } from "./FileAttachment";
 
 export function UserMessage({ message, justSent }: MessageUserMessageProps) {
-  const currentUserId = useAuthState((s) => s.user?.id);
-  const own = !!currentUserId && message.sender.id === currentUserId;
+  const currentUserId = useAuthState((s) => s.user?.email);
+  const own = !!currentUserId && message.sender.email === currentUserId;
+  const clientMessage = !own;
+  console.log(own, clientMessage, message?.sender?.email, currentUserId);
+
   return (
     <div
       className={cn(
-        "grid w-full grid-cols-[96px_minmax(0,1fr)] gap-3 max-[720px]:grid-cols-1 max-[720px]:gap-1",
+        "flex w-full",
+        own ? "justify-end" : "justify-start",
         justSent && "animate-in slide-in-from-bottom-2 fade-in",
       )}
     >
-      <div className="pt-2 text-[11px] text-[--ink-3] max-[720px]:pt-0">
-        <div className="font-mono">{formatTime(message.at)}</div>
-        <div className="mt-1 w-fit rounded-[--radius-sm] border border-[--border-default] bg-[--surface-card] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em] text-[--ink-2]">
-          {own ? "Outbound" : "Inbound"}
-        </div>
-      </div>
       <article
         className={cn(
-          "rounded-[--radius-md] border bg-[--surface-card] px-3 py-2.5 shadow-[--elev-1]",
-          own
-            ? "border-[--status-info-border]"
-            : "border-[--border-default]",
+          "max-w-[min(760px,86%)] rounded-[--radius-md] bg-[--surface-card] px-3 py-2.5 shadow-[--elev-1] transition-shadow duration-200 hover:shadow-[--elev-2]",
+          clientMessage
+            ? "bg-[--action-tint-bg]"
+            : "bg-[--status-info-bg]",
         )}
       >
         <div className="mb-1.5 flex min-w-0 items-center justify-between gap-3">
           <span className="truncate text-[12px] font-semibold text-[--ink-1]">
-            {own ? "Operator reply" : message.sender.name}
+            {own ? "You" : message.sender.name}
           </span>
-          <span className="shrink-0 text-[11px] text-[--ink-3]">
-            Ticket thread
+          <span className="shrink-0 font-mono text-[11px] text-[--ink-3]">
+            {formatTime(message.at)}
           </span>
         </div>
         <div
           className={cn(
             "border-l-[3px] pl-3 text-[13px] leading-6 text-[--ink-1]",
-            own ? "border-l-[--status-info-fg]" : "border-l-[--action-bg]",
+            clientMessage
+              ? "border-l-[--action-bg]"
+              : "border-l-[--status-info-fg]",
           )}
         >
           {message.content ? (

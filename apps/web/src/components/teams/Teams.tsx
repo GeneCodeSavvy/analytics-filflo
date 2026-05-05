@@ -38,6 +38,7 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { DetailDrawer } from "./DetailDrawer";
 import { PendingInvitations } from "./PendingInvitations";
 import { useAuthState } from "@/stores/useAuthStore";
+import { PageLoader } from "@/components/PageLoader";
 import { CreateOrgModal } from "./CreateOrgModal";
 
 const pageShell =
@@ -302,9 +303,7 @@ export const Teams = () => {
             })}
             {!orgs.length ? (
               <div className={cardClass}>
-                <div className="flex min-h-[120px] flex-col items-center justify-center gap-1.5 text-center text-[--ink-3]">
-                  Organizations will appear when the backend returns team data.
-                </div>
+                <PageLoader inline />
               </div>
             ) : null}
           </div>
