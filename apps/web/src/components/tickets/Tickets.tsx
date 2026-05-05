@@ -42,7 +42,6 @@ import { CreateTicketModal } from "./CreateTicketModal";
 import { HeaderIconButton } from "./HeaderIconButton";
 import { TicketDrawer } from "./TicketDrawer";
 import { TicketsTable } from "./TicketsTable";
-import { UserTicketList } from "./UserTicketList";
 import {
   ticketChip,
   ticketDensityToggle,

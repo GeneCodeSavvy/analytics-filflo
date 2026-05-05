@@ -1,4 +1,5 @@
 import {
+  NotificationType,
   Prisma,
   TicketCategory,
   TicketPriority,
@@ -20,6 +21,7 @@ import type {
 } from "@shared/schema/tickets";
 import type { UserRef } from "@shared/schema/domain";
 import type { DbClient } from "../../lib/db";
+import { createTicketNotifications } from "../../lib/ticketNotifications";
 
 const staleTicketMs = 3 * 24 * 60 * 60 * 1000;
 
@@ -309,6 +311,23 @@ export const createTicketInDb = async (
     include: ticketInclude,
   });
 
+  await createTicketNotifications(db, {
+    type: NotificationType.NEW_TICKET_IN_ORG,
+    actorId,
+    ticketId: ticket.id,
+    body: ticket.description.slice(0, 180),
+  });
+
+  if (draft.assigneeIds.length > 0) {
+    await createTicketNotifications(db, {
+      type: NotificationType.TICKET_ASSIGNED,
+      actorId,
+      ticketId: ticket.id,
+      explicitRecipientIds: draft.assigneeIds,
+      body: `${ticket.subject} was assigned to you.`,
+    });
+  }
+
   return toTicketDetail(ticket);
 };
 
@@ -343,6 +362,26 @@ export const updateTicketInDb = async (
     },
     include: ticketInclude,
   });
+
+  if (payload.status && payload.status !== existing.status) {
+    const notificationType =
+      payload.status === TicketStatus.REVIEW
+        ? NotificationType.REVIEW_REQUESTED
+        : payload.status === TicketStatus.RESOLVED
+          ? NotificationType.TICKET_RESOLVED
+          : payload.status === TicketStatus.CLOSED
+            ? NotificationType.TICKET_CLOSED
+            : null;
+
+    if (notificationType) {
+      await createTicketNotifications(db, {
+        type: notificationType,
+        actorId,
+        ticketId: id,
+        body: `Status changed from ${existing.status} to ${payload.status}.`,
+      });
+    }
+  }
 
   return toTicketDetail(ticket);
 };
@@ -388,6 +427,10 @@ export const assignTicketInDb = async (
   const currentAssignees = await db.ticketParticipant.findMany({
     where: { ticketId: id, role: "ASSIGNEE" },
   });
+  const newAssigneeIds = add.filter(
+    (uid) =>
+      !currentAssignees.some((participant) => participant.userId === uid),
+  );
 
   await db.$transaction([
     ...(remove.length
@@ -397,19 +440,17 @@ export const assignTicketInDb = async (
           }),
         ]
       : []),
-    ...add
-      .filter((uid) => !currentAssignees.some((p) => p.userId === uid))
-      .map((userId, i) =>
-        db.ticketParticipant.create({
-          data: {
-            ticketId: id,
-            userId,
-            role: "ASSIGNEE",
-            isPrimary: i === 0 && currentAssignees.length === 0,
-            addedById: actorId,
-          },
-        }),
-      ),
+    ...newAssigneeIds.map((userId, i) =>
+      db.ticketParticipant.create({
+        data: {
+          ticketId: id,
+          userId,
+          role: "ASSIGNEE",
+          isPrimary: i === 0 && currentAssignees.length === 0,
+          addedById: actorId,
+        },
+      }),
+    ),
     db.ticketActivity.create({
       data: {
         ticketId: id,
@@ -418,6 +459,16 @@ export const assignTicketInDb = async (
       },
     }),
   ]);
+
+  if (newAssigneeIds.length > 0) {
+    await createTicketNotifications(db, {
+      type: NotificationType.TICKET_ASSIGNED,
+      actorId,
+      ticketId: id,
+      explicitRecipientIds: newAssigneeIds,
+      body: "You were assigned to this ticket.",
+    });
+  }
 
   const ticket = await db.ticket.findUnique({
     where: { id },
@@ -452,6 +503,26 @@ export const updateTicketStatusInDb = async (
     },
     include: ticketInclude,
   });
+
+  if (status !== existing.status) {
+    const notificationType =
+      status === TicketStatus.REVIEW
+        ? NotificationType.REVIEW_REQUESTED
+        : status === TicketStatus.RESOLVED
+          ? NotificationType.TICKET_RESOLVED
+          : status === TicketStatus.CLOSED
+            ? NotificationType.TICKET_CLOSED
+            : null;
+
+    if (notificationType) {
+      await createTicketNotifications(db, {
+        type: notificationType,
+        actorId,
+        ticketId: id,
+        body: `Status changed from ${existing.status} to ${status}.`,
+      });
+    }
+  }
 
   return toTicketDetail(ticket);
 };
@@ -534,6 +605,26 @@ export const bulkTicketsInDb = async (
           },
         },
       });
+
+      if (opts.status !== existing.status) {
+        const notificationType =
+          opts.status === TicketStatus.REVIEW
+            ? NotificationType.REVIEW_REQUESTED
+            : opts.status === TicketStatus.RESOLVED
+              ? NotificationType.TICKET_RESOLVED
+              : opts.status === TicketStatus.CLOSED
+                ? NotificationType.TICKET_CLOSED
+                : null;
+
+        if (notificationType) {
+          await createTicketNotifications(db, {
+            type: notificationType,
+            actorId,
+            ticketId: id,
+            body: `Status changed from ${existing.status} to ${opts.status}.`,
+          });
+        }
+      }
     } else if (action === "priority" && opts.priority) {
       await db.ticket.update({
         where: { id },
@@ -567,7 +658,27 @@ export const bulkTicketsInDb = async (
           },
         },
       });
+
+      if (existing.status !== TicketStatus.CLOSED) {
+        await createTicketNotifications(db, {
+          type: NotificationType.TICKET_CLOSED,
+          actorId,
+          ticketId: id,
+          body: `Status changed from ${existing.status} to ${TicketStatus.CLOSED}.`,
+        });
+      }
     } else if (action === "assign" && opts.assigneeIds?.length) {
+      const currentAssignees = await db.ticketParticipant.findMany({
+        where: { ticketId: id, role: "ASSIGNEE" },
+        select: { userId: true },
+      });
+      const currentAssigneeIds = new Set(
+        currentAssignees.map((participant) => participant.userId),
+      );
+      const newAssigneeIds = opts.assigneeIds.filter(
+        (userId) => !currentAssigneeIds.has(userId),
+      );
+
       await db.ticketParticipant.deleteMany({
         where: { ticketId: id, role: "ASSIGNEE" },
       });
@@ -583,6 +694,16 @@ export const bulkTicketsInDb = async (
       await db.ticketActivity.create({
         data: { ticketId: id, actorId, type: "assignee_change" },
       });
+
+      if (newAssigneeIds.length > 0) {
+        await createTicketNotifications(db, {
+          type: NotificationType.TICKET_ASSIGNED,
+          actorId,
+          ticketId: id,
+          explicitRecipientIds: newAssigneeIds,
+          body: "You were assigned to this ticket.",
+        });
+      }
     }
 
     succeeded.push(id);

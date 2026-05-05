@@ -1,5 +1,6 @@
 import {
   MessageKind,
+  NotificationType,
   Prisma,
   TicketParticipantRole,
   UserRole,
@@ -17,6 +18,7 @@ import type {
 import type { UserRef } from "@shared/schema/domain";
 import type { DbClient } from "../../lib/db";
 import type { DbUser } from "../../lib/auth";
+import { createTicketNotifications } from "../../lib/ticketNotifications";
 import { buildThreadWhere } from "./utils";
 
 const threadInclude = {
@@ -330,6 +332,15 @@ export const createThreadMessage = async (
         lastMessageId: created.id,
         lastMessageAt: created.createdAt,
       },
+    });
+
+    await createTicketNotifications(tx, {
+      type: NotificationType.MESSAGE_ACTIVITY,
+      actorId,
+      ticketId: thread.ticketId,
+      threadId,
+      messageId: created.id,
+      body: payload.content?.slice(0, 180),
     });
 
     return created;
