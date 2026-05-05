@@ -4,6 +4,11 @@ import type { NotificationActionsProps } from "../../types/notifications";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { SnoozeMenu } from "./SnoozeMenu";
+import {
+  notificationActionButton,
+  notificationDangerButton,
+  notificationSecondaryButton,
+} from "./styles";
 
 export function NotificationActions({
   row,
@@ -23,6 +28,7 @@ export function NotificationActions({
           type="button"
           variant="ghost"
           size="sm"
+          className={notificationActionButton}
           onClick={(event) => {
             event.stopPropagation();
             onInvite("ACCEPTED");
@@ -34,6 +40,7 @@ export function NotificationActions({
           type="button"
           variant="ghost"
           size="sm"
+          className={notificationDangerButton}
           onClick={(event) => {
             event.stopPropagation();
             onInvite("CANCELLED");
@@ -56,6 +63,7 @@ export function NotificationActions({
         type="button"
         variant="ghost"
         size="sm"
+        className={notificationSecondaryButton}
         onClick={(event) => {
           event.stopPropagation();
           onOpen();
@@ -74,6 +82,7 @@ export function NotificationActions({
             type="button"
             variant="ghost"
             size="sm"
+            className={notificationSecondaryButton}
             onClick={(event) => {
               event.stopPropagation();
               setSnoozeOpen((value) => !value);
@@ -95,6 +104,7 @@ export function NotificationActions({
         type="button"
         variant="ghost"
         size="sm"
+        className={notificationActionButton}
         onClick={(event) => {
           event.stopPropagation();
           onDone();

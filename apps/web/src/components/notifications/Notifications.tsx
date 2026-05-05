@@ -1,8 +1,4 @@
-import {
-  CheckCircle,
-  CircleHelp,
-  X,
-} from "lucide-react";
+import { Bell, CheckCircle } from "lucide-react";
 import { PageLoader } from "../PageLoader";
 import {
   useEffect,
@@ -17,7 +13,6 @@ import { mergeFilters, parseFilters } from "../../lib/notificationParams";
 import {
   filterChips,
   groupNotificationRows,
-  notificationShortcuts,
   selectedTypesFromChip,
   tabs,
   ticketHref,
@@ -38,12 +33,15 @@ import { EmptyState } from "./EmptyState";
 import { SnoozeMenu } from "./SnoozeMenu";
 import { NotificationRowView } from "./NotificationRowView";
 import {
+  notificationActionButton,
   notificationChip,
   notificationChipActive,
+  notificationGhostActionButton,
   notificationHeader,
   notificationMeta,
   notificationPage,
   notificationPanel,
+  notificationSecondaryButton,
   notificationTitle,
   notificationToast,
 } from "./styles";
@@ -60,7 +58,6 @@ export const Notifications = () => {
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [bulkSnoozeOpen, setBulkSnoozeOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [newRowsPending, setNewRowsPending] = useState(0);
@@ -208,25 +205,17 @@ export const Notifications = () => {
       event.preventDefault();
       bulk.mutate({ op: "read", scope: "ids", ids: rows.map((row) => row.id) });
     }
-    if (event.key === "?") {
-      event.preventDefault();
-      setShortcutsOpen(true);
-    }
   };
 
   return (
-    <main
-      className={notificationPage}
-      onKeyDown={handleKeyboard}
-    >
+    <main className={notificationPage} onKeyDown={handleKeyboard}>
       <div className="app-page-frame-content">
         <header className={notificationHeader}>
           <div>
-            <h1 className={notificationTitle}>
-              Notifications
-            </h1>
+            <h1 className={notificationTitle}>Notifications</h1>
             <p className={`${notificationMeta} mt-1`}>
-              {unreadCount} unread operator updates
+              {unreadCount} unread operator update
+              {unreadCount === 1 ? "" : "s"} waiting for action
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -235,6 +224,7 @@ export const Notifications = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
+                className={notificationActionButton}
                 onClick={() =>
                   bulk.mutate({
                     op: "done",
@@ -249,25 +239,22 @@ export const Notifications = () => {
           </div>
         </header>
 
-        <div className="sticky top-16 z-20 -mx-0.5 bg-background px-0.5">
-          <nav
-            className="flex gap-[18px] border-b border-[--border-default]"
-            aria-label="Notification tabs"
-          >
+        <div className="sticky top-20 z-20 -mx-0.5 border-b border-[--border-default] bg-[--surface-page]/95 px-0.5 pt-1 backdrop-blur">
+          <nav className="flex gap-1.5" aria-label="Notification tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 className={cn(
-                  "inline-flex cursor-pointer items-center gap-1.5 border-0 border-b border-transparent bg-transparent py-2.5 pt-2.5 pb-[9px] text-xs text-[--ink-3]",
+                  "inline-flex cursor-pointer items-center gap-1.5 rounded-t-[--radius-md] border border-transparent px-3 py-2 text-xs font-medium text-[--ink-3] transition-colors hover:bg-[--surface-card] hover:text-[--ink-1]",
                   activeTab === tab.key &&
-                    "border-b-[--action-bg] text-[--ink-1]",
+                    "border-[--action-bg] border-b-[--action-tint-bg] bg-[--action-tint-bg] text-[--action-tint-fg] shadow-[--elev-1]",
                 )}
                 onClick={() => updateFilters({ tab: tab.key })}
               >
                 {tab.label}
                 {tab.key === "inbox" ? (
-                  <span className="rounded-[--radius-md] border border-[--border-default] px-1.5 text-[0.625rem]/[1.4]">
+                  <span className="rounded-[--radius-pill] border border-[--border-default] bg-[--surface-sunken] px-1.5 text-[0.625rem]/[1.4] text-[--ink-2]">
                     {unreadCount}
                   </span>
                 ) : null}
@@ -279,10 +266,10 @@ export const Notifications = () => {
             className={cn(
               "grid max-h-0 grid-cols-[1fr_auto] items-center gap-3 overflow-visible opacity-0 -translate-y-1.5 transition-[max-height,opacity,transform,padding] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] max-[720px]:grid-cols-1 max-[720px]:items-start",
               selectedCount > 0 &&
-                "mt-2 max-h-12 translate-y-0 rounded-[--radius-md] border border-[--border-default] bg-[--surface-sunken] px-2 py-[7px] opacity-100 shadow-[--elev-1]",
+                "mt-3 max-h-14 translate-y-0 rounded-[--radius-lg] border border-[--action-bg] bg-[--action-tint-bg] px-3 py-2 opacity-100 shadow-[--elev-2]",
             )}
           >
-            <span className="text-xs text-[--ink-1]">
+            <span className="text-xs font-medium text-[--ink-1]">
               {selectedCount} selected
             </span>
             <div className="flex items-center gap-1.5">
@@ -290,6 +277,7 @@ export const Notifications = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
+                className={notificationSecondaryButton}
                 onClick={() =>
                   bulk.mutate({
                     op: "read",
@@ -304,6 +292,7 @@ export const Notifications = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
+                className={notificationActionButton}
                 onClick={() => {
                   bulk.mutate({
                     op: "done",
@@ -320,6 +309,7 @@ export const Notifications = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
+                  className={notificationSecondaryButton}
                   onClick={() => setBulkSnoozeOpen((value) => !value)}
                 >
                   Snooze
@@ -330,6 +320,7 @@ export const Notifications = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
+                className={notificationGhostActionButton}
                 onClick={() => setSelectedIds(new Set())}
               >
                 Deselect all
@@ -337,7 +328,7 @@ export const Notifications = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto py-2.5 pb-3 [scrollbar-width:thin]">
+          <div className="flex items-center gap-2 overflow-x-auto py-3 [scrollbar-width:thin]">
             {filterChips.map((chip) => {
               const active = selectedTypesFromChip(chip.types, activeTypes);
               return (
@@ -362,7 +353,7 @@ export const Notifications = () => {
             {hasFilters ? (
               <button
                 type="button"
-                className="shrink-0 cursor-pointer rounded-[--radius-md] border border-transparent bg-[--surface-page] px-2 py-1 text-[0.6875rem]/[1.4] text-[--action-tint-fg]"
+                className="shrink-0 cursor-pointer rounded-[--radius-pill] border border-transparent bg-transparent px-2.5 py-1.5 text-[0.6875rem]/[1.4] font-medium text-[--action-tint-fg] hover:bg-[--action-tint-bg]"
                 onClick={() => updateFilters({ type: [] })}
               >
                 Clear filters
@@ -375,7 +366,7 @@ export const Notifications = () => {
         {newRowsPending > 0 ? (
           <button
             type="button"
-            className="mx-auto mt-0.5 mb-3 block cursor-pointer rounded-[--radius-md] border border-[--status-warn-border] bg-[--status-warn-bg] px-2.5 py-[5px] text-[0.6875rem] text-[--status-warn-fg]"
+            className="mx-auto mt-4 mb-3 flex cursor-pointer items-center gap-1.5 rounded-[--radius-pill] border border-[--status-warn-border] bg-[--status-warn-bg] px-3 py-1.5 text-[0.6875rem] font-medium text-[--status-warn-fg] shadow-[--elev-1]"
             onClick={() => {
               setNewRowsPending(0);
               listTopRef.current?.scrollIntoView({
@@ -384,6 +375,7 @@ export const Notifications = () => {
               });
             }}
           >
+            <Bell className="size-3" />
             {newRowsPending} new notifications · Show
           </button>
         ) : null}
@@ -406,120 +398,66 @@ export const Notifications = () => {
         <section aria-label="Notification list">
           {Object.entries(groupedRows).map(([band, bandRows]) =>
             bandRows.length > 0 ? (
-              <div key={band} className="mt-3">
-                <div className="mt-3.5 mb-1.5 flex items-center gap-2.5 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-[--ink-3] after:h-px after:flex-1 after:bg-[--border-default]">
+              <div key={band} className="mt-5">
+                <div className="mb-2 flex items-center gap-2.5 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-[--ink-3] after:h-px after:flex-1 after:bg-[--border-default]">
                   <span>{band}</span>
                 </div>
-                {bandRows.map((row) => (
-                  <NotificationRowView
-                    key={row.id}
-                    row={row}
-                    focused={focusedId === row.id}
-                    selected={selectedIds.has(row.id)}
-                    expanded={expandedIds.has(row.id)}
-                    dismissing={dismissingIds.has(row.id)}
-                    onFocus={() => setFocusedId(row.id)}
-                    onToggleSelect={() =>
-                      setSelectedIds((prev) => {
-                        const next = new Set(prev);
-                        next.has(row.id)
-                          ? next.delete(row.id)
-                          : next.add(row.id);
-                        return next;
-                      })
-                    }
-                    onToggleExpand={() =>
-                      setExpandedIds((prev) => {
-                        const next = new Set(prev);
-                        next.has(row.id)
-                          ? next.delete(row.id)
-                          : next.add(row.id);
-                        return next;
-                      })
-                    }
-                    onOpen={() => navigate(ticketHref(row))}
-                    onDone={() => markRowDone(row)}
-                    onSnooze={(date, label) => snoozeRow(row, date, label)}
-                    onInvite={(response) => {
-                      if (row.type !== "TICKET_INVITATION" || !row.invitationId)
-                        return;
-                      const invitationId = row.invitationId;
-                      dismissThen(row.id, () =>
-                        invitation.mutate({
-                          invitationId,
-                          payload: { response },
-                        }),
-                      );
-                    }}
-                  />
-                ))}
+                <div className={notificationPanel}>
+                  {bandRows.map((row) => (
+                    <NotificationRowView
+                      key={row.id}
+                      row={row}
+                      focused={focusedId === row.id}
+                      selected={selectedIds.has(row.id)}
+                      expanded={expandedIds.has(row.id)}
+                      dismissing={dismissingIds.has(row.id)}
+                      onFocus={() => setFocusedId(row.id)}
+                      onToggleSelect={() =>
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          next.has(row.id)
+                            ? next.delete(row.id)
+                            : next.add(row.id);
+                          return next;
+                        })
+                      }
+                      onToggleExpand={() =>
+                        setExpandedIds((prev) => {
+                          const next = new Set(prev);
+                          next.has(row.id)
+                            ? next.delete(row.id)
+                            : next.add(row.id);
+                          return next;
+                        })
+                      }
+                      onOpen={() => navigate(ticketHref(row))}
+                      onDone={() => markRowDone(row)}
+                      onSnooze={(date, label) => snoozeRow(row, date, label)}
+                      onInvite={(response) => {
+                        if (
+                          row.type !== "TICKET_INVITATION" ||
+                          !row.invitationId
+                        )
+                          return;
+                        const invitationId = row.invitationId;
+                        dismissThen(row.id, () =>
+                          invitation.mutate({
+                            invitationId,
+                            payload: { response },
+                          }),
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             ) : null,
           )}
         </section>
-
-        <footer className="flex justify-end pt-[18px]">
-          <button
-            type="button"
-            aria-label="Keyboard shortcuts"
-            className="grid size-7 place-items-center rounded-[--radius-md] border border-[--border-default] bg-[--surface-card] text-[--ink-3]"
-            onClick={() => setShortcutsOpen(true)}
-          >
-            <CircleHelp className="size-4" />
-          </button>
-        </footer>
       </div>
 
-      {shortcutsOpen ? (
-        <div
-          className="fixed inset-0 z-[80] grid place-items-center bg-[--surface-overlay]"
-          role="presentation"
-        >
-          <div
-            className={`${notificationPanel} w-[min(92vw,420px)] p-3.5`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="shortcuts-title"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <h2
-                id="shortcuts-title"
-                className="m-0 text-base text-[--ink-1]"
-              >
-                Keyboard Shortcuts
-              </h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Close shortcuts"
-                onClick={() => setShortcutsOpen(false)}
-              >
-                <X />
-              </Button>
-            </div>
-            <div className="mt-3.5 grid gap-0.5">
-              {notificationShortcuts.map(({ key, label }) => (
-                <div
-                  key={key}
-                  className="grid grid-cols-[92px_1fr] items-center border-t border-[--border-default] py-2 text-xs text-[--ink-3]"
-                >
-                  <kbd className="w-fit rounded-[--radius-sm] border border-[--border-default] bg-[--surface-sunken] px-1.5 py-0.5 font-mono text-[--ink-1]">
-                    {key}
-                  </kbd>
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {toast ? (
-        <div
-          className={notificationToast}
-          role="status"
-        >
+        <div className={notificationToast} role="status">
           {toast}
         </div>
       ) : null}

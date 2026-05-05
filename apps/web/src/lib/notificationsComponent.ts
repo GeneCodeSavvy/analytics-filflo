@@ -4,7 +4,6 @@ import type {
   NotificationEmptyStateCopy,
   NotificationGroupedRows,
   NotificationRow,
-  NotificationShortcut,
   NotificationType,
   TabKey,
 } from "../types/notifications";
@@ -61,15 +60,6 @@ export const snoozeOptions = [
     label: "Custom...",
     getDate: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
   },
-];
-
-export const notificationShortcuts: NotificationShortcut[] = [
-  { key: "j / k", label: "Move focus" },
-  { key: "e", label: "Mark focused done" },
-  { key: "Enter", label: "Open ticket" },
-  { key: "x", label: "Toggle selection" },
-  { key: "Shift+I", label: "Mark all read" },
-  { key: "?", label: "Show shortcuts" },
 ];
 
 export function notificationIcon(type: NotificationType) {

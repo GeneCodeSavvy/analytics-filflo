@@ -47,11 +47,6 @@ export type NotificationEmptyStateCopy = {
   text: string;
 };
 
-export type NotificationShortcut = {
-  key: string;
-  label: string;
-};
-
 export type NotificationGroupedRows = Record<DateBand, NotificationRow[]>;
 
 export type EmptyStateProps = {
