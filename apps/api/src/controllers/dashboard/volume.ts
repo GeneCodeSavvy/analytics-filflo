@@ -1,22 +1,18 @@
 import { RequestHandler } from "express";
 import { VolumeBar } from "@shared/schema/dashboard";
 import type { DbClient } from "../../lib/db";
-import {
-  parseDashboardFilters,
-  sendInvalidFilters,
-  sendValidatedData,
-} from "./utils";
+import { parseScopedDashboardFilters, sendValidatedData } from "./utils";
 import { getDashboardVolume } from "./data";
 
 export const getVolume: RequestHandler = async (req, res) => {
   const db = req.app.locals.db as DbClient;
-  const filters = parseDashboardFilters(req.query);
+  const filters = parseScopedDashboardFilters(req, res);
 
-  if (!filters.success) {
-    return sendInvalidFilters(res, filters.error.issues);
+  if (!filters) {
+    return;
   }
 
-  const volume = await getDashboardVolume(db, filters.data);
+  const volume = await getDashboardVolume(db, filters);
 
   return sendValidatedData(res, VolumeBar, volume);
 };
