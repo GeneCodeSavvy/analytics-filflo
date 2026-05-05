@@ -18,6 +18,7 @@ const corsOptions: CorsOptions = {
 
 export const createApp = (db: DbClient): express.Application => {
   const app = express();
+  app.set("query parser", "extended");
   app.use(cors(corsOptions));
   app.locals.db = db;
 
