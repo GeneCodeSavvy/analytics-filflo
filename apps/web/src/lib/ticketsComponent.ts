@@ -1,6 +1,7 @@
 import type {
   Density,
   TicketCategory,
+  TicketFilters,
   TicketPriority,
   FlatTicketRow,
   TicketGroup,
@@ -26,6 +27,25 @@ export const DEFAULT_VIEWS = [
   { id: "high-priority", name: "High priority open" },
   { id: "stale", name: "Stale" },
 ];
+export function viewToFilters(viewId: string | null, userId?: string): Partial<TicketFilters> {
+  switch (viewId) {
+    case "awaiting-review":
+      return {
+        status: ["REVIEW"],
+        ...(userId ? { assigneeIds: [userId] } : {}),
+      };
+    case "high-priority":
+      return {
+        priority: ["HIGH"],
+        status: ["OPEN", "IN_PROGRESS", "ON_HOLD", "REVIEW"],
+      };
+    case "stale":
+      return { stale: true };
+    default:
+      return {};
+  }
+}
+
 export const ROW_HEIGHT: Record<Density, number> = {
   compact: 36,
   comfortable: 56,

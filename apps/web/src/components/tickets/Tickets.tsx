@@ -58,7 +58,6 @@ import {
   ticketSearchBox,
   ticketTopBar,
   ticketViewTab,
-  ticketViewTabIndicator,
   ticketViewTabsList,
   ticketViewTabsRow,
 } from "./styles";
@@ -91,7 +90,6 @@ export const Tickets = () => {
   }).some(Boolean);
 
   const [searchValue, setSearchValue] = useState(url.filters.q ?? "");
-  const [tabIndex, setTabIndex] = useState(0);
   const [drawerTab, setDrawerTab] = useState<DrawerTab>("Details");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [hoveredStatusId, setHoveredStatusId] = useState<string | null>(null);
@@ -467,30 +465,25 @@ export const Tickets = () => {
         <>
           <div className={ticketViewTabsRow}>
             <div className={ticketViewTabsList}>
-              {activeViews.map((view, index) => {
+              {activeViews.map((view) => {
                 const active =
                   url.viewId === view.id || (!url.viewId && view.id === null);
                 return (
                   <button
                     key={view.id ?? "all"}
                     type="button"
-                    onClick={() => {
-                      setTabIndex(index);
-                      actions.setView(view.id);
-                    }}
+                    onClick={() => actions.setView(view.id)}
                     className={cn(
                       ticketViewTab,
-                      active ? "text-foreground" : "text-muted-foreground",
+                      active
+                        ? "border-b-2 border-primary text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     {view.name}
                   </button>
                 );
               })}
-              <span
-                className={ticketViewTabIndicator}
-                style={{ transform: `translateX(${tabIndex * 100}%)` }}
-              />
               <HeaderIconButton
                 label="Save current filters"
                 className="h-full flex-[0_0_28px]"

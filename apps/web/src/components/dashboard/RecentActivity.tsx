@@ -24,7 +24,7 @@ export function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
               <span>
                 {entry.actor.name} {entry.action}{" "}
               </span>
-              <span className="text-[--action-tint-fg]">{entry.ticket.id}</span>
+              <span className="text-[--action-tint-fg]">{entry.ticket.subject}</span>
               <span className="text-[--ink-3]"> · {timeAgo(entry.at)}</span>
             </p>
           </div>

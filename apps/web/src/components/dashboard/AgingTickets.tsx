@@ -4,7 +4,7 @@ import type { AgingTicket } from "../../types/dashboard";
 import { Panel } from "./Panel";
 
 const agingRowClass =
-  "group grid w-full cursor-crosshair grid-cols-[18px_minmax(72px,92px)_1fr_54px_16px] items-center gap-2 px-4 py-3 text-left transition hover:-translate-x-0.5 hover:bg-[--surface-sunken]";
+  "group grid w-full cursor-crosshair grid-cols-[18px_1fr_54px_16px] items-center gap-2 px-4 py-3 text-left transition hover:-translate-x-0.5 hover:bg-[--surface-sunken]";
 
 export function AgingTickets({ tickets }: { tickets: AgingTicket[] }) {
   return (
@@ -18,9 +18,6 @@ export function AgingTickets({ tickets }: { tickets: AgingTicket[] }) {
                 backgroundColor: dashboardPriorityColor[ticket.priority],
               }}
             />
-            <span className="truncate text-xs text-[--ink-1] transition group-hover:text-[--action-tint-fg]">
-              {ticket.id}
-            </span>
             <span className="truncate text-[13px] text-[--ink-1]">
               {ticket.subject}
             </span>
