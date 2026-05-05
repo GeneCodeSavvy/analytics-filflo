@@ -235,7 +235,7 @@ export const notificationsApi = {
     return response.data;
   },
 
-  // Paginated notification list (tab: inbox/read/done + filters)
+  // Paginated notification list (tab: inbox/read/all + filters)
   getAll: async (params?: NotificationListParams): Promise<NotificationThread[]> => {
     const response = await api.get("/notifications", { params });
     return response.data;
@@ -246,12 +246,7 @@ export const notificationsApi = {
     await api.patch(`/notifications/${id}/read`);
   },
 
-  // Archive to done state
-  markDone: async (id: string): Promise<void> => {
-    await api.patch(`/notifications/${id}/done`);
-  },
-
-  // Move back to inbox from read/done
+  // Move back to inbox from read
   markUnread: async (id: string): Promise<void> => {
     await api.patch(`/notifications/${id}/unread`);
   },
@@ -261,7 +256,7 @@ export const notificationsApi = {
     await api.post(`/notifications/${id}/snooze`, payload);
   },
 
-  // Bulk state transitions (read/done/unread/snooze on multiple items)
+  // Bulk state transitions (read/unread/snooze on multiple items)
   bulk: async (payload: BulkNotificationPayload): Promise<void> => {
     await api.post("/notifications/bulk", payload);
   },

@@ -35,6 +35,7 @@ The current target pages apply these specific corrections:
 - **Tickets:** view tabs and filters are two rows. Table header and cells share the same column template. Priority/status strips are at least 4px wide and use status tokens.
 - **Messages:** treat as a ticket-context work queue, not a consumer chat app. It uses the same page header and table/inbox density as tickets.
 - **Notifications:** no raw `oklch()` utilities. Use tokenized warm stone and ember states.
+- **Notifications v1:** treat the list as the product. Keep interactions simple: Inbox/Read/All tabs, chips, row focus, selection, bulk read/unread actions, and snooze. The API contract mirrors DB persistence with only unread/read state via `readAt`; do not expose a separate done state.
 - **Teams:** one page background only. Org/member cards are card surfaces on that page background, with reduced top whitespace.
 
 ---
@@ -49,46 +50,46 @@ The palette is closed. If a color you need isn't here, the answer is "use the cl
 
 ```css
 /* Stone — neutral surfaces and text */
---stone-50:  #FAFAF8;   /* page background */
---stone-100: #F5F4F0;   /* hover, subtle fill */
---stone-150: #F0EEE9;   /* row separator, inset */
---stone-200: #E8E6E1;   /* border default */
---stone-300: #D1CEC7;   /* border strong, scrollbar */
---stone-400: #A8A49C;   /* placeholder, disabled */
---stone-500: #78756E;   /* muted text */
---stone-600: #5A574F;   /* secondary text */
---stone-700: #3A3833;   /* (reserved) */
---stone-900: #1A1917;   /* primary text */
+--stone-50: #fafaf8; /* page background */
+--stone-100: #f5f4f0; /* hover, subtle fill */
+--stone-150: #f0eee9; /* row separator, inset */
+--stone-200: #e8e6e1; /* border default */
+--stone-300: #d1cec7; /* border strong, scrollbar */
+--stone-400: #a8a49c; /* placeholder, disabled */
+--stone-500: #78756e; /* muted text */
+--stone-600: #5a574f; /* secondary text */
+--stone-700: #3a3833; /* (reserved) */
+--stone-900: #1a1917; /* primary text */
 
 /* Ember — single accent (burnt orange) */
---ember-50:  #FBF1E8;   /* accent tint background */
---ember-100: #F5E0CC;
---ember-300: #E8A876;
---ember-500: #C4642A;   /* accent default */
---ember-600: #A8521E;   /* accent hover */
---ember-700: #8B4218;   /* accent pressed */
+--ember-50: #fbf1e8; /* accent tint background */
+--ember-100: #f5e0cc;
+--ember-300: #e8a876;
+--ember-500: #c4642a; /* accent default */
+--ember-600: #a8521e; /* accent hover */
+--ember-700: #8b4218; /* accent pressed */
 
 /* Sand — warning / highlight (for amber pills, callouts) */
---sand-50:  #F5F0E6;
---sand-100: #E8DCC0;
---sand-500: #B8941E;
---sand-700: #6B5B3E;
+--sand-50: #f5f0e6;
+--sand-100: #e8dcc0;
+--sand-500: #b8941e;
+--sand-700: #6b5b3e;
 
 /* Moss — success */
---moss-50:  #ECF0E8;
---moss-500: #5A7A3E;
---moss-700: #3E5728;
+--moss-50: #ecf0e8;
+--moss-500: #5a7a3e;
+--moss-700: #3e5728;
 
 /* Brick — destructive / error */
---brick-50:  #F5E8E5;
---brick-100: #EDD5D0;
---brick-500: #B83A2A;
---brick-700: #8B2A1E;
+--brick-50: #f5e8e5;
+--brick-100: #edd5d0;
+--brick-500: #b83a2a;
+--brick-700: #8b2a1e;
 
 /* Slate — info / secondary chip (cool desaturated teal) */
---slate-50:  #E8EEF0;
---slate-500: #4A6B7A;
---slate-700: #2E4654;
+--slate-50: #e8eef0;
+--slate-500: #4a6b7a;
+--slate-700: #2e4654;
 ```
 
 ### 2.2 Color — semantic tokens
@@ -97,68 +98,68 @@ Components use these. Raw palette tokens are an implementation detail.
 
 ```css
 /* Surfaces */
---surface-page:    var(--stone-50);     /* outer page bg */
---surface-card:    #FFFFFF;             /* card / panel bg */
---surface-sunken:  var(--stone-100);    /* nested fill, hover row */
+--surface-page: var(--stone-50); /* outer page bg */
+--surface-card: #ffffff; /* card / panel bg */
+--surface-sunken: var(--stone-100); /* nested fill, hover row */
 --surface-overlay: rgba(26, 25, 23, 0.22); /* modal backdrop */
 
 /* Ink (text) */
---ink-1: var(--stone-900);   /* primary headings, body */
---ink-2: var(--stone-600);   /* secondary text */
---ink-3: var(--stone-500);   /* muted labels, captions */
---ink-4: var(--stone-400);   /* placeholder, disabled */
---ink-on-accent: #FFFFFF;
+--ink-1: var(--stone-900); /* primary headings, body */
+--ink-2: var(--stone-600); /* secondary text */
+--ink-3: var(--stone-500); /* muted labels, captions */
+--ink-4: var(--stone-400); /* placeholder, disabled */
+--ink-on-accent: #ffffff;
 
 /* Borders */
---border-subtle: var(--stone-150);  /* row separator */
+--border-subtle: var(--stone-150); /* row separator */
 --border-default: var(--stone-200); /* card, input */
---border-strong: var(--stone-300);  /* hover input */
---border-focus:  var(--ember-500);
+--border-strong: var(--stone-300); /* hover input */
+--border-focus: var(--ember-500);
 
 /* Action */
---action-bg:        var(--ember-500);
---action-bg-hover:  var(--ember-600);
---action-bg-press:  var(--ember-700);
---action-fg:        var(--ink-on-accent);
---action-tint-bg:   var(--ember-50);     /* ghost button hover */
---action-tint-fg:   var(--ember-500);    /* link, ghost button text */
+--action-bg: var(--ember-500);
+--action-bg-hover: var(--ember-600);
+--action-bg-press: var(--ember-700);
+--action-fg: var(--ink-on-accent);
+--action-tint-bg: var(--ember-50); /* ghost button hover */
+--action-tint-fg: var(--ember-500); /* link, ghost button text */
 
 /* Status (pills, badges, callouts) */
---status-success-bg:     var(--moss-50);
---status-success-fg:     var(--moss-700);
+--status-success-bg: var(--moss-50);
+--status-success-fg: var(--moss-700);
 --status-success-border: rgba(90, 122, 62, 0.25);
 
---status-warn-bg:        var(--sand-50);
---status-warn-fg:        var(--sand-700);
---status-warn-border:    rgba(184, 148, 30, 0.25);
+--status-warn-bg: var(--sand-50);
+--status-warn-fg: var(--sand-700);
+--status-warn-border: rgba(184, 148, 30, 0.25);
 
---status-danger-bg:      var(--brick-50);
---status-danger-fg:      var(--brick-700);
---status-danger-border:  rgba(184, 58, 42, 0.25);
+--status-danger-bg: var(--brick-50);
+--status-danger-fg: var(--brick-700);
+--status-danger-border: rgba(184, 58, 42, 0.25);
 
---status-info-bg:        var(--slate-50);
---status-info-fg:        var(--slate-700);
---status-info-border:    rgba(74, 107, 122, 0.25);
+--status-info-bg: var(--slate-50);
+--status-info-fg: var(--slate-700);
+--status-info-border: rgba(74, 107, 122, 0.25);
 
---status-neutral-bg:     var(--stone-100);
---status-neutral-fg:     var(--ink-2);
+--status-neutral-bg: var(--stone-100);
+--status-neutral-fg: var(--ink-2);
 --status-neutral-border: var(--border-default);
 
 /* Role pills (Teams) — semantic mapping */
---role-super-admin-bg:     var(--sand-50);
---role-super-admin-fg:     var(--sand-700);
+--role-super-admin-bg: var(--sand-50);
+--role-super-admin-fg: var(--sand-700);
 --role-super-admin-border: var(--sand-100);
 
---role-admin-bg:     var(--ember-50);
---role-admin-fg:     var(--ember-700);
+--role-admin-bg: var(--ember-50);
+--role-admin-fg: var(--ember-700);
 --role-admin-border: var(--ember-100);
 
---role-moderator-bg:     var(--slate-50);
---role-moderator-fg:     var(--slate-700);
+--role-moderator-bg: var(--slate-50);
+--role-moderator-fg: var(--slate-700);
 --role-moderator-border: rgba(74, 107, 122, 0.2);
 
---role-user-bg:     var(--stone-100);
---role-user-fg:     var(--ink-2);
+--role-user-bg: var(--stone-100);
+--role-user-fg: var(--ink-2);
 --role-user-border: var(--border-default);
 ```
 
@@ -174,16 +175,16 @@ Components use these. Raw palette tokens are an implementation detail.
 
 Type scale (mono baseline = 13px):
 
-| Token             | Size    | Line   | Tracking   | Weight | Use                                      |
-|-------------------|---------|--------|------------|--------|------------------------------------------|
-| `--text-display`  | 30px    | 1.0    | -0.01em    | 700    | Page H1 (`Teams`, `Tickets`)             |
-| `--text-h2`       | 20px    | 1.2    | -0.005em   | 600    | Section heads, modal titles              |
-| `--text-h3`       | 16px    | 1.3    | 0          | 600    | Card titles, drawer section heads        |
-| `--text-body`     | 13px    | 1.45   | 0          | 400    | Default UI text (tables, forms)          |
-| `--text-body-strong` | 13px | 1.45   | 0          | 500    | Buttons, active tabs                     |
-| `--text-meta`     | 12px    | 1.4    | 0          | 400    | Secondary metadata, captions             |
-| `--text-micro`    | 11px    | 1.4    | 0.04em     | 500    | Pills, badges, chip labels               |
-| `--text-eyebrow`  | 10px    | 1.4    | 0.08em     | 600    | UPPERCASE section labels                 |
+| Token                | Size | Line | Tracking | Weight | Use                               |
+| -------------------- | ---- | ---- | -------- | ------ | --------------------------------- |
+| `--text-display`     | 30px | 1.0  | -0.01em  | 700    | Page H1 (`Teams`, `Tickets`)      |
+| `--text-h2`          | 20px | 1.2  | -0.005em | 600    | Section heads, modal titles       |
+| `--text-h3`          | 16px | 1.3  | 0        | 600    | Card titles, drawer section heads |
+| `--text-body`        | 13px | 1.45 | 0        | 400    | Default UI text (tables, forms)   |
+| `--text-body-strong` | 13px | 1.45 | 0        | 500    | Buttons, active tabs              |
+| `--text-meta`        | 12px | 1.4  | 0        | 400    | Secondary metadata, captions      |
+| `--text-micro`       | 11px | 1.4  | 0.04em   | 500    | Pills, badges, chip labels        |
+| `--text-eyebrow`     | 10px | 1.4  | 0.08em   | 600    | UPPERCASE section labels          |
 
 **No new sizes.** If you need 14px, use `--text-body`. If you need 18px, use `--text-h3`.
 
@@ -192,20 +193,20 @@ Type scale (mono baseline = 13px):
 4px sub-grid. Tailwind's default scale (`p-1` = 4px, `p-2` = 8px, etc.) is the system. Below are named aliases for layout-level values where naming aids intent:
 
 ```css
---space-row-y:    10px;  /* table row vertical padding */
---space-row-x:    12px;  /* table row horizontal padding */
---space-card:     20px;  /* card interior padding */
---space-section:  24px;  /* gap between sections */
---space-page-x:   24px;  /* page outer horizontal padding */
+--space-row-y: 10px; /* table row vertical padding */
+--space-row-x: 12px; /* table row horizontal padding */
+--space-card: 20px; /* card interior padding */
+--space-section: 24px; /* gap between sections */
+--space-page-x: 24px; /* page outer horizontal padding */
 ```
 
 ### 2.5 Radii
 
 ```css
---radius-xs: 4px;   /* kbd, micro chip */
---radius-sm: 6px;   /* button, input, popover item */
---radius-md: 8px;   /* card, table container, modal */
---radius-lg: 12px;  /* drawer, large panel, bulk bar */
+--radius-xs: 4px; /* kbd, micro chip */
+--radius-sm: 6px; /* button, input, popover item */
+--radius-md: 8px; /* card, table container, modal */
+--radius-lg: 12px; /* drawer, large panel, bulk bar */
 --radius-pill: 999px;
 ```
 
@@ -220,29 +221,30 @@ Five steps. Stay quiet — borders are doing most of the work.
 --elev-1: 0 1px 2px rgba(26, 25, 23, 0.04), 0 1px 3px rgba(26, 25, 23, 0.06);
 --elev-2: 0 2px 4px rgba(26, 25, 23, 0.05), 0 4px 8px rgba(26, 25, 23, 0.06);
 --elev-3: 0 4px 12px rgba(26, 25, 23, 0.08), 0 8px 24px rgba(26, 25, 23, 0.06);
---elev-4: 0 12px 32px rgba(26, 25, 23, 0.14), 0 24px 70px rgba(26, 25, 23, 0.18);
+--elev-4:
+  0 12px 32px rgba(26, 25, 23, 0.14), 0 24px 70px rgba(26, 25, 23, 0.18);
 --elev-drawer: -18px 0 40px rgba(26, 25, 23, 0.14);
 ```
 
-| Use case                       | Token         |
-|--------------------------------|---------------|
-| Card / panel resting           | `--elev-1`    |
-| Card hover, popover            | `--elev-2`    |
-| Toast, floating bulk bar       | `--elev-3`    |
-| Modal dialog                   | `--elev-4`    |
-| Right-side drawer              | `--elev-drawer` |
+| Use case                 | Token           |
+| ------------------------ | --------------- |
+| Card / panel resting     | `--elev-1`      |
+| Card hover, popover      | `--elev-2`      |
+| Toast, floating bulk bar | `--elev-3`      |
+| Modal dialog             | `--elev-4`      |
+| Right-side drawer        | `--elev-drawer` |
 
 ### 2.7 Motion
 
 ```css
 --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
---ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
---ease-in-out:   cubic-bezier(0.32, 0.72, 0, 1);
+--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+--ease-in-out: cubic-bezier(0.32, 0.72, 0, 1);
 
---dur-instant: 80ms;   /* hover bg, opacity flicks */
---dur-fast:    150ms;  /* default UI transition */
---dur-medium:  220ms;  /* drawer, modal, tab underline */
---dur-slow:    320ms;  /* page-level reveals */
+--dur-instant: 80ms; /* hover bg, opacity flicks */
+--dur-fast: 150ms; /* default UI transition */
+--dur-medium: 220ms; /* drawer, modal, tab underline */
+--dur-slow: 320ms; /* page-level reveals */
 ```
 
 **Reduce-motion respect is mandatory.** Wrap all transform/animation in `@media (prefers-reduced-motion: no-preference)` or provide a `prefers-reduced-motion: reduce` override that disables animation.
@@ -252,13 +254,13 @@ Five steps. Stay quiet — borders are doing most of the work.
 Closed scale. No `z-99`, no `z-9999`.
 
 ```css
---z-base:     0;
---z-sticky:   10;   /* sticky table header, sticky nav */
---z-overlay:  20;   /* sticky page header above content */
---z-drawer:   30;
---z-popover:  40;
---z-modal:    50;
---z-toast:    80;
+--z-base: 0;
+--z-sticky: 10; /* sticky table header, sticky nav */
+--z-overlay: 20; /* sticky page header above content */
+--z-drawer: 30;
+--z-popover: 40;
+--z-modal: 50;
+--z-toast: 80;
 ```
 
 ---
@@ -286,15 +288,16 @@ Color: `bg-[--status-{tone}-bg] text-[--status-{tone}-fg] border-[--status-{tone
 
 ### 3.3 Button
 
-| Variant     | Bg                       | Fg                | Border                       | Hover                        |
-|-------------|--------------------------|-------------------|------------------------------|------------------------------|
-| Primary     | `--action-bg`            | `--action-fg`     | transparent                  | bg → `--action-bg-hover`     |
-| Secondary   | `--surface-card`         | `--ink-1`         | `--border-default`           | bg → `--surface-sunken`      |
-| Ghost       | transparent              | `--ink-1`         | transparent                  | bg → `--surface-sunken`      |
-| Ghost-action| transparent              | `--action-tint-fg`| transparent                  | bg → `--action-tint-bg`      |
-| Destructive | transparent              | `--brick-500`     | transparent                  | bg → `--brick-50`            |
+| Variant      | Bg               | Fg                 | Border             | Hover                    |
+| ------------ | ---------------- | ------------------ | ------------------ | ------------------------ |
+| Primary      | `--action-bg`    | `--action-fg`      | transparent        | bg → `--action-bg-hover` |
+| Secondary    | `--surface-card` | `--ink-1`          | `--border-default` | bg → `--surface-sunken`  |
+| Ghost        | transparent      | `--ink-1`          | transparent        | bg → `--surface-sunken`  |
+| Ghost-action | transparent      | `--action-tint-fg` | transparent        | bg → `--action-tint-bg`  |
+| Destructive  | transparent      | `--brick-500`      | transparent        | bg → `--brick-50`        |
 
 Sizes (height, x-padding):
+
 - `sm`: 28px / 8px
 - `md`: 32px / 12px (default)
 - `lg`: 36px / 16px
@@ -334,13 +337,13 @@ focus:border-[--border-focus] focus:outline-none
 
 ### 3.9 Pill / chip family
 
-| Use            | Height | Radius        | Bg                 | Border             | Text size |
-|----------------|--------|---------------|--------------------|--------------------|-----------|
-| Status pill    | 22px   | `--radius-xs` | status tint        | status border      | 11px      |
-| Filter chip    | 26px   | `--radius-sm` | `--surface-card`   | `--border-default` | 12px      |
-| Filter active  | 26px   | `--radius-sm` | `--surface-sunken` | `--border-default` | 12px      |
-| Count badge    | 18px   | `--radius-pill`| `--surface-card`  | `--border-default` | 10px      |
-| Ticket ID code | 20px   | `--radius-xs` | `--stone-100`      | `--border-default` | 11px mono |
+| Use            | Height | Radius          | Bg                 | Border             | Text size |
+| -------------- | ------ | --------------- | ------------------ | ------------------ | --------- |
+| Status pill    | 22px   | `--radius-xs`   | status tint        | status border      | 11px      |
+| Filter chip    | 26px   | `--radius-sm`   | `--surface-card`   | `--border-default` | 12px      |
+| Filter active  | 26px   | `--radius-sm`   | `--surface-sunken` | `--border-default` | 12px      |
+| Count badge    | 18px   | `--radius-pill` | `--surface-card`   | `--border-default` | 10px      |
+| Ticket ID code | 20px   | `--radius-xs`   | `--stone-100`      | `--border-default` | 11px mono |
 
 ---
 
@@ -359,20 +362,20 @@ How current files translate. Each page must be reduced to **zero hardcoded color
 
 Replace the hardcoded hex pass it's running on now:
 
-| Current arbitrary class                         | Replace with                  |
-|-------------------------------------------------|-------------------------------|
-| `bg-[#FAFAF8]`                                  | `bg-[--surface-page]`         |
-| `bg-[#F5F4F0]`                                  | `bg-[--surface-sunken]`       |
-| `border-[#E8E6E1]`                              | `border-[--border-default]`   |
-| `border-[#F0EEE9]`                              | `border-[--border-subtle]`    |
-| `text-[#1A1917]`                                | `text-[--ink-1]`              |
-| `text-[#78756E]` / `text-[#A8A49C]`             | `text-[--ink-3]` / `text-[--ink-4]` |
-| `bg-[#C4642A]` / `hover:bg-[#A8521E]`           | `bg-[--action-bg]` / hover `--action-bg-hover` |
-| `text-[#B83A2A]` + brick tints                  | destructive button variant    |
-| `bg-[#F5F0E6]` admin info callout               | `bg-[--status-warn-bg] text-[--status-warn-fg]` |
+| Current arbitrary class                                                                 | Replace with                                                                        |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `bg-[#FAFAF8]`                                                                          | `bg-[--surface-page]`                                                               |
+| `bg-[#F5F4F0]`                                                                          | `bg-[--surface-sunken]`                                                             |
+| `border-[#E8E6E1]`                                                                      | `border-[--border-default]`                                                         |
+| `border-[#F0EEE9]`                                                                      | `border-[--border-subtle]`                                                          |
+| `text-[#1A1917]`                                                                        | `text-[--ink-1]`                                                                    |
+| `text-[#78756E]` / `text-[#A8A49C]`                                                     | `text-[--ink-3]` / `text-[--ink-4]`                                                 |
+| `bg-[#C4642A]` / `hover:bg-[#A8521E]`                                                   | `bg-[--action-bg]` / hover `--action-bg-hover`                                      |
+| `text-[#B83A2A]` + brick tints                                                          | destructive button variant                                                          |
+| `bg-[#F5F0E6]` admin info callout                                                       | `bg-[--status-warn-bg] text-[--status-warn-fg]`                                     |
 | `bg-[rgba(184,58,42,0.08)] border-[rgba(184,58,42,0.25)] text-[#B83A2A]` (Expired pill) | `bg-[--status-danger-bg] border-[--status-danger-border] text-[--status-danger-fg]` |
-| `RolePill` color records in `lib/teamsComponent.ts` | swap to `--role-{role}-{bg/fg/border}` tokens |
-| `shadow-[0_1px_3px_rgba(26,25,23,0.06),...]`   | `shadow-[--elev-1]`           |
+| `RolePill` color records in `lib/teamsComponent.ts`                                     | swap to `--role-{role}-{bg/fg/border}` tokens                                       |
+| `shadow-[0_1px_3px_rgba(26,25,23,0.06),...]`                                            | `shadow-[--elev-1]`                                                                 |
 
 ### 4.3 Tickets
 
@@ -397,7 +400,7 @@ Heaviest lift. Currently 600+ lines of hand-rolled CSS with inline `oklch()` and
 ### 4.5 Dashboard
 
 - Page bg `#FAFAF8` → `--surface-page`. Card border `#E8E6E0` → `--border-default`.
-- Keep Inter Variable as the *opt-in* font for dashboard hero metrics only — wrap the metric numbers in `font-[--font-sans]`. Default the rest of the page to mono so it stops looking like a different app.
+- Keep Inter Variable as the _opt-in_ font for dashboard hero metrics only — wrap the metric numbers in `font-[--font-sans]`. Default the rest of the page to mono so it stops looking like a different app.
 - Donut/sparkline accents → `--action-bg` for primary, `--slate-500` for secondary, status tokens for state-coded slices.
 - Scrollbar custom colors → `--border-default` track / `--border-strong` thumb.
 
