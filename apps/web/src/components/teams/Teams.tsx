@@ -130,7 +130,7 @@ export const Teams = () => {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="m-0 text-[30px] leading-none font-bold text-[--ink-1]">
-                {superAdminView || moderatorView ? "Teams" : "Team"}
+                {superAdminView || adminView ? "Teams" : "Team"}
               </h1>
             </div>
             {moderatorView ? (
@@ -251,12 +251,14 @@ export const Teams = () => {
                     )}
                     <strong>{org.org.name}</strong>
                     <span className="text-[--ink-4]">{orgStats(rows)}</span>
-                    <a
-                      className="text-[--ink-3] no-underline"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      Manage org
-                    </a>
+                    {actorRole !== "ADMIN" && actorRole !== "USER" ? (
+                      <a
+                        className="text-[--ink-3] no-underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        Manage org
+                      </a>
+                    ) : null}
                   </button>
                   <div
                     className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "[grid-template-rows:1fr]" : "[grid-template-rows:0fr]"}`}
@@ -267,6 +269,9 @@ export const Teams = () => {
                         query={deferredSearch}
                         rows={rows}
                         showCheckboxes
+                        showActions={
+                          actorRole !== "ADMIN" && actorRole !== "USER"
+                        }
                         sortDirection={sortDirection}
                         sortKey={sortKey}
                         onRemove={(member) =>
@@ -297,7 +302,8 @@ export const Teams = () => {
               orgs={orgs}
               query={deferredSearch}
               rows={visibleRows}
-              showCheckboxes={false}
+              showCheckboxes={moderatorView}
+              showActions={moderatorView}
               sortDirection={sortDirection}
               sortKey={sortKey}
               onRemove={(member) => setModal({ type: "remove", member })}
@@ -306,6 +312,14 @@ export const Teams = () => {
               }
               onSort={handleSort}
             />
+            {moderatorView && orgs[0] ? (
+              <BulkBar
+                orgId={orgs[0].org.id}
+                selectedIds={visibleRows
+                  .filter((r) => selectedRowIds.includes(r.id))
+                  .map((r) => r.id)}
+              />
+            ) : null}
           </div>
         )}
 

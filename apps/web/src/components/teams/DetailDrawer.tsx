@@ -25,11 +25,11 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
 
   return (
     <div
-      className="fixed inset-0 z-[--z-drawer] bg-[--surface-overlay] backdrop-blur-[4px]"
+      className="fixed inset-0 z-[--z-drawer] bg-black/40"
       onMouseDown={closeMemberDetail}
     >
       <aside
-        className="absolute right-0 top-0 w-[min(560px,calc(100%-382px))] min-w-[360px] h-full overflow-auto bg-[--surface-card] border-l border-[--border-default] p-6 shadow-[--elev-drawer] animate-[teams-drawer-in_220ms_ease-out_forwards] font-mono text-[13px] text-[--ink-1]"
+        className="absolute right-0 top-0 w-[min(560px,calc(100%-382px))] min-w-[360px] h-full overflow-auto bg-white bg-[--surface-card] border-l border-[--border-default] p-6 shadow-[0_8px_40px_rgba(0,0,0,0.18),0_2px_12px_rgba(0,0,0,0.12)] animate-[teams-drawer-in_220ms_ease-out_forwards] font-mono text-[13px] text-[--ink-1]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <button
@@ -41,7 +41,7 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
         </button>
         {member ? (
           <>
-            <div className="grid justify-items-start gap-2 mb-6">
+            <div className="grid justify-items-start gap-2 mb-6 pr-10">
               <Avatar member={member} size={64} />
               <h2 className="mt-1 mb-0 text-[20px] font-semibold text-[--ink-1]">{member.name}</h2>
               <p className="m-0 text-[--ink-3]">{member.email}</p>
@@ -79,7 +79,7 @@ export function DetailDrawer({ orgs }: { orgs: OrgSummary[] }) {
                 </div>
               </div>
             </section>
-            {actorRole === "SUPER_ADMIN" ? (
+            {actorRole === "SUPER_ADMIN" || actorRole === "ADMIN" ? (
               <section className="border-t border-[--border-subtle] pt-[18px] mt-[18px]">
                 <h3 className="m-0 mb-2.5 text-[16px] font-semibold text-[--ink-1]">Organizations</h3>
                 <div className="grid gap-2">

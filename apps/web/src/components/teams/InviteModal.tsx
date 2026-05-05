@@ -41,7 +41,7 @@ export function InviteModal({ orgs }: { orgs: OrgSummary[] }) {
 
   return (
     <div
-      className="fixed inset-0 z-[--z-modal] bg-transparent"
+      className="fixed inset-0 z-[--z-modal] bg-black/40"
       onMouseDown={closeInviteModal}
     >
       <div

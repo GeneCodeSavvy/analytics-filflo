@@ -19,6 +19,7 @@ export function MemberTable({
   orgs,
   query,
   showCheckboxes,
+  showActions,
   sortKey,
   sortDirection,
   onSort,
@@ -29,6 +30,7 @@ export function MemberTable({
   orgs: OrgSummary[];
   query: string;
   showCheckboxes: boolean;
+  showActions: boolean;
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
@@ -41,11 +43,11 @@ export function MemberTable({
 
   return (
     <div className="relative overflow-auto">
-      <table className="w-full border-separate border-spacing-0">
+      <table className="w-full table-fixed border-separate border-spacing-0">
         <thead>
           <tr>
             {showCheckboxes ? <th className="w-[38px] border-b border-[--border-default]" /> : null}
-            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
+            <th className="w-[60%] border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3]">
               <SortHeader
                 label="Member"
                 sortKey="member"
@@ -54,7 +56,7 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
+            <th className="w-[20%] border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3]">
               <SortHeader
                 label="Role"
                 sortKey="role"
@@ -63,7 +65,7 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
+            <th className="w-[20%] border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3]">
               <SortHeader
                 label="Joined"
                 sortKey="joined"
@@ -72,9 +74,11 @@ export function MemberTable({
                 onSort={onSort}
               />
             </th>
-            <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3] whitespace-nowrap">
-              Actions
-            </th>
+            {showActions ? (
+              <th className="border-b border-[--border-default] px-3 py-[10px] text-left text-[13px] font-semibold text-[--ink-3]">
+                Actions
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -106,7 +110,7 @@ export function MemberTable({
                   </td>
                 ) : null}
                 <td className="border-b border-[--border-subtle] p-3 align-middle">
-                  <div className="flex min-w-[280px] items-center gap-[10px]">
+                  <div className="flex min-w-0 items-center gap-[10px]">
                     <Avatar member={member} />
                     <div>
                       <button
@@ -130,16 +134,18 @@ export function MemberTable({
                 <td className="border-b border-[--border-subtle] p-3 align-middle text-[--ink-1]">
                   {formatDate(member.joinedAt)}
                 </td>
-                <td className="border-b border-[--border-subtle] p-3 align-middle">
-                  <ActionMenu
-                    member={member}
-                    onProfile={() =>
-                      openMemberDetail(member.id, member.org?.id)
-                    }
-                    onRemove={() => onRemove(member)}
-                    onRole={(role) => onRole(member, role)}
-                  />
-                </td>
+                {showActions ? (
+                  <td className="border-b border-[--border-subtle] p-3 align-middle">
+                    <ActionMenu
+                      member={member}
+                      onProfile={() =>
+                        openMemberDetail(member.id, member.org?.id)
+                      }
+                      onRemove={() => onRemove(member)}
+                      onRole={(role) => onRole(member, role)}
+                    />
+                  </td>
+                ) : null}
               </tr>
             );
           })}
