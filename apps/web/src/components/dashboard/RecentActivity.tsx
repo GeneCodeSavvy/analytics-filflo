@@ -2,6 +2,22 @@ import { avatarColor, initials, timeAgo } from "../../lib/dashboardComponent";
 import type { ActivityEntry } from "../../types/dashboard";
 import { Panel } from "./Panel";
 
+const ACTION_LABELS: Record<string, { verb: string; prep: string }> = {
+  "status change": { verb: "changed the status of", prep: "" },
+  "assignee change": { verb: "reassigned", prep: "" },
+  created: { verb: "created", prep: "" },
+  commented: { verb: "commented on", prep: "" },
+  resolved: { verb: "resolved", prep: "" },
+  closed: { verb: "closed", prep: "" },
+  reopened: { verb: "reopened", prep: "" },
+  "priority change": { verb: "changed the priority of", prep: "" },
+  deleted: { verb: "deleted", prep: "" },
+};
+
+function formatAction(raw: string): string {
+  return ACTION_LABELS[raw.toLowerCase()]?.verb ?? raw;
+}
+
 export function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
   return (
     <Panel title="Recent activity" count={activity.length}>
@@ -20,13 +36,14 @@ export function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
             >
               {initials(entry.actor.name)}
             </div>
-            <p className="min-w-0 pt-0.5 text-[13px] leading-5 text-[--ink-1]">
-              <span>
-                {entry.actor.name} {entry.action}{" "}
-              </span>
-              <span className="text-[--action-tint-fg]">{entry.ticket.subject}</span>
-              <span className="text-[--ink-3]"> · {timeAgo(entry.at)}</span>
-            </p>
+            <div className="min-w-0 pt-0.5">
+              <p className="text-[13px] leading-5 text-[--ink-1]">
+                <span className="font-medium">{entry.actor.name}</span>
+                <span className="text-[--ink-2]"> {formatAction(entry.action)} </span>
+                <span className="font-medium text-[--action-tint-fg]">{entry.ticket.subject}</span>
+              </p>
+              <p className="mt-0.5 text-[11px] text-[--ink-3]">{timeAgo(entry.at)}</p>
+            </div>
           </div>
         ))}
       </div>
