@@ -130,7 +130,7 @@ export const Teams = () => {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="m-0 text-[30px] leading-none font-bold text-[--ink-1]">
-                Teams
+                {superAdminView || moderatorView ? "Teams" : "Team"}
               </h1>
             </div>
             {moderatorView ? (
@@ -238,10 +238,7 @@ export const Teams = () => {
                 .filter((row) => selectedRowIds.includes(row.id))
                 .map((row) => row.id);
               return (
-                <section
-                  className={cardClass}
-                  key={org.org.id}
-                >
+                <section className={cardClass} key={org.org.id}>
                   <button
                     className="grid w-full grid-cols-[auto_auto_1fr_auto] items-center gap-2.5 border-0 border-b border-[--border-default] bg-[--surface-card] px-4 py-3 text-left"
                     onClick={() => toggleOrgExpanded(org.org.id)}
