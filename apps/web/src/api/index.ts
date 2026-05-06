@@ -1,4 +1,5 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import axios, { AxiosHeaders, type AxiosRequestConfig } from "axios";
+import { getApiAuthToken } from "./authToken";
 
 interface TypedApi {
   get<T>(url: string, config?: AxiosRequestConfig): Promise<T>;
@@ -9,8 +10,19 @@ interface TypedApi {
 
 const _api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
-  withCredentials: true,
   headers: { "Content-Type": "application/json" },
+});
+
+_api.interceptors.request.use(async (config) => {
+  const token = await getApiAuthToken();
+
+  if (token) {
+    const headers = AxiosHeaders.from(config.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    config.headers = headers;
+  }
+
+  return config;
 });
 
 _api.interceptors.response.use(

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useAuth } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { InfiniteData } from "@tanstack/react-query";
 import { messageKeys } from "../lib/messageParams";
@@ -52,6 +53,7 @@ function patchThreadListRow(
 // ─── hook ────────────────────────────────────────────────────────────────────
 
 export function useMessageWebSocket(threadId: string | null): void {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
   const backoffRef = useRef(MIN_BACKOFF_MS);
@@ -113,10 +115,20 @@ export function useMessageWebSocket(threadId: string | null): void {
   );
 
   const connect = useCallback(
-    (tid: string) => {
+    async (tid: string) => {
       if (unmountedRef.current) return;
 
-      const wsUrl = `${getWsBaseUrl()}/threads/${tid}/ws`;
+      const token = await getToken();
+      if (unmountedRef.current) return;
+
+      if (!token) {
+        retryTimerRef.current = setTimeout(() => {
+          connect(tid);
+        }, backoffRef.current);
+        return;
+      }
+
+      const wsUrl = `${getWsBaseUrl()}/threads/${tid}/ws?token=${encodeURIComponent(token)}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -161,17 +173,23 @@ export function useMessageWebSocket(threadId: string | null): void {
         ws.close();
       };
     },
-    [queryClient, drainBuffer, handleNewMessage, handleThreadListUpdate],
+    [
+      getToken,
+      queryClient,
+      drainBuffer,
+      handleNewMessage,
+      handleThreadListUpdate,
+    ],
   );
 
   useEffect(() => {
-    if (!threadId) return;
+    if (!threadId || !isLoaded || !isSignedIn) return;
 
     unmountedRef.current = false;
     eventBufferRef.current = [];
     backoffRef.current = MIN_BACKOFF_MS;
 
-    connect(threadId);
+    void connect(threadId);
 
     // Watch for first page landing so we can drain the buffer
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
@@ -205,5 +223,5 @@ export function useMessageWebSocket(threadId: string | null): void {
       }
       eventBufferRef.current = [];
     };
-  }, [threadId, connect, drainBuffer, queryClient]);
+  }, [threadId, isLoaded, isSignedIn, connect, drainBuffer, queryClient]);
 }

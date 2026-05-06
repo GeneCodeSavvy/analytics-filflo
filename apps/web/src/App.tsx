@@ -12,6 +12,7 @@ import { SignUpPage } from "./components/SignUpPage";
 import { SignInPage } from "./components/SignInPage";
 import { AuthRequired } from "./components/AuthRequired";
 import { AuthStoreBridge } from "./components/AuthStoreBridge";
+import { ApiAuthTokenBridge } from "./components/ApiAuthTokenBridge";
 import { NotificationQueryPoller } from "./components/NotificationQueryPoller";
 
 const NotFound = () => (
@@ -25,6 +26,7 @@ const NotFound = () => (
 
 const App = () => (
   <ErrorBoundary>
+    <ApiAuthTokenBridge />
     <AuthStoreBridge />
     <Routes>
       {/* Public routes — no sidebar */}

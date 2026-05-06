@@ -22,6 +22,18 @@ const parseThreadId = (request: IncomingMessage) => {
   return ThreadMessageParamsSchema.safeParse({ threadId: match[1] });
 };
 
+const getSocketAuthToken = (request: IncomingMessage) => {
+  const url = new URL(request.url ?? "/", "http://localhost");
+  return url.searchParams.get("token");
+};
+
+const applySocketAuthHeader = (request: IncomingMessage) => {
+  const token = getSocketAuthToken(request);
+  if (token) {
+    request.headers.authorization = `Bearer ${token}`;
+  }
+};
+
 const closeWithPolicy = (socket: WebSocket, reason: string) => {
   socket.close(1008, reason);
 };
@@ -30,6 +42,8 @@ const authenticateSocketUser = async (
   db: DbClient,
   request: IncomingMessage,
 ) => {
+  applySocketAuthHeader(request);
+
   const requestState = await authenticateRequest({
     clerkClient,
     request: request as Request,
