@@ -90,9 +90,6 @@ export async function sendBootstrapSuperAdminMail(
 </body>
 </html>`,
     },
-    {
-      idempotencyKey: `bootstrap-super-admin/${to.toLowerCase()}`,
-    },
   );
 
   if (error) {
