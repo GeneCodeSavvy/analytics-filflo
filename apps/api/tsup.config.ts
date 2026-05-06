@@ -5,5 +5,6 @@ export default defineConfig({
   format: ["esm"],
   outDir: "dist",
   splitting: false,
+  platform: "node",
   noExternal: [/@shared/],
 });
