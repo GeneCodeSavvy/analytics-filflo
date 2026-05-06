@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build": "tsup src/index.ts --format esm --out-dir dist --no-splitting",
+        "build": "tsup",
         "check-types": "tsc --noEmit",
         "dev": "tsx watch src/index.ts",
         "lint": "eslint . --max-warnings 0",
