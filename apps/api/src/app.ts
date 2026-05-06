@@ -11,12 +11,11 @@ import webhooksRouter from "./routes/webhooks";
 import type { DbClient } from "./lib/db";
 import { requireDbUser } from "./lib/auth";
 
-const corsOptions: CorsOptions = {
-  origin: process.env.CORS_URLS || "https://analytics.filflo.harsh-dev.xyz",
-  credentials: true,
-};
-
 export const createApp = (db: DbClient): express.Application => {
+  const corsOptions: CorsOptions = {
+    origin: process.env.CORS_URLS || "http://localhost:5173",
+    credentials: true,
+  };
   const app = express();
   app.set("query parser", "extended");
   app.use(cors(corsOptions));
