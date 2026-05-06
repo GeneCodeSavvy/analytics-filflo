@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build": "tsc",
+        "build": "tsup src/index.ts --format esm --out-dir dist --no-splitting",
         "check-types": "tsc --noEmit",
         "dev": "tsx watch src/index.ts",
         "lint": "eslint . --max-warnings 0",
@@ -34,6 +34,7 @@
         "dotenv": "^17.4.2",
         "eslint": "^9.39.1",
         "prisma": "^7.0.1",
+        "tsup": "^8.4.0",
         "tsx": "^4.21.0",
         "typescript": "5.9.2"
     }
