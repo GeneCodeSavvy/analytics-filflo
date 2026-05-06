@@ -12,7 +12,7 @@ import type { DbClient } from "./lib/db";
 import { requireDbUser } from "./lib/auth";
 
 const corsOptions: CorsOptions = {
-  origin: process.env.CORS_URLS || "http://localhost:5173",
+  origin: process.env.CORS_URLS || "https://analytics.filflo.harsh-dev.xyz",
   credentials: true,
 };
 
@@ -23,7 +23,11 @@ export const createApp = (db: DbClient): express.Application => {
   app.locals.db = db;
 
   // Webhook route must be before express.json() to get raw body for svix verification
-  app.use("/webhooks", express.raw({ type: "application/json" }), webhooksRouter);
+  app.use(
+    "/webhooks",
+    express.raw({ type: "application/json" }),
+    webhooksRouter,
+  );
 
   app.use(express.json());
   app.use(clerkMiddleware());
