@@ -35,3 +35,4 @@ setupMessageWebSocket(wss, db);
 server.listen(PORT, () => {
   console.log(`API + WS running on http://localhost:${PORT}`);
 });
+
