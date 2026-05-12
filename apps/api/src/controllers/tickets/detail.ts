@@ -17,7 +17,10 @@ export const getTicket: RequestHandler = async (req, res) => {
   const params = IdParamsSchema.safeParse(req.params);
 
   if (!params.success) {
-    logger.error("Invalid ticket detail params");
+    logger.error({
+      event: "invalid_ticket_detail_params",
+      issues: params.error.issues,
+    });
     return sendInvalidRequest(res, "ticket id", params.error.issues);
   }
 
@@ -26,21 +29,30 @@ export const getTicket: RequestHandler = async (req, res) => {
   const target = await getTicketOrg(db, params.data.id);
 
   if (!target) {
-    logger.error(`Ticket ${params.data.id} was not found`);
+    logger.error({
+      event: "ticket_not_found",
+      ticketId: params.data.id,
+    });
     return sendNotFound(res, "Ticket");
   }
 
   if (!ensureTicketOrgReadable(res, req.dbUser, target)) {
-    logger.error(
-      `User ${req.dbUser.id} cannot read ticket ${params.data.id} in org ${target.orgId}`,
-    );
+    logger.error({
+      event: "ticket_read_forbidden",
+      userId: req.dbUser.id,
+      ticketId: params.data.id,
+      orgId: target.orgId,
+    });
     return;
   }
 
   const ticket = await getTicketDetail(db, params.data.id);
 
   if (!ticket) {
-    logger.error(`Ticket ${params.data.id} disappeared before detail load`);
+    logger.error({
+      event: "ticket_detail_missing_after_org_lookup",
+      ticketId: params.data.id,
+    });
     return sendNotFound(res, "Ticket");
   }
 

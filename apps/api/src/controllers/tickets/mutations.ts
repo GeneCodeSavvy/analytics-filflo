@@ -151,17 +151,20 @@ export const bulkTickets: RequestHandler = async (req, res) => {
   );
 
   if (!body.success) {
-    logger.error(
-      `Invalid bulk ticket payload: ${JSON.stringify(body.error.issues)}`,
-    );
+    logger.error({
+      event: "invalid_bulk_ticket_payload",
+      issues: body.error.issues,
+    });
     return sendInvalidRequest(res, "bulk ticket payload", body.error.issues);
   }
 
   const db = req.app.locals.db as DbClient;
   if (!ensureBulkTicketActionAllowed(res, req.dbUser, body.data.action)) {
-    logger.error(
-      `Bulk ticket action ${body.data.action} forbidden for user ${req.dbUser.id}`,
-    );
+    logger.error({
+      event: "bulk_ticket_action_forbidden",
+      action: body.data.action,
+      userId: req.dbUser.id,
+    });
     return;
   }
 

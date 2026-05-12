@@ -1,5 +1,5 @@
 import { Component } from "react";
-import type { ReactNode } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import createLogger from "@shared/logger";
 
 const logger = createLogger("ErrorBoundary");
@@ -24,8 +24,13 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error) {
-    logger.error(`React component error caught: ${error.message}`);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    logger.error({
+      event: "react_component_error_caught",
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   reset = () => {

@@ -26,7 +26,12 @@ ticketsRouter.use((req, res, next) => {
   logger.info(`${req.method} ${req.originalUrl}`);
   res.on("finish", () => {
     if (res.statusCode >= 400) {
-      logger.error(`${req.method} ${req.originalUrl} -> ${res.statusCode}`);
+      logger.error({
+        event: "ticket_request_failed",
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+      });
     }
   });
   next();
@@ -48,7 +53,11 @@ ticketsRouter.post("/:id/assign", assignTicket);
 ticketsRouter.patch("/:id/status", updateTicketStatus);
 ticketsRouter.patch("/:id/priority", updateTicketPriority);
 ticketsRouter.use((req, res) => {
-  logger.error(`No ticket route matched ${req.method} ${req.originalUrl}`);
+  logger.error({
+    event: "ticket_route_not_found",
+    method: req.method,
+    path: req.originalUrl,
+  });
   res.status(404).json({ success: false, error: "Ticket route not found" });
 });
 

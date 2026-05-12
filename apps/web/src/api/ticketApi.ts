@@ -88,7 +88,13 @@ export const ticketApi = {
     } catch (error) {
       const status = (error as { response?: { status?: number } }).response
         ?.status;
-      logger.error(`GET /tickets/${id} failed${status ? ` (${status})` : ""}`);
+      logger.error({
+        event: "ticket_detail_request_failed",
+        method: "GET",
+        path: `/tickets/${id}`,
+        ticketId: id,
+        status,
+      });
       throw error;
     }
   },

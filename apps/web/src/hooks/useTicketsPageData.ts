@@ -90,7 +90,12 @@ export function useTicketsPageData() {
       (detail.error as any)?.response?.status === 404 &&
       ticketId !== handled404Ref.current
     ) {
-      logger.error(`Ticket ${ticketId} returned 404; closing drawer`);
+      logger.error({
+        event: "ticket_detail_not_found",
+        ticketId,
+        action: "close_drawer",
+        status: 404,
+      });
       handled404Ref.current = ticketId ?? null;
       closeDrawer();
     }

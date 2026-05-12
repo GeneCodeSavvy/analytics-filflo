@@ -93,9 +93,11 @@ export const sendValidatedData = <Output>(
   const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
-    logger.error(
-      `${label} failed response validation: ${JSON.stringify(parsed.error.issues)}`,
-    );
+    logger.error({
+      event: "response_validation_failed",
+      label,
+      issues: parsed.error.issues,
+    });
     return sendError(res, 500, `${label} failed response validation`, {
       issues: parsed.error.issues,
     });
