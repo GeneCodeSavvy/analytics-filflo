@@ -1,6 +1,8 @@
 import type { RequestHandler } from "express";
 import { clerkClient, type ExpressRequestWithAuth } from "@clerk/express";
 import type { DbClient } from "./db";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import createLogger from "@shared/logger";
 
 export type DbUser = {
   id: string;
@@ -21,6 +23,27 @@ const dbUserSelect = {
   role: true,
   orgId: true,
 } as const;
+
+const logger = createLogger("auth");
+
+const getErrorData = (error: unknown) => {
+  if (error instanceof PrismaClientKnownRequestError) {
+    return {
+      code: error.code,
+      message: error.message,
+      name: error.name,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      name: error.name,
+    };
+  }
+
+  return { error };
+};
 
 type ClerkUserForLinking = Awaited<
   ReturnType<typeof clerkClient.users.getUser>
@@ -69,10 +92,22 @@ export const reconcileDbUserForClerkId = async (
   db: DbClient,
   clerkUserId: string,
 ): Promise<DbUser | null> => {
-  const existing = await db.user.findUnique({
-    where: { clerkUserId },
-    select: dbUserSelect,
-  });
+  let existing: DbUser | null;
+  try {
+    existing = await db.user.findUnique({
+      where: { clerkUserId },
+      select: dbUserSelect,
+    });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logger.error({
+        clerkUserId,
+        ...getErrorData(error),
+      });
+    }
+
+    throw error;
+  }
 
   if (existing) {
     await syncClerkPublicMetadata(clerkUserId, existing);
@@ -128,28 +163,26 @@ export const reconcileDbUserForClerkId = async (
 };
 
 export const requireDbUser: RequestHandler = async (req, res, next) => {
-  const clerkUserId = (req as ExpressRequestWithAuth).auth().userId;
-
-  if (!clerkUserId) {
-    res.status(401).json({ success: false, error: "Unauthenticated" });
-    return;
-  }
-
-  const db = req.app.locals.db as DbClient;
-
-  let user: DbUser | null;
   try {
-    user = await reconcileDbUserForClerkId(db, clerkUserId);
-  } catch {
+    const clerkUserId = (req as ExpressRequestWithAuth).auth().userId;
+
+    if (!clerkUserId) {
+      res.status(401).json({ success: false, error: "Unauthenticated" });
+      return;
+    }
+
+    const db = req.app.locals.db as DbClient;
+    const user = await reconcileDbUserForClerkId(db, clerkUserId);
+
+    if (!user) {
+      res.status(401).json({ success: false, error: "User not found" });
+      return;
+    }
+
+    req.dbUser = user;
+    next();
+  } catch (error) {
+    logger.error(getErrorData(error));
     res.status(500).json({ success: false, error: "Internal error" });
-    return;
   }
-
-  if (!user) {
-    res.status(401).json({ success: false, error: "User not found" });
-    return;
-  }
-
-  req.dbUser = user;
-  next();
 };

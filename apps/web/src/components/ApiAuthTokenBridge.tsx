@@ -1,20 +1,18 @@
 import { useAuth } from "@clerk/react";
 import { useEffect } from "react";
-import {
-  clearApiAuthTokenGetter,
-  setApiAuthTokenGetter,
-} from "../api/authToken";
+import { setApiAuthTokenGetter } from "../api";
 
 export function ApiAuthTokenBridge() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
-      clearApiAuthTokenGetter();
-      return;
+      setApiAuthTokenGetter(null);
+      return () => setApiAuthTokenGetter(null);
     }
 
-    return setApiAuthTokenGetter(() => getToken());
+    setApiAuthTokenGetter(() => getToken());
+    return () => setApiAuthTokenGetter(null);
   }, [getToken, isLoaded, isSignedIn]);
 
   return null;

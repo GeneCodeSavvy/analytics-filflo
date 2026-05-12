@@ -1,12 +1,25 @@
 import axios, { AxiosHeaders, type AxiosRequestConfig } from "axios";
-import { getApiAuthToken } from "./authToken";
 
 interface TypedApi {
   get<T>(url: string, config?: AxiosRequestConfig): Promise<T>;
   post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
-  patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  patch<T>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T>;
   delete<T>(url: string, config?: AxiosRequestConfig): Promise<T>;
 }
+
+type ApiAuthTokenGetter =
+  | null
+  | (() => string | null | undefined | Promise<string | null | undefined>);
+
+let apiAuthTokenGetter: ApiAuthTokenGetter = null;
+
+export const setApiAuthTokenGetter = (getter: ApiAuthTokenGetter) => {
+  apiAuthTokenGetter = getter;
+};
 
 const _api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
@@ -14,7 +27,7 @@ const _api = axios.create({
 });
 
 _api.interceptors.request.use(async (config) => {
-  const token = await getApiAuthToken();
+  const token = (await apiAuthTokenGetter?.()) ?? null;
 
   if (token) {
     const headers = AxiosHeaders.from(config.headers);
